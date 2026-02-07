@@ -6,6 +6,8 @@ import jakarta.persistence.Convert
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
@@ -36,6 +38,7 @@ class TripJpaEntity(
     var endDate: LocalDate,
 
     @Column(name = "itinerary_items", nullable = false, columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Convert(converter = ItineraryItemConverter::class)
     var itineraryItems: MutableList<ItineraryItem> = mutableListOf(),
 

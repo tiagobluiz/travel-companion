@@ -41,7 +41,11 @@ class CreateExpenseService(
         description: String = "",
         date: LocalDate,
     ): Expense? {
-        if (!tripRepository.existsByIdAndUserId(tripId, userId)) return null
+        val trip = tripRepository.findById(tripId) ?: return null
+        if (trip.userId != userId) return null
+        require(!date.isBefore(trip.startDate) && !date.isAfter(trip.endDate)) {
+            "Expense date must be within trip date range (${trip.startDate} - ${trip.endDate})"
+        }
 
         val expense = Expense(
             id = ExpenseId.generate(),

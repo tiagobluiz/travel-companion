@@ -42,6 +42,9 @@ class AddItineraryItemService(
     ): Trip? {
         val trip = tripRepository.findById(tripId) ?: return null
         if (trip.userId != userId) return null
+        require(!date.isBefore(trip.startDate) && !date.isAfter(trip.endDate)) {
+            "Itinerary item date must be within trip date range (${trip.startDate} - ${trip.endDate})"
+        }
 
         val item = ItineraryItem(
             placeName = placeName.trim(),

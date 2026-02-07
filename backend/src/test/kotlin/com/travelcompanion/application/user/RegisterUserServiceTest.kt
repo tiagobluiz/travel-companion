@@ -4,7 +4,7 @@ import com.travelcompanion.domain.user.User
 import com.travelcompanion.domain.user.UserId
 import com.travelcompanion.domain.user.UserRepository
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor

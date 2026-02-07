@@ -73,7 +73,7 @@ export default function DashboardPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
             />
             <div className="flex gap-3">
               <input
@@ -81,14 +81,14 @@ export default function DashboardPage() {
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 required
-                className="flex-1 px-3 py-2 border border-slate-300 rounded-lg"
+                className="flex-1 px-3 py-2 border border-slate-300 rounded-lg bg-white"
               />
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 required
-                className="flex-1 px-3 py-2 border border-slate-300 rounded-lg"
+                className="flex-1 px-3 py-2 border border-slate-300 rounded-lg bg-white"
               />
             </div>
             <div className="flex gap-2">

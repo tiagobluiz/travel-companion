@@ -28,7 +28,7 @@ class AuthIntegrationTest {
             content = """{"email":"test@example.com","password":"password123","displayName":"Test User"}"""
             contentType = MediaType.APPLICATION_JSON
         }.andExpect {
-            status { isCreated }
+            status { isCreated() }
             jsonPath("$.token") { exists() }
             jsonPath("$.user.email") { value("test@example.com") }
             jsonPath("$.user.displayName") { value("Test User") }
@@ -46,7 +46,7 @@ class AuthIntegrationTest {
             content = """{"email":"login@example.com","password":"pass123"}"""
             contentType = MediaType.APPLICATION_JSON
         }.andExpect {
-            status { isOk }
+            status { isOk() }
             jsonPath("$.token") { exists() }
         }
     }

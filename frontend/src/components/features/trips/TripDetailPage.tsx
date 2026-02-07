@@ -28,12 +28,14 @@ export default function TripDetailPage() {
   const [itemNotes, setItemNotes] = useState('')
   const [itemLatitude, setItemLatitude] = useState('')
   const [itemLongitude, setItemLongitude] = useState('')
+  const [itineraryError, setItineraryError] = useState('')
 
   const [showExpenseForm, setShowExpenseForm] = useState(false)
   const [amount, setAmount] = useState('')
   const [currency, setCurrency] = useState('USD')
   const [expenseDesc, setExpenseDesc] = useState('')
   const [expenseDate, setExpenseDate] = useState('')
+  const [expenseError, setExpenseError] = useState('')
 
   const { data: trip, isLoading } = useQuery({
     queryKey: ['trip', id],
@@ -88,10 +90,15 @@ export default function TripDetailPage() {
 
   function handleAddItinerary(e: React.FormEvent) {
     e.preventDefault()
+    setItineraryError('')
     if (!placeName.trim() || !itemDate || !itemLatitude || !itemLongitude) return
     const lat = parseFloat(itemLatitude)
     const lng = parseFloat(itemLongitude)
     if (isNaN(lat) || isNaN(lng)) return
+    if (itemDate < trip.startDate || itemDate > trip.endDate) {
+      setItineraryError(`Date must be between ${trip.startDate} and ${trip.endDate}.`)
+      return
+    }
     addItineraryMutation.mutate({
       placeName: placeName.trim(),
       date: itemDate,
@@ -103,8 +110,13 @@ export default function TripDetailPage() {
 
   function handleAddExpense(e: React.FormEvent) {
     e.preventDefault()
+    setExpenseError('')
     const amt = parseFloat(amount)
     if (isNaN(amt) || amt < 0 || !expenseDate) return
+    if (expenseDate < trip.startDate || expenseDate > trip.endDate) {
+      setExpenseError(`Date must be between ${trip.startDate} and ${trip.endDate}.`)
+      return
+    }
     createExpenseMutation.mutate({
       amount: amt,
       currency,
@@ -164,13 +176,18 @@ export default function TripDetailPage() {
               onSubmit={handleAddItinerary}
               className="mb-4 p-4 bg-white rounded-lg border border-slate-200 space-y-3"
             >
+              {itineraryError && (
+                <div className="p-2 rounded-md bg-red-50 text-red-700 text-sm">
+                  {itineraryError}
+                </div>
+              )}
               <input
                 type="text"
                 placeholder="Place or activity"
                 value={placeName}
                 onChange={(e) => setPlaceName(e.target.value)}
                 required
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
               />
               <div>
                 <label className="block text-xs text-slate-500 mb-1">Date</label>
@@ -178,8 +195,10 @@ export default function TripDetailPage() {
                   type="date"
                   value={itemDate}
                   onChange={(e) => setItemDate(e.target.value)}
+                  min={trip.startDate}
+                  max={trip.endDate}
                   required
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
                 />
               </div>
               <input
@@ -187,7 +206,7 @@ export default function TripDetailPage() {
                 placeholder="Notes"
                 value={itemNotes}
                 onChange={(e) => setItemNotes(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
               />
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -201,7 +220,7 @@ export default function TripDetailPage() {
                     value={itemLatitude}
                     onChange={(e) => setItemLatitude(e.target.value)}
                     required
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
                   />
                 </div>
                 <div>
@@ -215,7 +234,7 @@ export default function TripDetailPage() {
                     value={itemLongitude}
                     onChange={(e) => setItemLongitude(e.target.value)}
                     required
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
                   />
                 </div>
               </div>
@@ -295,6 +314,11 @@ export default function TripDetailPage() {
               onSubmit={handleAddExpense}
               className="mb-4 p-4 bg-white rounded-lg border border-slate-200 space-y-3"
             >
+              {expenseError && (
+                <div className="p-2 rounded-md bg-red-50 text-red-700 text-sm">
+                  {expenseError}
+                </div>
+              )}
               <div className="flex gap-3">
                 <input
                   type="number"
@@ -304,12 +328,12 @@ export default function TripDetailPage() {
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   required
-                  className="flex-1 px-3 py-2 border border-slate-300 rounded-lg"
+                  className="flex-1 px-3 py-2 border border-slate-300 rounded-lg bg-white"
                 />
                 <select
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value)}
-                  className="px-3 py-2 border border-slate-300 rounded-lg"
+                  className="px-3 py-2 border border-slate-300 rounded-lg bg-white"
                 >
                   <option value="USD">USD</option>
                   <option value="EUR">EUR</option>
@@ -321,14 +345,16 @@ export default function TripDetailPage() {
                 placeholder="Description"
                 value={expenseDesc}
                 onChange={(e) => setExpenseDesc(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
               />
               <input
                 type="date"
                 value={expenseDate}
                 onChange={(e) => setExpenseDate(e.target.value)}
+                min={trip.startDate}
+                max={trip.endDate}
                 required
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
               />
               <div className="flex gap-2">
                 <button

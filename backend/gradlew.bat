@@ -13,6 +13,8 @@
 @rem See the License for the specific language governing permissions and
 @rem limitations under the License.
 @rem
+@rem SPDX-License-Identifier: Apache-2.0
+@rem
 
 @if "%DEBUG%"=="" @echo off
 @rem ##########################################################################
@@ -48,7 +50,7 @@ echo ERROR: JAVA_HOME is not set and no 'java' command could be found in your PA
 echo. 1>&2
 echo Please set the JAVA_HOME variable in your environment to match the 1>&2
 echo location of your Java installation. 1>&2
-echo. 1>&2
+
 goto fail
 
 :findJavaFromJavaHome
@@ -60,6 +62,9 @@ if exist "%JAVA_EXE%" goto execute
 echo. 1>&2
 echo ERROR: JAVA_HOME is set to an invalid directory: %JAVA_HOME% 1>&2
 echo. 1>&2
+echo Please set the JAVA_HOME variable in your environment to match the 1>&2
+echo location of your Java installation. 1>&2
+
 goto fail
 
 :execute
@@ -77,9 +82,11 @@ if %ERRORLEVEL% equ 0 goto mainEnd
 
 :fail
 rem Set variable GRADLE_EXIT_CONSOLE if you need the _script_ return code instead of
-rem having to wait for the user to press a key before the console window closes
-if not ""=="%GRADLE_EXIT_CONSOLE%" exit 1
-exit /b 1
+rem the _cmd.exe /c_ return code!
+set EXIT_CODE=%ERRORLEVEL%
+if %EXIT_CODE% equ 0 set EXIT_CODE=1
+if not ""=="%GRADLE_EXIT_CONSOLE%" exit %EXIT_CODE%
+exit /b %EXIT_CODE%
 
 :mainEnd
 if "%OS%"=="Windows_NT" endlocal

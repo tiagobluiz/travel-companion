@@ -40,7 +40,13 @@ class UpdateExpenseService(
         date: LocalDate?,
     ): Expense? {
         val existing = expenseRepository.findById(expenseId) ?: return null
-        if (!tripRepository.existsByIdAndUserId(existing.tripId, userId)) return null
+        val trip = tripRepository.findById(existing.tripId) ?: return null
+        if (trip.userId != userId) return null
+        if (date != null) {
+            require(!date.isBefore(trip.startDate) && !date.isAfter(trip.endDate)) {
+                "Expense date must be within trip date range (${trip.startDate} - ${trip.endDate})"
+            }
+        }
 
         val updated = existing.copy(
             amount = amount ?: existing.amount,

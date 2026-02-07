@@ -3,6 +3,7 @@ package com.travelcompanion.infrastructure.persistence
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.travelcompanion.domain.trip.ItineraryItem
 import jakarta.persistence.AttributeConverter
 import jakarta.persistence.Converter
@@ -18,6 +19,7 @@ class ItineraryItemConverter : AttributeConverter<List<ItineraryItem>, String> {
 
     private val objectMapper = ObjectMapper().apply {
         registerModule(JavaTimeModule())
+        registerModule(KotlinModule.Builder().build())
     }
 
     private val typeRef = object : TypeReference<List<ItineraryItemDto>>() {}
@@ -50,7 +52,7 @@ class ItineraryItemConverter : AttributeConverter<List<ItineraryItem>, String> {
         }
     }
 
-    private data class ItineraryItemDto(
+    data class ItineraryItemDto(
         val placeName: String,
         val date: String,
         val notes: String? = "",
