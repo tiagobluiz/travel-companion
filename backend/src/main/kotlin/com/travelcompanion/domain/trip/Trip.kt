@@ -23,11 +23,7 @@ data class Trip(
     init {
         require(name.isNotBlank()) { "Trip name cannot be blank" }
         require(!endDate.isBefore(startDate)) { "End date cannot be before start date" }
-        itineraryItems.forEach { item ->
-            require(!item.date.isBefore(startDate) && !item.date.isAfter(endDate)) {
-                "Itinerary item date must be within trip date range"
-            }
-        }
+        itineraryItems.forEach { item -> validateDateWithinRange(item.date, startDate, endDate) }
     }
 
     /**
@@ -37,9 +33,7 @@ data class Trip(
      * @return A new Trip with the item added
      */
     fun addItineraryItem(item: ItineraryItem): Trip {
-        require(!item.date.isBefore(startDate) && !item.date.isAfter(endDate)) {
-            "Itinerary item date must be within trip date range ($startDate - $endDate)"
-        }
+        validateDateWithinRange(item.date, startDate, endDate)
         return copy(itineraryItems = itineraryItems + item)
     }
 
@@ -52,12 +46,20 @@ data class Trip(
      */
     fun updateItineraryItem(index: Int, item: ItineraryItem): Trip {
         require(index in itineraryItems.indices) { "Invalid itinerary item index" }
-        require(!item.date.isBefore(startDate) && !item.date.isAfter(endDate)) {
-            "Itinerary item date must be within trip date range"
-        }
+        validateDateWithinRange(item.date, startDate, endDate)
         val updated = itineraryItems.toMutableList()
         updated[index] = item
         return copy(itineraryItems = updated)
+    }
+
+    /**
+     * Updates trip metadata while preserving aggregate invariants.
+     */
+    fun updateDetails(name: String, startDate: LocalDate, endDate: LocalDate): Trip {
+        require(name.isNotBlank()) { "Trip name cannot be blank" }
+        require(!endDate.isBefore(startDate)) { "End date cannot be before start date" }
+        itineraryItems.forEach { item -> validateDateWithinRange(item.date, startDate, endDate) }
+        return copy(name = name, startDate = startDate, endDate = endDate)
     }
 
     /**
@@ -71,5 +73,11 @@ data class Trip(
         val updated = itineraryItems.toMutableList()
         updated.removeAt(index)
         return copy(itineraryItems = updated)
+    }
+
+    private fun validateDateWithinRange(date: LocalDate, startDate: LocalDate, endDate: LocalDate) {
+        require(!date.isBefore(startDate) && !date.isAfter(endDate)) {
+            "Itinerary item date must be within trip date range ($startDate - $endDate)"
+        }
     }
 }

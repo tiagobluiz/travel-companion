@@ -41,7 +41,7 @@ class UpdateTripService(
         val newStart = startDate ?: existing.startDate
         val newEnd = endDate ?: existing.endDate
 
-        val updated = existing.copy(
+        val updated = existing.updateDetails(
             name = newName,
             startDate = newStart,
             endDate = newEnd,

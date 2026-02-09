@@ -84,6 +84,108 @@ class TripTest {
         }
     }
 
+    @Test
+    fun `trip rejects blank name`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            Trip(
+                id = TripId.generate(),
+                userId = userId,
+                name = "   ",
+                startDate = startDate,
+                endDate = endDate,
+                itineraryItems = emptyList(),
+                createdAt = Instant.now(),
+            )
+        }
+    }
+
+    @Test
+    fun `trip rejects itinerary items outside date range at construction`() {
+        val outOfRangeItem = ItineraryItem(
+            placeName = "London",
+            date = endDate.plusDays(1),
+            notes = "",
+            latitude = 51.5074,
+            longitude = -0.1278,
+        )
+        assertThrows(IllegalArgumentException::class.java) {
+            Trip(
+                id = TripId.generate(),
+                userId = userId,
+                name = "Trip",
+                startDate = startDate,
+                endDate = endDate,
+                itineraryItems = listOf(outOfRangeItem),
+                createdAt = Instant.now(),
+            )
+        }
+    }
+
+    @Test
+    fun `updateDetails rejects new date range that excludes existing itinerary items`() {
+        val trip = createTrip().addItineraryItem(
+            ItineraryItem("Paris", LocalDate.of(2025, 6, 5), "", 48.0, 2.0)
+        )
+
+        assertThrows(IllegalArgumentException::class.java) {
+            trip.updateDetails(
+                name = trip.name,
+                startDate = LocalDate.of(2025, 6, 6),
+                endDate = LocalDate.of(2025, 6, 10),
+            )
+        }
+    }
+
+    @Test
+    fun `updateDetails rejects blank name`() {
+        val trip = createTrip()
+        assertThrows(IllegalArgumentException::class.java) {
+            trip.updateDetails(
+                name = " ",
+                startDate = trip.startDate,
+                endDate = trip.endDate,
+            )
+        }
+    }
+
+    @Test
+    fun `updateDetails rejects end date before start date`() {
+        val trip = createTrip()
+        assertThrows(IllegalArgumentException::class.java) {
+            trip.updateDetails(
+                name = trip.name,
+                startDate = endDate,
+                endDate = startDate,
+            )
+        }
+    }
+
+    @Test
+    fun `updateItineraryItem rejects invalid index`() {
+        val trip = createTrip()
+        val item = ItineraryItem("Paris", startDate, "", 48.0, 2.0)
+        assertThrows(IllegalArgumentException::class.java) {
+            trip.updateItineraryItem(0, item)
+        }
+    }
+
+    @Test
+    fun `updateItineraryItem rejects out of range date`() {
+        val trip = createTrip().addItineraryItem(ItineraryItem("A", startDate, "", 0.0, 0.0))
+        val item = ItineraryItem("B", endDate.plusDays(1), "", 0.0, 0.0)
+        assertThrows(IllegalArgumentException::class.java) {
+            trip.updateItineraryItem(0, item)
+        }
+    }
+
+    @Test
+    fun `removeItineraryItem rejects invalid index`() {
+        val trip = createTrip()
+        assertThrows(IllegalArgumentException::class.java) {
+            trip.removeItineraryItem(0)
+        }
+    }
+
     private fun createTrip() = Trip(
         id = TripId.generate(),
         userId = userId,

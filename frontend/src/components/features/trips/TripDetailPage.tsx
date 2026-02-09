@@ -68,6 +68,9 @@ export default function TripDetailPage() {
       setItemLatitude('')
       setItemLongitude('')
     },
+    onError: (error: Error) => {
+      setItineraryError(error.message || 'Failed to add itinerary item.')
+    },
   })
 
   const createExpenseMutation = useMutation({

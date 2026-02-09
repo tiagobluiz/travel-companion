@@ -11,7 +11,8 @@ import java.time.LocalDate
 /**
  * Handles the use case of updating an itinerary item at a given index.
  *
- * Validates that the trip exists, belongs to the user, and the index is valid.
+ * Validates that the trip exists and belongs to the user.
+ * Domain invariants (including index and date range) are enforced by the Trip aggregate.
  */
 @Service
 class UpdateItineraryItemService(
@@ -43,10 +44,6 @@ class UpdateItineraryItemService(
     ): Trip? {
         val trip = tripRepository.findById(tripId) ?: return null
         if (trip.userId != userId) return null
-        require(!date.isBefore(trip.startDate) && !date.isAfter(trip.endDate)) {
-            "Itinerary item date must be within trip date range (${trip.startDate} - ${trip.endDate})"
-        }
-
         val item = ItineraryItem(
             placeName = placeName.trim(),
             date = date,

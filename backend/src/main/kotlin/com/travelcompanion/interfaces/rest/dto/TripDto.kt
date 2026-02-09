@@ -4,6 +4,7 @@ import jakarta.validation.constraints.DecimalMax
 import jakarta.validation.constraints.DecimalMin
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
+import jakarta.validation.constraints.Pattern
 import java.time.LocalDate
 
 /**
@@ -50,6 +51,10 @@ data class ItineraryItemRequest(
     @field:NotBlank(message = "Place name is required")
     val placeName: String,
     @field:NotBlank(message = "Date is required")
+    @field:Pattern(
+        regexp = "^\\d{4}-\\d{2}-\\d{2}$",
+        message = "Date must use yyyy-MM-dd format",
+    )
     val date: String,  // ISO date (yyyy-MM-dd)
     val notes: String? = null,
     @field:NotNull(message = "Latitude is required")

@@ -18,7 +18,8 @@ async function request<T>(
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers })
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw new Error((err as { error?: string }).error || res.statusText)
+    const parsed = err as { error?: string; message?: string }
+    throw new Error(parsed.error || parsed.message || res.statusText)
   }
   if (res.status === 204 || res.headers.get('content-length') === '0') {
     return {} as T
