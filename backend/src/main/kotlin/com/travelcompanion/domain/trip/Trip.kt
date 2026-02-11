@@ -3,6 +3,7 @@ package com.travelcompanion.domain.trip
 import com.travelcompanion.domain.user.UserId
 import java.time.Instant
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 /**
@@ -351,7 +352,7 @@ data class Trip(
         memberships.count { it.role == TripRole.OWNER }
 
     private fun tripDurationDays(startDate: LocalDate, endDate: LocalDate): Long =
-        java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate) + 1
+        ChronoUnit.DAYS.between(startDate, endDate) + 1
 
     companion object {
         const val MAX_TRIP_DURATION_DAYS: Long = 31
