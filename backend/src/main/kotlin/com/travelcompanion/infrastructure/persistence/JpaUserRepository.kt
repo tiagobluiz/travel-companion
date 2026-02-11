@@ -3,6 +3,7 @@ package com.travelcompanion.infrastructure.persistence
 import com.travelcompanion.domain.user.User
 import com.travelcompanion.domain.user.UserId
 import com.travelcompanion.domain.user.UserRepository
+import com.travelcompanion.infrastructure.audit.AuditEventWriter
 import org.springframework.stereotype.Repository
 
 /**
@@ -14,12 +15,24 @@ import org.springframework.stereotype.Repository
 @Repository
 class JpaUserRepository(
     private val springRepo: SpringDataUserRepository,
+    private val auditEventWriter: AuditEventWriter,
 ) : UserRepository {
 
     override fun save(user: User): User {
+        val existing = springRepo.findById(user.id.value).orElse(null)?.let { toDomain(it) }
         val entity = toEntity(user)
         val saved = springRepo.save(entity)
-        return toDomain(saved)
+        val savedDomain = toDomain(saved)
+
+        auditEventWriter.record(
+            action = if (existing == null) "USER_CREATED" else "USER_UPDATED",
+            entityType = "USER",
+            entityId = savedDomain.id.toString(),
+            beforeState = existing?.copy(passwordHash = "***redacted***"),
+            afterState = savedDomain.copy(passwordHash = "***redacted***"),
+            metadata = mapOf("email" to savedDomain.email),
+        )
+        return savedDomain
     }
 
     override fun findById(id: UserId): User? =
