@@ -367,6 +367,32 @@ class TripTest {
         assertEquals(1, trip.memberships.count { it.role == TripRole.OWNER })
     }
 
+    @Test
+    fun `trip rejects duration over 31 days`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            Trip(
+                id = TripId.generate(),
+                userId = userId,
+                name = "Trip",
+                startDate = LocalDate.of(2025, 6, 1),
+                endDate = LocalDate.of(2025, 7, 2),
+                itineraryItems = emptyList(),
+                createdAt = Instant.now(),
+            )
+        }
+    }
+
+    @Test
+    fun `updateDetails rejects duration over 31 days`() {
+        val trip = createTrip()
+        assertThrows(IllegalArgumentException::class.java) {
+            trip.updateDetails(
+                name = trip.name,
+                startDate = LocalDate.of(2025, 6, 1),
+                endDate = LocalDate.of(2025, 7, 2),
+            )
+        }
+    }
     private fun createTrip() = Trip(
         id = TripId.generate(),
         userId = userId,

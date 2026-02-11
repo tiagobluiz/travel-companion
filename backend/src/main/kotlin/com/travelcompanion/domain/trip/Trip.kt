@@ -3,6 +3,7 @@ package com.travelcompanion.domain.trip
 import com.travelcompanion.domain.user.UserId
 import java.time.Instant
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 /**
@@ -27,6 +28,9 @@ data class Trip(
     init {
         require(name.isNotBlank()) { "Trip name cannot be blank" }
         require(!endDate.isBefore(startDate)) { "End date cannot be before start date" }
+        require(tripDurationDays(startDate, endDate) <= MAX_TRIP_DURATION_DAYS) {
+            "Trip duration cannot exceed $MAX_TRIP_DURATION_DAYS days"
+        }
         require(memberships.isNotEmpty()) { "Trip must have at least one member" }
         require(memberships.any { it.userId == userId && it.role == TripRole.OWNER }) {
             "Trip owner must be present as an OWNER membership"
@@ -80,30 +84,23 @@ data class Trip(
     ): Trip {
         require(name.isNotBlank()) { "Trip name cannot be blank" }
         require(!endDate.isBefore(startDate)) { "End date cannot be before start date" }
-
+        require(tripDurationDays(startDate, endDate) <= MAX_TRIP_DURATION_DAYS) {
+            "Trip duration cannot exceed $MAX_TRIP_DURATION_DAYS days"
+        }
         val remappedItems = itineraryItems.map { item ->
             if (item.isInPlacesToVisit) {
                 item.copy(date = startDate)
+            } else if (item.date.isBefore(startDate) || item.date.isAfter(endDate)) {
+                item.copy(
+                    isInPlacesToVisit = true,
+                    date = startDate,
+                )
             } else {
-                if (item.date.isBefore(startDate) || item.date.isAfter(endDate)) {
-                    item.copy(
-                        isInPlacesToVisit = true,
-                        date = startDate,
-                    )
-                } else {
-                    item
-                }
+                item
             }
         }
-
         remappedItems.forEach { item -> validateDateWithinRange(item.date, startDate, endDate) }
-        return copy(
-            name = name,
-            startDate = startDate,
-            endDate = endDate,
-            visibility = visibility,
-            itineraryItems = remappedItems,
-        )
+        return copy(name = name, startDate = startDate, endDate = endDate, visibility = visibility, itineraryItems = remappedItems)
     }
 
     /**
@@ -365,6 +362,13 @@ data class Trip(
 
     private fun ownerCount(): Int =
         memberships.count { it.role == TripRole.OWNER }
+
+    private fun tripDurationDays(startDate: LocalDate, endDate: LocalDate): Long =
+        ChronoUnit.DAYS.between(startDate, endDate) + 1
+
+    companion object {
+        const val MAX_TRIP_DURATION_DAYS: Long = 31
+    }
 }
 
 data class TripDayContainer(
