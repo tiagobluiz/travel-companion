@@ -1,8 +1,6 @@
 package com.travelcompanion.infrastructure.persistence
 
 import com.travelcompanion.domain.trip.ItineraryItem
-import com.travelcompanion.domain.trip.TripInvite
-import com.travelcompanion.domain.trip.TripMembership
 import jakarta.persistence.Column
 import jakarta.persistence.Convert
 import jakarta.persistence.Entity
@@ -27,8 +25,8 @@ class TripJpaEntity(
     @Column(name = "id", updatable = false)
     val id: UUID,
 
-    @Column(name = "user_id", nullable = false, updatable = false)
-    val userId: UUID,
+    @Column(name = "owner_id", nullable = false, updatable = false)
+    val ownerId: UUID,
 
     @Column(name = "name", nullable = false)
     var name: String,
@@ -41,16 +39,6 @@ class TripJpaEntity(
 
     @Column(name = "visibility", nullable = false)
     var visibility: String,
-
-    @Column(name = "memberships", nullable = false, columnDefinition = "jsonb")
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Convert(converter = TripMembershipConverter::class)
-    var memberships: MutableList<TripMembership> = mutableListOf(),
-
-    @Column(name = "invites", nullable = false, columnDefinition = "jsonb")
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Convert(converter = TripInviteConverter::class)
-    var invites: MutableList<TripInvite> = mutableListOf(),
 
     @Column(name = "itinerary_items", nullable = false, columnDefinition = "jsonb")
     @JdbcTypeCode(SqlTypes.JSON)

@@ -2,6 +2,8 @@ package com.travelcompanion.infrastructure.persistence
 
 import com.travelcompanion.domain.trip.Trip
 import com.travelcompanion.domain.trip.TripId
+import com.travelcompanion.domain.trip.InviteStatus
+import com.travelcompanion.domain.trip.TripInvite
 import com.travelcompanion.domain.trip.TripMembership
 import com.travelcompanion.domain.trip.TripRepository
 import com.travelcompanion.domain.trip.TripRole
@@ -9,6 +11,9 @@ import com.travelcompanion.domain.trip.TripVisibility
 import com.travelcompanion.domain.user.UserId
 import com.travelcompanion.infrastructure.audit.AuditEventWriter
 import org.springframework.stereotype.Repository
+import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
+import java.util.UUID
 
 /**
  * JPA implementation of [TripRepository].
@@ -19,13 +24,43 @@ import org.springframework.stereotype.Repository
 @Repository
 class JpaTripRepository(
     private val springRepo: SpringDataTripRepository,
+    private val membershipRepo: SpringDataTripMembershipRepository,
+    private val inviteRepo: SpringDataTripInviteRepository,
     private val auditEventWriter: AuditEventWriter,
 ) : TripRepository {
 
+    @Transactional
     override fun save(trip: Trip): Trip {
         val existing = springRepo.findById(trip.id.value).orElse(null)?.let { toDomain(it) }
         val entity = toEntity(trip)
         val saved = springRepo.save(entity)
+
+        membershipRepo.deleteByTripId(saved.id)
+        membershipRepo.saveAll(
+            trip.memberships.map {
+                TripMembershipJpaEntity(
+                    tripId = saved.id,
+                    userId = it.userId.value,
+                    role = it.role.name,
+                    createdAt = Instant.now(),
+                )
+            }
+        )
+
+        inviteRepo.deleteByTripId(saved.id)
+        inviteRepo.saveAll(
+            trip.invites.map {
+                TripInviteJpaEntity(
+                    id = UUID.randomUUID(),
+                    tripId = saved.id,
+                    email = it.email,
+                    role = it.role.name,
+                    status = it.status.name,
+                    createdAt = it.createdAt,
+                )
+            }
+        )
+
         val savedDomain = toDomain(saved)
 
         val metadata = mapOf(
@@ -59,10 +94,13 @@ class JpaTripRepository(
         springRepo.findById(id.value).orElse(null)?.let { toDomain(it) }
 
     override fun findByUserId(userId: UserId): List<Trip> =
-        springRepo.findByUserIdOrderByCreatedAtDesc(userId.value).map { toDomain(it) }
+        springRepo.findByOwnerIdOrderByCreatedAtDesc(userId.value).map { toDomain(it) }
 
+    @Transactional
     override fun deleteById(id: TripId) {
         val existing = findById(id)
+        inviteRepo.deleteByTripId(id.value)
+        membershipRepo.deleteByTripId(id.value)
         springRepo.deleteById(id.value)
         if (existing != null) {
             auditEventWriter.record(
@@ -76,18 +114,16 @@ class JpaTripRepository(
     }
 
     override fun existsByIdAndUserId(tripId: TripId, userId: UserId): Boolean =
-        springRepo.existsByIdAndUserId(tripId.value, userId.value)
+        springRepo.existsByIdAndOwnerId(tripId.value, userId.value)
 
     private fun toEntity(trip: Trip): TripJpaEntity {
         val entity = TripJpaEntity(
             id = trip.id.value,
-            userId = trip.userId.value,
+            ownerId = trip.userId.value,
             name = trip.name,
             startDate = trip.startDate,
             endDate = trip.endDate,
             visibility = trip.visibility.name,
-            memberships = trip.memberships.toMutableList(),
-            invites = trip.invites.toMutableList(),
             itineraryItems = trip.itineraryItems.toMutableList(),
             createdAt = trip.createdAt,
         )
@@ -152,11 +188,26 @@ class JpaTripRepository(
     }
 
     private fun toDomain(entity: TripJpaEntity): Trip {
-        val ownerId = UserId(entity.userId)
-        val memberships = if (entity.memberships.isEmpty()) {
+        val ownerId = UserId(entity.ownerId)
+        val persistedMemberships = membershipRepo.findByTripId(entity.id).map {
+            TripMembership(
+                userId = UserId(it.userId),
+                role = TripRole.valueOf(it.role),
+            )
+        }
+        val memberships = if (persistedMemberships.isEmpty()) {
             listOf(TripMembership(userId = ownerId, role = TripRole.OWNER))
         } else {
-            entity.memberships.toList()
+            persistedMemberships
+        }
+
+        val invites = inviteRepo.findByTripId(entity.id).map {
+            TripInvite(
+                email = it.email,
+                role = TripRole.valueOf(it.role),
+                status = InviteStatus.valueOf(it.status),
+                createdAt = it.createdAt,
+            )
         }
 
         return Trip(
@@ -168,7 +219,7 @@ class JpaTripRepository(
             visibility = runCatching { TripVisibility.valueOf(entity.visibility) }
                 .getOrDefault(TripVisibility.PRIVATE),
             memberships = memberships,
-            invites = entity.invites.toList(),
+            invites = invites,
             itineraryItems = entity.itineraryItems.toList(),
             createdAt = entity.createdAt,
         )
