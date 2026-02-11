@@ -11,7 +11,7 @@ import java.util.UUID
  */
 interface SpringDataTripRepository : JpaRepository<TripJpaEntity, UUID> {
 
-    fun findByUserIdOrderByCreatedAtDesc(userId: UUID): List<TripJpaEntity>
+    fun findByOwnerIdOrderByCreatedAtDesc(ownerId: UUID): List<TripJpaEntity>
 
-    fun existsByIdAndUserId(id: UUID, userId: UUID): Boolean
+    fun existsByIdAndOwnerId(id: UUID, ownerId: UUID): Boolean
 }
