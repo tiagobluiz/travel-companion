@@ -3,6 +3,7 @@ package com.travelcompanion.application.trip
 import com.travelcompanion.domain.trip.Trip
 import com.travelcompanion.domain.trip.TripId
 import com.travelcompanion.domain.trip.TripRepository
+import com.travelcompanion.domain.trip.TripRole
 import com.travelcompanion.domain.trip.TripVisibility
 import com.travelcompanion.domain.user.UserId
 import org.springframework.stereotype.Service
@@ -37,7 +38,16 @@ class UpdateTripService(
         visibility: TripVisibility?,
     ): Trip? {
         val existing = tripRepository.findById(tripId) ?: return null
-        if (existing.userId != userId) return null
+
+        val isOwner = existing.hasRole(userId, TripRole.OWNER)
+        val isEditor = existing.hasRole(userId, TripRole.EDITOR)
+        val isOwnerOrEditor = isOwner || isEditor
+        val requestedCoreEdit = name != null || startDate != null || endDate != null
+
+        if (requestedCoreEdit && !isOwnerOrEditor) return null
+        if (visibility != null && !isOwner) return null
+
+        if (!requestedCoreEdit && visibility == null) return existing
 
         val newName = name?.trim() ?: existing.name
         val newStart = startDate ?: existing.startDate

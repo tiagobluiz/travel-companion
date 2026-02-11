@@ -27,6 +27,7 @@ data class Trip(
     init {
         require(name.isNotBlank()) { "Trip name cannot be blank" }
         require(!endDate.isBefore(startDate)) { "End date cannot be before start date" }
+        require(tripDurationDays(startDate, endDate) <= 31) { "Trip duration cannot exceed 31 days" }
         require(memberships.isNotEmpty()) { "Trip must have at least one member" }
         require(memberships.any { it.userId == userId && it.role == TripRole.OWNER }) {
             "Trip owner must be present as an OWNER membership"
@@ -80,6 +81,7 @@ data class Trip(
     ): Trip {
         require(name.isNotBlank()) { "Trip name cannot be blank" }
         require(!endDate.isBefore(startDate)) { "End date cannot be before start date" }
+        require(tripDurationDays(startDate, endDate) <= 31) { "Trip duration cannot exceed 31 days" }
         itineraryItems.forEach { item -> validateDateWithinRange(item.date, startDate, endDate) }
         return copy(name = name, startDate = startDate, endDate = endDate, visibility = visibility)
     }
@@ -343,6 +345,9 @@ data class Trip(
 
     private fun ownerCount(): Int =
         memberships.count { it.role == TripRole.OWNER }
+
+    private fun tripDurationDays(startDate: LocalDate, endDate: LocalDate): Long =
+        java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate) + 1
 }
 
 data class TripDayContainer(
