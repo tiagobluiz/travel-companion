@@ -3,6 +3,7 @@ package com.travelcompanion.application.trip
 import com.travelcompanion.domain.trip.Trip
 import com.travelcompanion.domain.trip.TripId
 import com.travelcompanion.domain.trip.TripRepository
+import com.travelcompanion.domain.trip.TripVisibility
 import com.travelcompanion.domain.user.UserId
 import org.springframework.stereotype.Service
 import java.time.Instant
@@ -28,13 +29,20 @@ class CreateTripService(
      * @param endDate The trip end date (must be >= startDate)
      * @return The created trip
      */
-    fun execute(userId: UserId, name: String, startDate: LocalDate, endDate: LocalDate): Trip {
+    fun execute(
+        userId: UserId,
+        name: String,
+        startDate: LocalDate,
+        endDate: LocalDate,
+        visibility: TripVisibility = TripVisibility.PRIVATE,
+    ): Trip {
         val trip = Trip(
             id = TripId.generate(),
             userId = userId,
             name = name.trim(),
             startDate = startDate,
             endDate = endDate,
+            visibility = visibility,
             itineraryItems = emptyList(),
             createdAt = Instant.now(),
         )

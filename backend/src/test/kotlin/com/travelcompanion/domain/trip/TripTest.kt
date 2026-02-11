@@ -3,6 +3,7 @@ package com.travelcompanion.domain.trip
 import com.travelcompanion.domain.user.UserId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.time.LocalDate
@@ -184,6 +185,52 @@ class TripTest {
         assertThrows(IllegalArgumentException::class.java) {
             trip.removeItineraryItem(0)
         }
+    }
+
+    @Test
+    fun `trip supports public visibility`() {
+        val trip = createTrip().updateDetails(
+            name = "Public Trip",
+            startDate = startDate,
+            endDate = endDate,
+            visibility = TripVisibility.PUBLIC,
+        )
+        assertEquals(TripVisibility.PUBLIC, trip.visibility)
+        assertTrue(trip.canView(null))
+    }
+
+    @Test
+    fun `trip supports owner editor viewer memberships`() {
+        val editorId = UserId.generate()
+        val viewerId = UserId.generate()
+        val trip = createTrip().copy(
+            memberships = listOf(
+                TripMembership(userId = userId, role = TripRole.OWNER),
+                TripMembership(userId = editorId, role = TripRole.EDITOR),
+                TripMembership(userId = viewerId, role = TripRole.VIEWER),
+            )
+        )
+
+        assertTrue(trip.hasRole(userId, TripRole.OWNER))
+        assertTrue(trip.hasRole(editorId, TripRole.EDITOR))
+        assertTrue(trip.hasRole(viewerId, TripRole.VIEWER))
+    }
+
+    @Test
+    fun `trip supports pending accepted declined invite states`() {
+        val now = Instant.now()
+        val trip = createTrip().copy(
+            invites = listOf(
+                TripInvite("pending@example.com", TripRole.EDITOR, InviteStatus.PENDING, now),
+                TripInvite("accepted@example.com", TripRole.VIEWER, InviteStatus.ACCEPTED, now),
+                TripInvite("declined@example.com", TripRole.VIEWER, InviteStatus.DECLINED, now),
+            )
+        )
+
+        assertEquals(3, trip.invites.size)
+        assertEquals(InviteStatus.PENDING, trip.invites[0].status)
+        assertEquals(InviteStatus.ACCEPTED, trip.invites[1].status)
+        assertEquals(InviteStatus.DECLINED, trip.invites[2].status)
     }
 
     private fun createTrip() = Trip(

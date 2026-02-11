@@ -3,6 +3,7 @@ package com.travelcompanion.application.trip
 import com.travelcompanion.domain.trip.Trip
 import com.travelcompanion.domain.trip.TripId
 import com.travelcompanion.domain.trip.TripRepository
+import com.travelcompanion.domain.trip.TripVisibility
 import com.travelcompanion.domain.user.UserId
 import org.springframework.stereotype.Service
 import java.time.LocalDate
@@ -33,6 +34,7 @@ class UpdateTripService(
         name: String?,
         startDate: LocalDate?,
         endDate: LocalDate?,
+        visibility: TripVisibility?,
     ): Trip? {
         val existing = tripRepository.findById(tripId) ?: return null
         if (existing.userId != userId) return null
@@ -45,6 +47,7 @@ class UpdateTripService(
             name = newName,
             startDate = newStart,
             endDate = newEnd,
+            visibility = visibility ?: existing.visibility,
         )
         return tripRepository.save(updated)
     }

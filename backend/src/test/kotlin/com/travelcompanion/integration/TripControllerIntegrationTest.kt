@@ -34,15 +34,17 @@ class TripControllerIntegrationTest {
             jsonPath("$.name") { value("Summer Trip") }
             jsonPath("$.startDate") { value("2026-08-08") }
             jsonPath("$.endDate") { value("2026-08-16") }
+            jsonPath("$.visibility") { value("PRIVATE") }
         }
 
         mockMvc.put("/trips/$tripId") {
             header("Authorization", "Bearer $token")
             contentType = MediaType.APPLICATION_JSON
-            content = """{"name":"Updated Trip"}"""
+            content = """{"name":"Updated Trip","visibility":"PUBLIC"}"""
         }.andExpect {
             status { isOk() }
             jsonPath("$.name") { value("Updated Trip") }
+            jsonPath("$.visibility") { value("PUBLIC") }
         }
 
         mockMvc.get("/trips") {
