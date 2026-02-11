@@ -291,6 +291,38 @@ class TripTest {
     }
 
     @Test
+    fun `item note and association can be edited`() {
+        val trip = createTrip()
+            .addItineraryItemToDay("Museum", "old note", 10.0, 20.0, 2)
+
+        val itemId = trip.generatedDays()[1].items.first().id.toString()
+
+        val movedToPlaces = trip.updateItineraryItemById(
+            itemId = itemId,
+            placeName = "Museum",
+            notes = "new note",
+            latitude = 10.0,
+            longitude = 20.0,
+            dayNumber = null,
+        )
+        assertEquals(1, movedToPlaces.placesToVisitItems().size)
+        assertEquals("new note", movedToPlaces.placesToVisitItems().first().notes)
+        assertTrue(movedToPlaces.placesToVisitItems().first().isInPlacesToVisit)
+
+        val movedBackToDay = movedToPlaces.updateItineraryItemById(
+            itemId = itemId,
+            placeName = "Museum Updated",
+            notes = "day note",
+            latitude = 11.0,
+            longitude = 21.0,
+            dayNumber = 3,
+        )
+        assertEquals("Museum Updated", movedBackToDay.generatedDays()[2].items.first().placeName)
+        assertEquals("day note", movedBackToDay.generatedDays()[2].items.first().notes)
+        assertEquals(0, movedBackToDay.placesToVisitItems().size)
+    }
+
+    @Test
     fun `date shrink moves orphaned day items to places to visit`() {
         val trip = createTrip()
             .addItineraryItemToDay("Day1", "", 1.0, 1.0, 1)
