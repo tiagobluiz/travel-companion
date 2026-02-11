@@ -288,6 +288,51 @@ class TripTest {
         assertEquals("Idea", moved.generatedDays()[2].items.first().placeName)
     }
 
+    @Test
+    fun `owners can add owners`() {
+        val newOwner = UserId.generate()
+        val trip = createTrip().addOwner(actorUserId = userId, targetUserId = newOwner)
+
+        assertTrue(trip.hasRole(newOwner, TripRole.OWNER))
+        assertEquals(2, trip.memberships.count { it.role == TripRole.OWNER })
+    }
+
+    @Test
+    fun `owners cannot remove other owners`() {
+        val secondOwner = UserId.generate()
+        val trip = createTrip().addOwner(actorUserId = userId, targetUserId = secondOwner)
+
+        assertThrows(IllegalArgumentException::class.java) {
+            trip.removeMember(actorUserId = userId, targetUserId = secondOwner)
+        }
+    }
+
+    @Test
+    fun `owner must assign another owner before leaving`() {
+        val trip = createTrip()
+
+        assertThrows(IllegalArgumentException::class.java) {
+            trip.leaveTrip(memberUserId = userId)
+        }
+    }
+
+    @Test
+    fun `owner can leave after assigning another owner`() {
+        val nextOwner = UserId.generate()
+        val trip = createTrip()
+            .copy(
+                memberships = listOf(
+                    TripMembership(userId = userId, role = TripRole.OWNER),
+                    TripMembership(userId = nextOwner, role = TripRole.EDITOR),
+                )
+            )
+            .leaveTrip(memberUserId = userId, successorOwnerUserId = nextOwner)
+
+        assertEquals(nextOwner, trip.userId)
+        assertTrue(trip.hasRole(nextOwner, TripRole.OWNER))
+        assertEquals(1, trip.memberships.count { it.role == TripRole.OWNER })
+    }
+
     private fun createTrip() = Trip(
         id = TripId.generate(),
         userId = userId,
