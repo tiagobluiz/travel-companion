@@ -1,6 +1,7 @@
 package com.travelcompanion.domain.trip
 
 import java.time.LocalDate
+import java.util.UUID
 
 /**
  * Represents a single place or activity in a trip's itinerary.
@@ -14,14 +15,16 @@ import java.time.LocalDate
  */
 data class ItineraryItem(
     val placeName: String,
-    val date: LocalDate,
+    val date: LocalDate?,
     val notes: String = "",
     val latitude: Double,
     val longitude: Double,
+    val id: String = UUID.randomUUID().toString(),
 ) {
     init {
         require(placeName.isNotBlank()) { "Place name cannot be blank" }
         require(latitude in -90.0..90.0) { "Latitude must be between -90 and 90" }
         require(longitude in -180.0..180.0) { "Longitude must be between -180 and 180" }
+        require(id.isNotBlank()) { "Itinerary item id cannot be blank" }
     }
 }

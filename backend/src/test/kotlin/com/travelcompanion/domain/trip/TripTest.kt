@@ -4,6 +4,7 @@ import com.travelcompanion.domain.user.UserId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.time.LocalDate
@@ -231,6 +232,51 @@ class TripTest {
         assertEquals(InviteStatus.PENDING, trip.invites[0].status)
         assertEquals(InviteStatus.ACCEPTED, trip.invites[1].status)
         assertEquals(InviteStatus.DECLINED, trip.invites[2].status)
+    }
+
+    @Test
+    fun `generated days cover full trip range and places list is separate`() {
+        val trip = createTrip()
+            .addItineraryItemToDay("Museum", "visit", 10.0, 20.0, dayNumber = 2)
+            .addItineraryItemToPlacesToVisit("Wishlist", "", 11.0, 21.0)
+
+        val days = trip.generatedDays()
+        assertEquals(10, days.size)
+        assertEquals(LocalDate.of(2025, 6, 2), days[1].date)
+        assertEquals(1, days[1].items.size)
+        assertEquals("Museum", days[1].items[0].placeName)
+        assertEquals(1, trip.placesToVisitItems().size)
+        assertNull(trip.placesToVisitItems()[0].date)
+    }
+
+    @Test
+    fun `move item supports before and after ordering in day container`() {
+        var trip = createTrip()
+            .addItineraryItemToDay("A", "", 1.0, 1.0, 1)
+            .addItineraryItemToDay("B", "", 1.0, 1.0, 1)
+            .addItineraryItemToDay("C", "", 1.0, 1.0, 1)
+
+        val itemA = trip.generatedDays()[0].items[0]
+        val itemB = trip.generatedDays()[0].items[1]
+        val itemC = trip.generatedDays()[0].items[2]
+
+        trip = trip.moveItineraryItem(itemId = itemC.id, targetDayNumber = 1, beforeItemId = itemA.id, afterItemId = null)
+        assertEquals(listOf("C", "A", "B"), trip.generatedDays()[0].items.map { it.placeName })
+
+        trip = trip.moveItineraryItem(itemId = itemA.id, targetDayNumber = 1, beforeItemId = null, afterItemId = itemB.id)
+        assertEquals(listOf("C", "B", "A"), trip.generatedDays()[0].items.map { it.placeName })
+    }
+
+    @Test
+    fun `move item between places and day containers`() {
+        val trip = createTrip()
+            .addItineraryItemToPlacesToVisit("Idea", "", 1.0, 1.0)
+
+        val itemId = trip.placesToVisitItems().first().id
+        val moved = trip.moveItineraryItem(itemId, targetDayNumber = 3, beforeItemId = null, afterItemId = null)
+
+        assertEquals(0, moved.placesToVisitItems().size)
+        assertEquals("Idea", moved.generatedDays()[2].items.first().placeName)
     }
 
     private fun createTrip() = Trip(

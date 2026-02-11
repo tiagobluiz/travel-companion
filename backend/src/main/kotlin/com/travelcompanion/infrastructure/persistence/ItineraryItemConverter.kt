@@ -8,6 +8,7 @@ import com.travelcompanion.domain.trip.ItineraryItem
 import jakarta.persistence.AttributeConverter
 import jakarta.persistence.Converter
 import java.time.LocalDate
+import java.util.UUID
 
 /**
  * JPA attribute converter for [ItineraryItem] list to/from JSONB.
@@ -28,8 +29,9 @@ class ItineraryItemConverter : AttributeConverter<List<ItineraryItem>, String> {
         if (attribute == null || attribute.isEmpty()) return "[]"
         val dtos = attribute.map {
             ItineraryItemDto(
+                id = it.id,
                 placeName = it.placeName,
-                date = it.date.toString(),
+                date = it.date?.toString(),
                 notes = it.notes,
                 latitude = it.latitude,
                 longitude = it.longitude,
@@ -41,20 +43,27 @@ class ItineraryItemConverter : AttributeConverter<List<ItineraryItem>, String> {
     override fun convertToEntityAttribute(dbData: String?): List<ItineraryItem> {
         if (dbData == null || dbData.isBlank()) return emptyList()
         val dtos = objectMapper.readValue(dbData, typeRef)
-        return dtos.map {
+        return dtos.mapIndexed { index, it ->
             ItineraryItem(
                 placeName = it.placeName,
-                date = LocalDate.parse(it.date),
+                date = it.date?.let { value -> LocalDate.parse(value) },
                 notes = it.notes ?: "",
                 latitude = it.latitude ?: throw IllegalArgumentException("Latitude is required"),
                 longitude = it.longitude ?: throw IllegalArgumentException("Longitude is required"),
+                id = it.id ?: legacyStableId(it, index),
             )
         }
     }
 
+    private fun legacyStableId(item: ItineraryItemDto, index: Int): String {
+        val seed = "${item.placeName}|${item.date}|${item.notes}|${item.latitude}|${item.longitude}|$index"
+        return UUID.nameUUIDFromBytes(seed.toByteArray()).toString()
+    }
+
     data class ItineraryItemDto(
+        val id: String? = null,
         val placeName: String,
-        val date: String,
+        val date: String? = null,
         val notes: String? = "",
         val latitude: Double? = null,
         val longitude: Double? = null,
