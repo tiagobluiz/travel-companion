@@ -82,3 +82,49 @@ data class ItineraryItemResponse(
     val latitude: Double,
     val longitude: Double,
 )
+
+data class ItineraryV2Response(
+    val days: List<DayContainerResponse>,
+    val placesToVisit: ItemContainerResponse,
+)
+
+data class DayContainerResponse(
+    val dayNumber: Int,
+    val date: String,
+    val items: List<ItineraryItemV2Response>,
+)
+
+data class ItemContainerResponse(
+    val label: String,
+    val items: List<ItineraryItemV2Response>,
+)
+
+data class ItineraryItemV2Response(
+    val id: String,
+    val placeName: String,
+    val notes: String,
+    val latitude: Double,
+    val longitude: Double,
+    val dayNumber: Int?,
+)
+
+data class ItineraryItemV2Request(
+    @field:NotBlank(message = "Place name is required")
+    val placeName: String,
+    val notes: String? = null,
+    @field:NotNull(message = "Latitude is required")
+    @field:DecimalMin(value = "-90", message = "Latitude must be between -90 and 90")
+    @field:DecimalMax(value = "90", message = "Latitude must be between -90 and 90")
+    val latitude: Double,
+    @field:NotNull(message = "Longitude is required")
+    @field:DecimalMin(value = "-180", message = "Longitude must be between -180 and 180")
+    @field:DecimalMax(value = "180", message = "Longitude must be between -180 and 180")
+    val longitude: Double,
+    val dayNumber: Int? = null,
+)
+
+data class MoveItineraryItemV2Request(
+    val targetDayNumber: Int? = null,
+    val beforeItemId: String? = null,
+    val afterItemId: String? = null,
+)
