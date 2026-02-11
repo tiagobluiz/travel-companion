@@ -21,6 +21,14 @@ Each PR must include:
 3. Test evidence (exact commands + result summary).
 4. Risk notes and rollback notes.
 
+## Agent Self-Review (Mandatory for Agent-Opened PRs)
+Before handing a PR to the owner, the agent must run and report:
+1. Required checks for touched areas (backend/frontend commands listed below).
+2. Diff review for regressions, permission/security risks, and contract drift.
+3. File hygiene verification (no unintended generated files, secrets, or unrelated edits).
+4. PR metadata verification (linked issue, scope, risks, rollback notes).
+5. Explicit handoff statement: "Ready for owner review and manual merge."
+
 ## Mandatory Checks Before Merge
 - Backend PRs:
 1. `cd backend`
