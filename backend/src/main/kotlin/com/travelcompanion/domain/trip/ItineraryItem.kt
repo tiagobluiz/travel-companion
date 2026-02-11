@@ -19,13 +19,12 @@ data class ItineraryItem(
     val notes: String = "",
     val latitude: Double,
     val longitude: Double,
-    val id: String = UUID.randomUUID().toString(),
+    val id: UUID = UUID.randomUUID(),
     val isInPlacesToVisit: Boolean = false,
 ) {
     init {
         require(placeName.isNotBlank()) { "Place name cannot be blank" }
         require(latitude in -90.0..90.0) { "Latitude must be between -90 and 90" }
         require(longitude in -180.0..180.0) { "Longitude must be between -180 and 180" }
-        require(id.isNotBlank()) { "Itinerary item id cannot be blank" }
     }
 }

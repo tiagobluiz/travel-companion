@@ -259,10 +259,20 @@ class TripTest {
         val itemB = trip.generatedDays()[0].items[1]
         val itemC = trip.generatedDays()[0].items[2]
 
-        trip = trip.moveItineraryItem(itemId = itemC.id, targetDayNumber = 1, beforeItemId = itemA.id, afterItemId = null)
+        trip = trip.moveItineraryItem(
+            itemId = itemC.id.toString(),
+            targetDayNumber = 1,
+            beforeItemId = itemA.id.toString(),
+            afterItemId = null,
+        )
         assertEquals(listOf("C", "A", "B"), trip.generatedDays()[0].items.map { it.placeName })
 
-        trip = trip.moveItineraryItem(itemId = itemA.id, targetDayNumber = 1, beforeItemId = null, afterItemId = itemB.id)
+        trip = trip.moveItineraryItem(
+            itemId = itemA.id.toString(),
+            targetDayNumber = 1,
+            beforeItemId = null,
+            afterItemId = itemB.id.toString(),
+        )
         assertEquals(listOf("C", "B", "A"), trip.generatedDays()[0].items.map { it.placeName })
     }
 
@@ -271,7 +281,7 @@ class TripTest {
         val trip = createTrip()
             .addItineraryItemToPlacesToVisit("Idea", "", 1.0, 1.0)
 
-        val itemId = trip.placesToVisitItems().first().id
+        val itemId = trip.placesToVisitItems().first().id.toString()
         val moved = trip.moveItineraryItem(itemId, targetDayNumber = 3, beforeItemId = null, afterItemId = null)
 
         assertEquals(0, moved.placesToVisitItems().size)

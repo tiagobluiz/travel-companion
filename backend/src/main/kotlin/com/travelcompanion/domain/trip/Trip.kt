@@ -3,6 +3,7 @@ package com.travelcompanion.domain.trip
 import com.travelcompanion.domain.user.UserId
 import java.time.Instant
 import java.time.LocalDate
+import java.util.UUID
 
 /**
  * Represents a travel trip owned by a user.
@@ -159,7 +160,8 @@ data class Trip(
         longitude: Double,
         dayNumber: Int?,
     ): Trip {
-        val index = itineraryItems.indexOfFirst { it.id == itemId }
+        val itemUuid = parseItemId(itemId)
+        val index = itineraryItems.indexOfFirst { it.id == itemUuid }
         require(index >= 0) { "Itinerary item not found" }
         val current = itineraryItems[index]
         val targetDate = dayNumber?.let { dayNumberToDate(it) } ?: current.date
@@ -175,7 +177,8 @@ data class Trip(
     }
 
     fun removeItineraryItemById(itemId: String): Trip {
-        val index = itineraryItems.indexOfFirst { it.id == itemId }
+        val itemUuid = parseItemId(itemId)
+        val index = itineraryItems.indexOfFirst { it.id == itemUuid }
         require(index >= 0) { "Itinerary item not found" }
         return removeItineraryItem(index)
     }
@@ -190,7 +193,10 @@ data class Trip(
             "Use either beforeItemId or afterItemId, not both"
         }
 
-        val sourceIndex = itineraryItems.indexOfFirst { it.id == itemId }
+        val sourceItemId = parseItemId(itemId)
+        val beforeUuid = beforeItemId?.let { parseItemId(it) }
+        val afterUuid = afterItemId?.let { parseItemId(it) }
+        val sourceIndex = itineraryItems.indexOfFirst { it.id == sourceItemId }
         require(sourceIndex >= 0) { "Itinerary item not found" }
 
         val movingOriginal = itineraryItems[sourceIndex]
@@ -202,16 +208,16 @@ data class Trip(
         val remaining = itineraryItems.toMutableList().also { it.removeAt(sourceIndex) }
 
         val insertAt = when {
-            beforeItemId != null -> {
-                val beforeIndex = remaining.indexOfFirst { it.id == beforeItemId }
+            beforeUuid != null -> {
+                val beforeIndex = remaining.indexOfFirst { it.id == beforeUuid }
                 require(beforeIndex >= 0) { "beforeItemId not found" }
                 require(isInTargetContainer(remaining[beforeIndex], targetDayNumber, targetDate)) {
                     "beforeItemId must be in the target container"
                 }
                 beforeIndex
             }
-            afterItemId != null -> {
-                val afterIndex = remaining.indexOfFirst { it.id == afterItemId }
+            afterUuid != null -> {
+                val afterIndex = remaining.indexOfFirst { it.id == afterUuid }
                 require(afterIndex >= 0) { "afterItemId not found" }
                 require(isInTargetContainer(remaining[afterIndex], targetDayNumber, targetDate)) {
                     "afterItemId must be in the target container"
@@ -257,6 +263,13 @@ data class Trip(
         if (targetDayNumber == null) return item.isInPlacesToVisit
         return !item.isInPlacesToVisit && isSameDate(item.date, targetDate)
     }
+
+    private fun parseItemId(itemId: String): UUID =
+        try {
+            UUID.fromString(itemId)
+        } catch (_: IllegalArgumentException) {
+            throw IllegalArgumentException("Invalid itinerary item id")
+        }
 }
 
 data class TripDayContainer(

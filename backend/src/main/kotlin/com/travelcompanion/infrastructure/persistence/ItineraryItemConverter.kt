@@ -29,7 +29,7 @@ class ItineraryItemConverter : AttributeConverter<List<ItineraryItem>, String> {
         if (attribute == null || attribute.isEmpty()) return "[]"
         val dtos = attribute.map {
             ItineraryItemDto(
-                id = it.id,
+                id = it.id.toString(),
                 placeName = it.placeName,
                 date = it.date.toString(),
                 isInPlacesToVisit = it.isInPlacesToVisit,
@@ -52,14 +52,14 @@ class ItineraryItemConverter : AttributeConverter<List<ItineraryItem>, String> {
                 notes = it.notes ?: "",
                 latitude = it.latitude ?: throw IllegalArgumentException("Latitude is required"),
                 longitude = it.longitude ?: throw IllegalArgumentException("Longitude is required"),
-                id = it.id ?: legacyStableId(it, index),
+                id = it.id?.let(UUID::fromString) ?: legacyStableId(it, index),
             )
         }
     }
 
-    private fun legacyStableId(item: ItineraryItemDto, index: Int): String {
+    private fun legacyStableId(item: ItineraryItemDto, index: Int): UUID {
         val seed = "${item.placeName}|${item.date}|${item.notes}|${item.latitude}|${item.longitude}|$index"
-        return UUID.nameUUIDFromBytes(seed.toByteArray()).toString()
+        return UUID.nameUUIDFromBytes(seed.toByteArray())
     }
 
     data class ItineraryItemDto(

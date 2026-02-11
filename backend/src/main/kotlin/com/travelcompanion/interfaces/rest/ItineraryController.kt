@@ -211,7 +211,7 @@ class ItineraryController(
                 date = day.date.toString(),
                 items = day.items.map { item ->
                     ItineraryItemV2Response(
-                        id = item.id,
+                        id = item.id.toString(),
                         placeName = item.placeName,
                         notes = item.notes,
                         latitude = item.latitude,
@@ -226,7 +226,7 @@ class ItineraryController(
             label = "Places To Visit",
             items = trip.placesToVisitItems().map { item ->
                 ItineraryItemV2Response(
-                    id = item.id,
+                    id = item.id.toString(),
                     placeName = item.placeName,
                     notes = item.notes,
                     latitude = item.latitude,
