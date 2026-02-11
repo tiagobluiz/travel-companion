@@ -93,6 +93,7 @@ export default function TripDetailPage() {
 
   function handleAddItinerary(e: React.FormEvent) {
     e.preventDefault()
+    if (!trip) return
     setItineraryError('')
     if (!placeName.trim() || !itemDate || !itemLatitude || !itemLongitude) return
     const lat = parseFloat(itemLatitude)
@@ -113,6 +114,7 @@ export default function TripDetailPage() {
 
   function handleAddExpense(e: React.FormEvent) {
     e.preventDefault()
+    if (!trip) return
     setExpenseError('')
     const amt = parseFloat(amount)
     if (isNaN(amt) || amt < 0 || !expenseDate) return
