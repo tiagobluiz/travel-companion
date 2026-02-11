@@ -359,7 +359,6 @@ class TripTest {
             )
         }
     }
-
     private fun createTrip() = Trip(
         id = TripId.generate(),
         userId = userId,
