@@ -36,9 +36,7 @@ data class Trip(
         require(invites.map { it.email.lowercase() }.toSet().size == invites.size) {
             "Duplicate invites are not allowed"
         }
-        itineraryItems.forEach { item ->
-            item.date?.let { validateDateWithinRange(it, startDate, endDate) }
-        }
+        itineraryItems.forEach { item -> validateDateWithinRange(item.date, startDate, endDate) }
         require(itineraryItems.map { it.id }.toSet().size == itineraryItems.size) {
             "Duplicate itinerary item ids are not allowed"
         }
@@ -51,7 +49,7 @@ data class Trip(
      * @return A new Trip with the item added
      */
     fun addItineraryItem(item: ItineraryItem): Trip {
-        item.date?.let { validateDateWithinRange(it, startDate, endDate) }
+        validateDateWithinRange(item.date, startDate, endDate)
         return copy(itineraryItems = itineraryItems + item)
     }
 
@@ -64,7 +62,7 @@ data class Trip(
      */
     fun updateItineraryItem(index: Int, item: ItineraryItem): Trip {
         require(index in itineraryItems.indices) { "Invalid itinerary item index" }
-        item.date?.let { validateDateWithinRange(it, startDate, endDate) }
+        validateDateWithinRange(item.date, startDate, endDate)
         val updated = itineraryItems.toMutableList()
         updated[index] = item
         return copy(itineraryItems = updated)
@@ -81,9 +79,7 @@ data class Trip(
     ): Trip {
         require(name.isNotBlank()) { "Trip name cannot be blank" }
         require(!endDate.isBefore(startDate)) { "End date cannot be before start date" }
-        itineraryItems.forEach { item ->
-            item.date?.let { validateDateWithinRange(it, startDate, endDate) }
-        }
+        itineraryItems.forEach { item -> validateDateWithinRange(item.date, startDate, endDate) }
         return copy(name = name, startDate = startDate, endDate = endDate, visibility = visibility)
     }
 
@@ -108,7 +104,7 @@ data class Trip(
             days += TripDayContainer(
                 dayNumber = dayNumber,
                 date = current,
-                items = itineraryItems.filter { isSameDate(it.date, current) },
+                items = itineraryItems.filter { !it.isInPlacesToVisit && isSameDate(it.date, current) },
             )
             current = current.plusDays(1)
             dayNumber++
@@ -117,7 +113,7 @@ data class Trip(
     }
 
     fun placesToVisitItems(): List<ItineraryItem> =
-        itineraryItems.filter { it.date == null }
+        itineraryItems.filter { it.isInPlacesToVisit }
 
     fun addItineraryItemToDay(
         placeName: String,
@@ -130,6 +126,7 @@ data class Trip(
         val item = ItineraryItem(
             placeName = placeName.trim(),
             date = date,
+            isInPlacesToVisit = false,
             notes = notes.trim(),
             latitude = latitude,
             longitude = longitude,
@@ -145,7 +142,8 @@ data class Trip(
     ): Trip {
         val item = ItineraryItem(
             placeName = placeName.trim(),
-            date = null,
+            date = startDate,
+            isInPlacesToVisit = true,
             notes = notes.trim(),
             latitude = latitude,
             longitude = longitude,
@@ -163,13 +161,15 @@ data class Trip(
     ): Trip {
         val index = itineraryItems.indexOfFirst { it.id == itemId }
         require(index >= 0) { "Itinerary item not found" }
-        val targetDate = dayNumber?.let { dayNumberToDate(it) }
+        val current = itineraryItems[index]
+        val targetDate = dayNumber?.let { dayNumberToDate(it) } ?: current.date
         val updated = itineraryItems[index].copy(
             placeName = placeName.trim(),
             notes = notes.trim(),
             latitude = latitude,
             longitude = longitude,
             date = targetDate,
+            isInPlacesToVisit = dayNumber == null,
         )
         return updateItineraryItem(index, updated)
     }
@@ -193,15 +193,19 @@ data class Trip(
         val sourceIndex = itineraryItems.indexOfFirst { it.id == itemId }
         require(sourceIndex >= 0) { "Itinerary item not found" }
 
-        val targetDate = targetDayNumber?.let { dayNumberToDate(it) }
-        val moving = itineraryItems[sourceIndex].copy(date = targetDate)
+        val movingOriginal = itineraryItems[sourceIndex]
+        val targetDate = targetDayNumber?.let { dayNumberToDate(it) } ?: movingOriginal.date
+        val moving = movingOriginal.copy(
+            date = targetDate,
+            isInPlacesToVisit = targetDayNumber == null,
+        )
         val remaining = itineraryItems.toMutableList().also { it.removeAt(sourceIndex) }
 
         val insertAt = when {
             beforeItemId != null -> {
                 val beforeIndex = remaining.indexOfFirst { it.id == beforeItemId }
                 require(beforeIndex >= 0) { "beforeItemId not found" }
-                require(isSameDate(remaining[beforeIndex].date, targetDate)) {
+                require(isInTargetContainer(remaining[beforeIndex], targetDayNumber, targetDate)) {
                     "beforeItemId must be in the target container"
                 }
                 beforeIndex
@@ -209,13 +213,13 @@ data class Trip(
             afterItemId != null -> {
                 val afterIndex = remaining.indexOfFirst { it.id == afterItemId }
                 require(afterIndex >= 0) { "afterItemId not found" }
-                require(isSameDate(remaining[afterIndex].date, targetDate)) {
+                require(isInTargetContainer(remaining[afterIndex], targetDayNumber, targetDate)) {
                     "afterItemId must be in the target container"
                 }
                 afterIndex + 1
             }
             else -> {
-                val lastTargetIndex = remaining.indexOfLast { isSameDate(it.date, targetDate) }
+                val lastTargetIndex = remaining.indexOfLast { isInTargetContainer(it, targetDayNumber, targetDate) }
                 if (lastTargetIndex >= 0) lastTargetIndex + 1 else remaining.size
             }
         }
@@ -246,9 +250,12 @@ data class Trip(
         }
     }
 
-    private fun isSameDate(left: LocalDate?, right: LocalDate?): Boolean {
-        if (left == null || right == null) return left == null && right == null
-        return left.isEqual(right)
+    private fun isSameDate(left: LocalDate, right: LocalDate): Boolean =
+        left.isEqual(right)
+
+    private fun isInTargetContainer(item: ItineraryItem, targetDayNumber: Int?, targetDate: LocalDate): Boolean {
+        if (targetDayNumber == null) return item.isInPlacesToVisit
+        return !item.isInPlacesToVisit && isSameDate(item.date, targetDate)
     }
 }
 

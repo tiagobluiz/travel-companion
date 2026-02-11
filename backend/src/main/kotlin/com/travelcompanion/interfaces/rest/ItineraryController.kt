@@ -195,7 +195,7 @@ class ItineraryController(
         itineraryItems = trip.itineraryItems.map {
             ItineraryItemResponse(
                 placeName = it.placeName,
-                date = it.date?.toString() ?: "",
+                date = it.date.toString(),
                 notes = it.notes,
                 latitude = it.latitude,
                 longitude = it.longitude,

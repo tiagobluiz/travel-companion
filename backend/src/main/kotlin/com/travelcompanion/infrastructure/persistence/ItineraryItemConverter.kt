@@ -31,7 +31,8 @@ class ItineraryItemConverter : AttributeConverter<List<ItineraryItem>, String> {
             ItineraryItemDto(
                 id = it.id,
                 placeName = it.placeName,
-                date = it.date?.toString(),
+                date = it.date.toString(),
+                isInPlacesToVisit = it.isInPlacesToVisit,
                 notes = it.notes,
                 latitude = it.latitude,
                 longitude = it.longitude,
@@ -46,7 +47,8 @@ class ItineraryItemConverter : AttributeConverter<List<ItineraryItem>, String> {
         return dtos.mapIndexed { index, it ->
             ItineraryItem(
                 placeName = it.placeName,
-                date = it.date?.let { value -> LocalDate.parse(value) },
+                date = it.date?.let { value -> LocalDate.parse(value) } ?: throw IllegalArgumentException("Date is required"),
+                isInPlacesToVisit = it.isInPlacesToVisit ?: false,
                 notes = it.notes ?: "",
                 latitude = it.latitude ?: throw IllegalArgumentException("Latitude is required"),
                 longitude = it.longitude ?: throw IllegalArgumentException("Longitude is required"),
@@ -64,6 +66,7 @@ class ItineraryItemConverter : AttributeConverter<List<ItineraryItem>, String> {
         val id: String? = null,
         val placeName: String,
         val date: String? = null,
+        val isInPlacesToVisit: Boolean? = null,
         val notes: String? = "",
         val latitude: Double? = null,
         val longitude: Double? = null,

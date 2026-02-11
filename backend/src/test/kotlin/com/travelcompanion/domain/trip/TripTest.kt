@@ -4,7 +4,6 @@ import com.travelcompanion.domain.user.UserId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.time.LocalDate
@@ -246,7 +245,7 @@ class TripTest {
         assertEquals(1, days[1].items.size)
         assertEquals("Museum", days[1].items[0].placeName)
         assertEquals(1, trip.placesToVisitItems().size)
-        assertNull(trip.placesToVisitItems()[0].date)
+        assertTrue(trip.placesToVisitItems()[0].isInPlacesToVisit)
     }
 
     @Test

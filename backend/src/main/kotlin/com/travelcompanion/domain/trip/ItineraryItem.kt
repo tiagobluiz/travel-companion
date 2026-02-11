@@ -15,11 +15,12 @@ import java.util.UUID
  */
 data class ItineraryItem(
     val placeName: String,
-    val date: LocalDate?,
+    val date: LocalDate,
     val notes: String = "",
     val latitude: Double,
     val longitude: Double,
     val id: String = UUID.randomUUID().toString(),
+    val isInPlacesToVisit: Boolean = false,
 ) {
     init {
         require(placeName.isNotBlank()) { "Place name cannot be blank" }
