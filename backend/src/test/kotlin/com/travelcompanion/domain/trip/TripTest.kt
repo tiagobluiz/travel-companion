@@ -291,6 +291,62 @@ class TripTest {
     }
 
     @Test
+    fun `move before and after works inside places to visit container`() {
+        var trip = createTrip()
+            .addItineraryItemToPlacesToVisit("A", "", 1.0, 1.0)
+            .addItineraryItemToPlacesToVisit("B", "", 1.0, 1.0)
+            .addItineraryItemToPlacesToVisit("C", "", 1.0, 1.0)
+
+        val a = trip.placesToVisitItems()[0]
+        val b = trip.placesToVisitItems()[1]
+        val c = trip.placesToVisitItems()[2]
+
+        trip = trip.moveItineraryItem(
+            itemId = c.id.toString(),
+            targetDayNumber = null,
+            beforeItemId = a.id.toString(),
+            afterItemId = null,
+        )
+        assertEquals(listOf("C", "A", "B"), trip.placesToVisitItems().map { it.placeName })
+
+        trip = trip.moveItineraryItem(
+            itemId = a.id.toString(),
+            targetDayNumber = null,
+            beforeItemId = null,
+            afterItemId = b.id.toString(),
+        )
+        assertEquals(listOf("C", "B", "A"), trip.placesToVisitItems().map { it.placeName })
+    }
+
+    @Test
+    fun `sequential moves follow last write wins behavior`() {
+        var trip = createTrip()
+            .addItineraryItemToDay("A", "", 1.0, 1.0, 1)
+            .addItineraryItemToDay("B", "", 1.0, 1.0, 1)
+            .addItineraryItemToDay("C", "", 1.0, 1.0, 1)
+
+        val a = trip.generatedDays()[0].items[0]
+        val b = trip.generatedDays()[0].items[1]
+        val c = trip.generatedDays()[0].items[2]
+
+        trip = trip.moveItineraryItem(
+            itemId = a.id.toString(),
+            targetDayNumber = 1,
+            beforeItemId = c.id.toString(),
+            afterItemId = null,
+        )
+        assertEquals(listOf("B", "A", "C"), trip.generatedDays()[0].items.map { it.placeName })
+
+        trip = trip.moveItineraryItem(
+            itemId = a.id.toString(),
+            targetDayNumber = 1,
+            beforeItemId = null,
+            afterItemId = c.id.toString(),
+        )
+        assertEquals(listOf("B", "C", "A"), trip.generatedDays()[0].items.map { it.placeName })
+    }
+
+    @Test
     fun `item note and association can be edited`() {
         val trip = createTrip()
             .addItineraryItemToDay("Museum", "old note", 10.0, 20.0, 2)
