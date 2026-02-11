@@ -13,6 +13,8 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.time.LocalDate
@@ -25,6 +27,7 @@ class UpdateTripServiceTest {
     private val ownerId = UserId.generate()
     private val editorId = UserId.generate()
     private val viewerId = UserId.generate()
+    private val outsiderId = UserId.generate()
 
     @Test
     fun `owner can update privacy and details`() {
@@ -89,6 +92,115 @@ class UpdateTripServiceTest {
         )
 
         assertNull(updated)
+        verify(repository, never()).save(any())
+    }
+
+    @Test
+    fun `non member cannot update details or visibility`() {
+        val trip = createTrip()
+        whenever(repository.findById(tripId)).thenReturn(trip)
+
+        val updated = service.execute(
+            tripId = tripId,
+            userId = outsiderId,
+            name = "Outsider",
+            startDate = null,
+            endDate = null,
+            visibility = TripVisibility.PUBLIC,
+        )
+
+        assertNull(updated)
+        verify(repository, never()).save(any())
+    }
+
+    @Test
+    fun `editor cannot update visibility only`() {
+        val trip = createTrip()
+        whenever(repository.findById(tripId)).thenReturn(trip)
+
+        val updated = service.execute(
+            tripId = tripId,
+            userId = editorId,
+            name = null,
+            startDate = null,
+            endDate = null,
+            visibility = TripVisibility.PUBLIC,
+        )
+
+        assertNull(updated)
+        verify(repository, never()).save(any())
+    }
+
+    @Test
+    fun `owner can update visibility only`() {
+        val trip = createTrip()
+        whenever(repository.findById(tripId)).thenReturn(trip)
+        whenever(repository.save(any())).thenAnswer { it.arguments[0] as Trip }
+
+        val updated = service.execute(
+            tripId = tripId,
+            userId = ownerId,
+            name = null,
+            startDate = null,
+            endDate = null,
+            visibility = TripVisibility.PUBLIC,
+        )
+
+        assertNotNull(updated)
+        assertEquals(TripVisibility.PUBLIC, updated!!.visibility)
+    }
+
+    @Test
+    fun `returns existing trip when no fields are provided`() {
+        val trip = createTrip()
+        whenever(repository.findById(tripId)).thenReturn(trip)
+
+        val updated = service.execute(
+            tripId = tripId,
+            userId = ownerId,
+            name = null,
+            startDate = null,
+            endDate = null,
+            visibility = null,
+        )
+
+        assertEquals(trip, updated)
+        verify(repository, never()).save(any())
+    }
+
+    @Test
+    fun `returns null when trip not found`() {
+        whenever(repository.findById(tripId)).thenReturn(null)
+
+        val updated = service.execute(
+            tripId = tripId,
+            userId = ownerId,
+            name = "Whatever",
+            startDate = null,
+            endDate = null,
+            visibility = null,
+        )
+
+        assertNull(updated)
+        verify(repository, never()).save(any())
+    }
+
+    @Test
+    fun `editor cannot update details when visibility is also requested`() {
+        val trip = createTrip()
+        whenever(repository.findById(tripId)).thenReturn(trip)
+
+        val updated = service.execute(
+            tripId = tripId,
+            userId = editorId,
+            name = "Editor rename",
+            startDate = null,
+            endDate = null,
+            visibility = TripVisibility.PUBLIC,
+        )
+
+        assertNull(updated)
+        verify(repository, never()).save(any())
     }
 
     private fun createTrip() = Trip(
