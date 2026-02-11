@@ -87,8 +87,20 @@ data class Trip(
         require(tripDurationDays(startDate, endDate) <= MAX_TRIP_DURATION_DAYS) {
             "Trip duration cannot exceed $MAX_TRIP_DURATION_DAYS days"
         }
-        itineraryItems.forEach { item -> validateDateWithinRange(item.date, startDate, endDate) }
-        return copy(name = name, startDate = startDate, endDate = endDate, visibility = visibility)
+        val remappedItems = itineraryItems.map { item ->
+            if (item.isInPlacesToVisit) {
+                item.copy(date = startDate)
+            } else if (item.date.isBefore(startDate) || item.date.isAfter(endDate)) {
+                item.copy(
+                    isInPlacesToVisit = true,
+                    date = startDate,
+                )
+            } else {
+                item
+            }
+        }
+        remappedItems.forEach { item -> validateDateWithinRange(item.date, startDate, endDate) }
+        return copy(name = name, startDate = startDate, endDate = endDate, visibility = visibility, itineraryItems = remappedItems)
     }
 
     /**

@@ -123,18 +123,20 @@ class TripTest {
     }
 
     @Test
-    fun `updateDetails rejects new date range that excludes existing itinerary items`() {
+    fun `updateDetails moves out-of-range itinerary items to places to visit when dates shrink`() {
         val trip = createTrip().addItineraryItem(
             ItineraryItem("Paris", LocalDate.of(2025, 6, 5), "", 48.0, 2.0)
         )
 
-        assertThrows(IllegalArgumentException::class.java) {
-            trip.updateDetails(
-                name = trip.name,
-                startDate = LocalDate.of(2025, 6, 6),
-                endDate = LocalDate.of(2025, 6, 10),
-            )
-        }
+        val updated = trip.updateDetails(
+            name = trip.name,
+            startDate = LocalDate.of(2025, 6, 6),
+            endDate = LocalDate.of(2025, 6, 10),
+        )
+
+        assertEquals(0, updated.generatedDays().flatMap { it.items }.size)
+        assertEquals(1, updated.placesToVisitItems().size)
+        assertEquals("Paris", updated.placesToVisitItems()[0].placeName)
     }
 
     @Test
@@ -286,6 +288,38 @@ class TripTest {
 
         assertEquals(0, moved.placesToVisitItems().size)
         assertEquals("Idea", moved.generatedDays()[2].items.first().placeName)
+    }
+
+    @Test
+    fun `date shrink moves orphaned day items to places to visit`() {
+        val trip = createTrip()
+            .addItineraryItemToDay("Day1", "", 1.0, 1.0, 1)
+            .addItineraryItemToDay("Day10", "", 1.0, 1.0, 10)
+
+        val updated = trip.updateDetails(
+            name = trip.name,
+            startDate = LocalDate.of(2025, 6, 1),
+            endDate = LocalDate.of(2025, 6, 5),
+        )
+
+        assertEquals(1, updated.generatedDays().flatMap { it.items }.size)
+        assertEquals("Day1", updated.generatedDays().flatMap { it.items }[0].placeName)
+        assertEquals(1, updated.placesToVisitItems().size)
+        assertEquals("Day10", updated.placesToVisitItems()[0].placeName)
+        assertTrue(updated.placesToVisitItems()[0].isInPlacesToVisit)
+    }
+
+    @Test
+    fun `generated days are inclusive from day1 to dayN`() {
+        val trip = createTrip().updateDetails(
+            name = "Short",
+            startDate = LocalDate.of(2025, 6, 3),
+            endDate = LocalDate.of(2025, 6, 5),
+        )
+        val days = trip.generatedDays()
+        assertEquals(3, days.size)
+        assertEquals(LocalDate.of(2025, 6, 3), days[0].date)
+        assertEquals(LocalDate.of(2025, 6, 5), days[2].date)
     }
 
     @Test
