@@ -243,6 +243,76 @@ data class Trip(
     fun canView(userId: UserId?): Boolean =
         visibility == TripVisibility.PUBLIC || (userId != null && isMember(userId))
 
+    fun addOwner(actorUserId: UserId, targetUserId: UserId): Trip {
+        require(hasRole(actorUserId, TripRole.OWNER)) { "Only owners can add owners" }
+
+        val updatedMemberships = memberships.toMutableList()
+        val targetIndex = updatedMemberships.indexOfFirst { it.userId == targetUserId }
+        if (targetIndex >= 0) {
+            updatedMemberships[targetIndex] = updatedMemberships[targetIndex].copy(role = TripRole.OWNER)
+        } else {
+            updatedMemberships += TripMembership(userId = targetUserId, role = TripRole.OWNER)
+        }
+        return copy(memberships = updatedMemberships)
+    }
+
+    fun removeMember(actorUserId: UserId, targetUserId: UserId): Trip {
+        require(hasRole(actorUserId, TripRole.OWNER)) { "Only owners can remove members" }
+        require(isMember(targetUserId)) { "Target user is not a member" }
+
+        val targetMembership = memberships.first { it.userId == targetUserId }
+        if (targetMembership.role == TripRole.OWNER && targetUserId != actorUserId) {
+            throw IllegalArgumentException("Owners cannot remove other owners")
+        }
+        if (targetMembership.role == TripRole.OWNER && ownerCount() <= 1) {
+            throw IllegalArgumentException("Trip must have at least one owner")
+        }
+        if (targetUserId == userId) {
+            throw IllegalArgumentException("Primary owner must assign another owner before leaving")
+        }
+
+        return copy(memberships = memberships.filterNot { it.userId == targetUserId })
+    }
+
+    fun leaveTrip(memberUserId: UserId, successorOwnerUserId: UserId? = null): Trip {
+        require(isMember(memberUserId)) { "User is not a member" }
+
+        val leavingIsOwner = hasRole(memberUserId, TripRole.OWNER)
+        if (!leavingIsOwner) {
+            return copy(memberships = memberships.filterNot { it.userId == memberUserId })
+        }
+
+        val ownerCount = ownerCount()
+        if (ownerCount <= 1 && successorOwnerUserId == null) {
+            throw IllegalArgumentException("Owner must assign another owner before leaving")
+        }
+
+        val updatedMemberships = memberships.toMutableList()
+        if (successorOwnerUserId != null) {
+            require(successorOwnerUserId != memberUserId) {
+                "Successor owner must be different from leaving owner"
+            }
+            val successorIndex = updatedMemberships.indexOfFirst { it.userId == successorOwnerUserId }
+            require(successorIndex >= 0) { "Successor owner must be an existing member" }
+            updatedMemberships[successorIndex] = updatedMemberships[successorIndex].copy(role = TripRole.OWNER)
+        }
+
+        val primaryOwnerLeaving = memberUserId == userId
+        if (primaryOwnerLeaving && successorOwnerUserId == null) {
+            throw IllegalArgumentException("Primary owner must assign another owner before leaving")
+        }
+
+        val membershipsAfterLeave = updatedMemberships.filterNot { it.userId == memberUserId }
+        require(membershipsAfterLeave.any { it.role == TripRole.OWNER }) {
+            "Trip must have at least one owner"
+        }
+
+        return copy(
+            userId = if (primaryOwnerLeaving) successorOwnerUserId!! else userId,
+            memberships = membershipsAfterLeave,
+        )
+    }
+
     private fun dayNumberToDate(dayNumber: Int): LocalDate {
         require(dayNumber >= 1) { "dayNumber must be >= 1" }
         val date = startDate.plusDays((dayNumber - 1).toLong())
@@ -270,6 +340,9 @@ data class Trip(
         } catch (_: IllegalArgumentException) {
             throw IllegalArgumentException("Invalid itinerary item id")
         }
+
+    private fun ownerCount(): Int =
+        memberships.count { it.role == TripRole.OWNER }
 }
 
 data class TripDayContainer(
