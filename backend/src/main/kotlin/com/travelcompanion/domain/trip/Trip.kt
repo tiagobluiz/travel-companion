@@ -17,12 +17,25 @@ data class Trip(
     val name: String,
     val startDate: LocalDate,
     val endDate: LocalDate,
+    val visibility: TripVisibility = TripVisibility.PRIVATE,
+    val memberships: List<TripMembership> = listOf(TripMembership(userId, TripRole.OWNER)),
+    val invites: List<TripInvite> = emptyList(),
     val itineraryItems: List<ItineraryItem> = emptyList(),
     val createdAt: Instant,
 ) {
     init {
         require(name.isNotBlank()) { "Trip name cannot be blank" }
         require(!endDate.isBefore(startDate)) { "End date cannot be before start date" }
+        require(memberships.isNotEmpty()) { "Trip must have at least one member" }
+        require(memberships.any { it.userId == userId && it.role == TripRole.OWNER }) {
+            "Trip owner must be present as an OWNER membership"
+        }
+        require(memberships.map { it.userId }.toSet().size == memberships.size) {
+            "Duplicate memberships are not allowed"
+        }
+        require(invites.map { it.email.lowercase() }.toSet().size == invites.size) {
+            "Duplicate invites are not allowed"
+        }
         itineraryItems.forEach { item -> validateDateWithinRange(item.date, startDate, endDate) }
     }
 
@@ -55,11 +68,16 @@ data class Trip(
     /**
      * Updates trip metadata while preserving aggregate invariants.
      */
-    fun updateDetails(name: String, startDate: LocalDate, endDate: LocalDate): Trip {
+    fun updateDetails(
+        name: String,
+        startDate: LocalDate,
+        endDate: LocalDate,
+        visibility: TripVisibility = this.visibility,
+    ): Trip {
         require(name.isNotBlank()) { "Trip name cannot be blank" }
         require(!endDate.isBefore(startDate)) { "End date cannot be before start date" }
         itineraryItems.forEach { item -> validateDateWithinRange(item.date, startDate, endDate) }
-        return copy(name = name, startDate = startDate, endDate = endDate)
+        return copy(name = name, startDate = startDate, endDate = endDate, visibility = visibility)
     }
 
     /**
@@ -74,6 +92,15 @@ data class Trip(
         updated.removeAt(index)
         return copy(itineraryItems = updated)
     }
+
+    fun isMember(userId: UserId): Boolean =
+        memberships.any { it.userId == userId }
+
+    fun hasRole(userId: UserId, role: TripRole): Boolean =
+        memberships.any { it.userId == userId && it.role == role }
+
+    fun canView(userId: UserId?): Boolean =
+        visibility == TripVisibility.PUBLIC || (userId != null && isMember(userId))
 
     private fun validateDateWithinRange(date: LocalDate, startDate: LocalDate, endDate: LocalDate) {
         require(!date.isBefore(startDate) && !date.isAfter(endDate)) {

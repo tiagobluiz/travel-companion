@@ -1,5 +1,6 @@
 package com.travelcompanion.interfaces.rest.dto
 
+import com.travelcompanion.domain.trip.TripVisibility
 import jakarta.validation.constraints.DecimalMax
 import jakarta.validation.constraints.DecimalMin
 import jakarta.validation.constraints.NotBlank
@@ -19,6 +20,8 @@ data class CreateTripRequest(
 
     @field:NotNull(message = "End date is required")
     val endDate: LocalDate,
+
+    val visibility: TripVisibility = TripVisibility.PRIVATE,
 )
 
 /**
@@ -28,6 +31,7 @@ data class UpdateTripRequest(
     val name: String? = null,
     val startDate: LocalDate? = null,
     val endDate: LocalDate? = null,
+    val visibility: TripVisibility? = null,
 )
 
 /**
@@ -38,6 +42,7 @@ data class TripResponse(
     val name: String,
     val startDate: String,
     val endDate: String,
+    val visibility: String,
     val itineraryItems: List<ItineraryItemResponse>,
     val createdAt: String,
 )

@@ -92,6 +92,7 @@ class ItineraryController(
         name = trip.name,
         startDate = trip.startDate.toString(),
         endDate = trip.endDate.toString(),
+        visibility = trip.visibility.name,
         itineraryItems = trip.itineraryItems.map {
             ItineraryItemResponse(
                 placeName = it.placeName,

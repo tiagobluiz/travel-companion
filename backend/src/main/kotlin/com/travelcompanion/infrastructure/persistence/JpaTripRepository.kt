@@ -2,7 +2,10 @@ package com.travelcompanion.infrastructure.persistence
 
 import com.travelcompanion.domain.trip.Trip
 import com.travelcompanion.domain.trip.TripId
+import com.travelcompanion.domain.trip.TripMembership
 import com.travelcompanion.domain.trip.TripRepository
+import com.travelcompanion.domain.trip.TripRole
+import com.travelcompanion.domain.trip.TripVisibility
 import com.travelcompanion.domain.user.UserId
 import org.springframework.stereotype.Repository
 
@@ -43,19 +46,35 @@ class JpaTripRepository(
             name = trip.name,
             startDate = trip.startDate,
             endDate = trip.endDate,
+            visibility = trip.visibility.name,
+            memberships = trip.memberships.toMutableList(),
+            invites = trip.invites.toMutableList(),
             itineraryItems = trip.itineraryItems.toMutableList(),
             createdAt = trip.createdAt,
         )
         return entity
     }
 
-    private fun toDomain(entity: TripJpaEntity) = Trip(
-        id = TripId(entity.id),
-        userId = UserId(entity.userId),
-        name = entity.name,
-        startDate = entity.startDate,
-        endDate = entity.endDate,
-        itineraryItems = entity.itineraryItems.toList(),
-        createdAt = entity.createdAt,
-    )
+    private fun toDomain(entity: TripJpaEntity): Trip {
+        val ownerId = UserId(entity.userId)
+        val memberships = if (entity.memberships.isEmpty()) {
+            listOf(TripMembership(userId = ownerId, role = TripRole.OWNER))
+        } else {
+            entity.memberships.toList()
+        }
+
+        return Trip(
+            id = TripId(entity.id),
+            userId = ownerId,
+            name = entity.name,
+            startDate = entity.startDate,
+            endDate = entity.endDate,
+            visibility = runCatching { TripVisibility.valueOf(entity.visibility) }
+                .getOrDefault(TripVisibility.PRIVATE),
+            memberships = memberships,
+            invites = entity.invites.toList(),
+            itineraryItems = entity.itineraryItems.toList(),
+            createdAt = entity.createdAt,
+        )
+    }
 }

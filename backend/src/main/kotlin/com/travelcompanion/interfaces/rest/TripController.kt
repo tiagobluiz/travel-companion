@@ -51,6 +51,7 @@ class TripController(
             name = request.name,
             startDate = request.startDate,
             endDate = request.endDate,
+            visibility = request.visibility,
         )
         return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(trip))
     }
@@ -88,6 +89,7 @@ class TripController(
             name = request.name,
             startDate = request.startDate,
             endDate = request.endDate,
+            visibility = request.visibility,
         ) ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
         return ResponseEntity.ok(toResponse(trip))
     }
@@ -114,6 +116,7 @@ class TripController(
         name = trip.name,
         startDate = trip.startDate.toString(),
         endDate = trip.endDate.toString(),
+        visibility = trip.visibility.name,
         itineraryItems = trip.itineraryItems.map {
             ItineraryItemResponse(
                 placeName = it.placeName,
