@@ -90,18 +90,15 @@ data class Trip(
         val remappedItems = itineraryItems.map { item ->
             if (item.isInPlacesToVisit) {
                 item.copy(date = startDate)
+            } else if (item.date.isBefore(startDate) || item.date.isAfter(endDate)) {
+                item.copy(
+                    isInPlacesToVisit = true,
+                    date = startDate,
+                )
             } else {
-                if (item.date.isBefore(startDate) || item.date.isAfter(endDate)) {
-                    item.copy(
-                        isInPlacesToVisit = true,
-                        date = startDate,
-                    )
-                } else {
-                    item
-                }
+                item
             }
         }
-
         remappedItems.forEach { item -> validateDateWithinRange(item.date, startDate, endDate) }
         return copy(
             name = name,
