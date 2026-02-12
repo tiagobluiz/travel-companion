@@ -40,4 +40,6 @@ jobs:
       - name: Run backend tests
         env:
           DOCKER_HOST: unix:///var/run/docker.sock
+          TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE: /var/run/docker.sock
+          TESTCONTAINERS_HOST_OVERRIDE: localhost
         run: ./gradlew test --no-daemon
