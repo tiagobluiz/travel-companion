@@ -100,7 +100,13 @@ data class Trip(
             }
         }
         remappedItems.forEach { item -> validateDateWithinRange(item.date, startDate, endDate) }
-        return copy(name = name, startDate = startDate, endDate = endDate, visibility = visibility, itineraryItems = remappedItems)
+        return copy(
+            name = name,
+            startDate = startDate,
+            endDate = endDate,
+            visibility = visibility,
+            itineraryItems = remappedItems,
+        )
     }
 
     /**
