@@ -14,20 +14,6 @@ on:
 jobs:
   backend-ci:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:17
-        env:
-          POSTGRES_DB: travel_companion
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d travel_companion"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     defaults:
       run:
         working-directory: backend
@@ -46,10 +32,16 @@ jobs:
       - name: Ensure Gradle wrapper executable
         run: chmod +x gradlew
 
+      - name: Ensure Docker is available for Testcontainers
+        run: |
+          sudo systemctl start docker
+          docker info
+
+      - name: Configure docker-java API level for Docker 29+
+        run: echo "api.version=1.44" > "$HOME/.docker-java.properties"
+
       - name: Run backend tests
         env:
-          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/travel_companion
-          SPRING_DATASOURCE_USERNAME: postgres
-          SPRING_DATASOURCE_PASSWORD: postgres
-          SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+          DOCKER_HOST: unix:///var/run/docker.sock
+          DOCKER_API_VERSION: "1.44"
         run: ./gradlew test --no-daemon
