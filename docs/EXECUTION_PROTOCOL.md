@@ -5,8 +5,8 @@ Run multiple coding agents in parallel with safe boundaries, while keeping merge
 
 ## Core Rules
 1. Agents may create branches, commits, and PRs.
-2. Agents must not merge PRs unless explicitly authorized by the owner in that thread.
-3. The owner performs final review and merge.
+2. Agents may merge PRs automatically when approval and required checks conditions are satisfied.
+3. Owner review remains recommended for high-risk changes, but merge authority is delegated to automation by default.
 
 ## Work Partitioning
 1. One issue per branch: `feat/issue-<id>-<short-name>`.
@@ -64,6 +64,51 @@ Deliver:
 - Files changed
 - Test evidence
 - PR link
+```
+
+## Queue Mode Prompt (Backend/Frontend)
+Use this when you want the agent to continuously pick work from the backlog.
+
+```
+Queue mode enabled.
+
+Global rules:
+- At the beginning of each cycle, check open PRs and auto-merge any PR that:
+  - has required approvals; and
+  - has all required checks passing; and
+  - has no merge conflicts.
+- If a PR has merge conflicts (`dirty`/`conflicting`), resolve conflicts automatically:
+  - update branch with latest PR target/base branch;
+  - resolve conflicts preserving issue intent and current target/base branch invariants;
+  - run relevant tests;
+  - push the conflict-resolution commit;
+  - re-check mergeability/check status.
+- At the beginning of each cycle, check open issues and auto-close any issue that is already completed:
+  - linked PR is merged and resolves the issue; or
+  - acceptance criteria are fully delivered in the issue's delivery branch (normally the default branch) and validated.
+- Before picking new work, check all open PRs for unanswered review comments.
+- If unanswered comments exist, handle them first in-thread:
+  - answer, challenge with rationale, or ask a clarifying follow-up question;
+  - if the comment is clear and valid, implement the fix, run relevant tests, and push.
+- Do not post self-review comments in PRs (another tool handles self-review).
+
+Issue selection:
+- Pick the next available issue in priority order.
+- You may group related issues that touch the same topic to increase throughput:
+  - target batch size: up to 5 issues;
+  - allowed extension when tightly coupled: up to 7 issues total.
+- For grouped issues, use one branch and one PR with all linked issues listed.
+
+Execution constraints:
+- Respect scope boundaries (`backend/**` for backend queue, `frontend/**` for frontend queue).
+- Run required checks for the touched area before opening/updating PR.
+- After opening/updating PR, continue to the next eligible issue batch automatically.
+
+Deliver each cycle:
+- issues picked
+- changes made
+- tests run + results
+- PR link updated/created
 ```
 
 ## Escalation Rules
