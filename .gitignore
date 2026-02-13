@@ -33,3 +33,6 @@ pnpm-debug.log*
 frontend/vite.config.js
 
 frontend/vite.config.d.ts
+
+# Local PR triage artifacts
+pr*_comments.json
