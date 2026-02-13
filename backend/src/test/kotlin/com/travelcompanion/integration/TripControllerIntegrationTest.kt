@@ -68,6 +68,36 @@ class TripControllerIntegrationTest {
         }
     }
 
+    @Test
+    fun `anonymous user can read public trip`() {
+        val token = registerAndGetToken()
+        val tripId = createTrip(token, "Public Trip", "2026-09-01", "2026-09-05")
+
+        mockMvc.put("/trips/$tripId") {
+            header("Authorization", "Bearer $token")
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"visibility":"PUBLIC"}"""
+        }.andExpect {
+            status { isOk() }
+        }
+
+        mockMvc.get("/trips/$tripId").andExpect {
+            status { isOk() }
+            jsonPath("$.id") { value(tripId) }
+            jsonPath("$.visibility") { value("PUBLIC") }
+        }
+    }
+
+    @Test
+    fun `anonymous user cannot read private trip`() {
+        val token = registerAndGetToken()
+        val tripId = createTrip(token, "Private Trip", "2026-09-10", "2026-09-12")
+
+        mockMvc.get("/trips/$tripId").andExpect {
+            status { isNotFound() }
+        }
+    }
+
     private fun registerAndGetToken(): String {
         val email = "trip-${UUID.randomUUID()}@example.com"
         val response = mockMvc.post("/auth/register") {

@@ -65,10 +65,10 @@ class TripController(
 
     @GetMapping("/{id}")
     fun get(
-        authentication: Authentication,
+        authentication: Authentication?,
         @PathVariable id: String,
     ): ResponseEntity<Any> {
-        val userId = requireUserId(authentication) ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        val userId = resolveUserId(authentication)
         val tripId = TripId.fromString(id) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         val trip = getTripService.execute(tripId, userId)
             ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
@@ -107,6 +107,11 @@ class TripController(
     }
 
     private fun requireUserId(authentication: Authentication): UserId? {
+        return resolveUserId(authentication)
+    }
+
+    private fun resolveUserId(authentication: Authentication?): UserId? {
+        if (authentication == null) return null
         val principal = authentication.principal as? String ?: return null
         return UserId.fromString(principal)
     }
