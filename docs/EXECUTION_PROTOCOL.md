@@ -51,7 +51,7 @@ Each PR must include:
 ## Suggested Prompt Template
 Use this when starting an agent task:
 
-```
+```text
 Work on issue #<id>.
 Branch: feat/issue-<id>-<slug>
 Scope: <backend only|frontend only|specific paths>
@@ -69,7 +69,7 @@ Deliver:
 ## Queue Mode Prompt (Backend/Frontend)
 Use this when you want the agent to continuously pick work from the backlog.
 
-```
+```text
 Queue mode enabled.
 
 Global rules:
