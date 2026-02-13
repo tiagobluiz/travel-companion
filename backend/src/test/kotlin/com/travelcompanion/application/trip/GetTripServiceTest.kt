@@ -53,6 +53,25 @@ class GetTripServiceTest {
         assertNull(result)
     }
 
+    @Test
+    fun `owner can read their own private trip`() {
+        val trip = createTrip(visibility = TripVisibility.PRIVATE)
+        whenever(repository.findById(tripId)).thenReturn(trip)
+
+        val result = service.execute(tripId, ownerId)
+
+        assertEquals(trip, result)
+    }
+
+    @Test
+    fun `returns null when trip not found`() {
+        whenever(repository.findById(tripId)).thenReturn(null)
+
+        val result = service.execute(tripId, ownerId)
+
+        assertNull(result)
+    }
+
     private fun createTrip(visibility: TripVisibility) = Trip(
         id = tripId,
         userId = ownerId,

@@ -28,7 +28,8 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * REST controller for trip CRUD operations.
  *
- * All endpoints require authentication. Users can only access their own trips.
+ * Most endpoints require authentication. Users can only modify their own trips.
+ * GET /{id} also supports anonymous access for public trips.
  */
 @RestController
 @RequestMapping("/trips")
@@ -45,7 +46,7 @@ class TripController(
         authentication: Authentication,
         @Valid @RequestBody request: CreateTripRequest,
     ): ResponseEntity<Any> {
-        val userId = requireUserId(authentication) ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        val userId = resolveUserId(authentication) ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val trip = createTripService.execute(
             userId = userId,
             name = request.name,
@@ -58,7 +59,7 @@ class TripController(
 
     @GetMapping
     fun list(authentication: Authentication): ResponseEntity<Any> {
-        val userId = requireUserId(authentication) ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        val userId = resolveUserId(authentication) ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val trips = getTripsService.execute(userId)
         return ResponseEntity.ok(trips.map { toResponse(it) })
     }
@@ -81,7 +82,7 @@ class TripController(
         @PathVariable id: String,
         @Valid @RequestBody request: UpdateTripRequest,
     ): ResponseEntity<Any> {
-        val userId = requireUserId(authentication) ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        val userId = resolveUserId(authentication) ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val tripId = TripId.fromString(id) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         val trip = updateTripService.execute(
             tripId = tripId,
@@ -99,15 +100,11 @@ class TripController(
         authentication: Authentication,
         @PathVariable id: String,
     ): ResponseEntity<Any> {
-        val userId = requireUserId(authentication) ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        val userId = resolveUserId(authentication) ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val tripId = TripId.fromString(id) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         val deleted = deleteTripService.execute(tripId, userId)
         return if (deleted) ResponseEntity.noContent().build()
         else ResponseEntity.status(HttpStatus.NOT_FOUND).build()
-    }
-
-    private fun requireUserId(authentication: Authentication): UserId? {
-        return resolveUserId(authentication)
     }
 
     private fun resolveUserId(authentication: Authentication?): UserId? {
