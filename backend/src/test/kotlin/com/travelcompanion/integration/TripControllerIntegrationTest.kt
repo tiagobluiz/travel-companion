@@ -98,6 +98,19 @@ class TripControllerIntegrationTest {
         }
     }
 
+    @Test
+    fun `authenticated non member cannot read private trip`() {
+        val ownerToken = registerAndGetToken()
+        val tripId = createTrip(ownerToken, "Private Trip", "2026-09-10", "2026-09-12")
+        val otherUserToken = registerAndGetToken()
+
+        mockMvc.get("/trips/$tripId") {
+            header("Authorization", "Bearer $otherUserToken")
+        }.andExpect {
+            status { isNotFound() }
+        }
+    }
+
     private fun registerAndGetToken(): String {
         val email = "trip-${UUID.randomUUID()}@example.com"
         val response = mockMvc.post("/auth/register") {
