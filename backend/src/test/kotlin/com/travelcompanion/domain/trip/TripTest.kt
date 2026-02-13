@@ -18,54 +18,57 @@ class TripTest {
     private val endDate = LocalDate.of(2025, 6, 10)
 
     @Test
-    fun `addItineraryItem adds item within date range`() {
+    fun `addItineraryItemToDay adds item within trip day range`() {
         val trip = createTrip()
-        val item = ItineraryItem("Paris", LocalDate.of(2025, 6, 5), "Eiffel Tower", 48.8566, 2.3522)
-        val updated = trip.addItineraryItem(item)
-        assertEquals(1, updated.itineraryItems.size)
-        assertEquals("Paris", updated.itineraryItems[0].placeName)
-        assertEquals(LocalDate.of(2025, 6, 5), updated.itineraryItems[0].date)
+        val updated = trip.addItineraryItemToDay(
+            placeName = "Paris",
+            notes = "Eiffel Tower",
+            latitude = 48.8566,
+            longitude = 2.3522,
+            dayNumber = 5,
+        )
+        assertEquals(1, updated.generatedDays()[4].items.size)
+        assertEquals("Paris", updated.generatedDays()[4].items[0].placeName)
+        assertEquals(LocalDate.of(2025, 6, 5), updated.generatedDays()[4].items[0].date)
     }
 
     @Test
-    fun `addItineraryItem rejects date before start`() {
+    fun `addItineraryItemToDay rejects day number lower than one`() {
         val trip = createTrip()
-        val item = ItineraryItem("Paris", LocalDate.of(2025, 5, 31), "", 48.0, 2.0)
         assertThrows(IllegalArgumentException::class.java) {
-            trip.addItineraryItem(item)
+            trip.addItineraryItemToDay("Paris", "", 48.0, 2.0, dayNumber = 0)
         }
     }
 
     @Test
-    fun `addItineraryItem rejects date after end`() {
+    fun `addItineraryItemToDay rejects day number beyond trip range`() {
         val trip = createTrip()
-        val item = ItineraryItem("Paris", LocalDate.of(2025, 6, 11), "", 48.0, 2.0)
         assertThrows(IllegalArgumentException::class.java) {
-            trip.addItineraryItem(item)
+            trip.addItineraryItemToDay("Paris", "", 48.0, 2.0, dayNumber = 11)
         }
     }
 
     @Test
-    fun `addItineraryItem preserves coordinates for map display`() {
+    fun `addItineraryItemToDay preserves coordinates for map display`() {
         val trip = createTrip()
-        val item = ItineraryItem(
+        val updated = trip.addItineraryItemToDay(
             placeName = "Eiffel Tower",
-            date = LocalDate.of(2025, 6, 5),
             notes = "",
             latitude = 48.8584,
             longitude = 2.2945,
+            dayNumber = 5,
         )
-        val updated = trip.addItineraryItem(item)
-        assertEquals(48.8584, updated.itineraryItems[0].latitude)
-        assertEquals(2.2945, updated.itineraryItems[0].longitude)
+        assertEquals(48.8584, updated.generatedDays()[4].items[0].latitude)
+        assertEquals(2.2945, updated.generatedDays()[4].items[0].longitude)
     }
 
     @Test
-    fun `removeItineraryItem removes at index`() {
+    fun `removeItineraryItemById removes target item`() {
         val trip = createTrip()
-            .addItineraryItem(ItineraryItem("A", startDate, "", 0.0, 0.0))
-            .addItineraryItem(ItineraryItem("B", startDate.plusDays(1), "", 0.0, 0.0))
-        val updated = trip.removeItineraryItem(0)
+            .addItineraryItemToDay("A", "", 0.0, 0.0, 1)
+            .addItineraryItemToDay("B", "", 0.0, 0.0, 2)
+        val firstId = trip.generatedDays()[0].items[0].id.toString()
+        val updated = trip.removeItineraryItemById(firstId)
         assertEquals(1, updated.itineraryItems.size)
         assertEquals("B", updated.itineraryItems[0].placeName)
     }
@@ -124,9 +127,7 @@ class TripTest {
 
     @Test
     fun `updateDetails moves out-of-range itinerary items to places to visit when dates shrink`() {
-        val trip = createTrip().addItineraryItem(
-            ItineraryItem("Paris", LocalDate.of(2025, 6, 5), "", 48.0, 2.0)
-        )
+        val trip = createTrip().addItineraryItemToDay("Paris", "", 48.0, 2.0, dayNumber = 5)
 
         val updated = trip.updateDetails(
             name = trip.name,
@@ -164,28 +165,54 @@ class TripTest {
     }
 
     @Test
-    fun `updateItineraryItem rejects invalid index`() {
-        val trip = createTrip()
-        val item = ItineraryItem("Paris", startDate, "", 48.0, 2.0)
+    fun `updateItineraryItemById rejects invalid item id format`() {
         assertThrows(IllegalArgumentException::class.java) {
-            trip.updateItineraryItem(0, item)
+            createTrip().updateItineraryItemById(
+                itemId = "invalid-id",
+                placeName = "Paris",
+                notes = "",
+                latitude = 48.0,
+                longitude = 2.0,
+                dayNumber = 1,
+            )
         }
     }
 
     @Test
-    fun `updateItineraryItem rejects out of range date`() {
-        val trip = createTrip().addItineraryItem(ItineraryItem("A", startDate, "", 0.0, 0.0))
-        val item = ItineraryItem("B", endDate.plusDays(1), "", 0.0, 0.0)
+    fun `updateItineraryItemById rejects unknown item id`() {
+        val trip = createTrip()
         assertThrows(IllegalArgumentException::class.java) {
-            trip.updateItineraryItem(0, item)
+            trip.updateItineraryItemById(
+                itemId = "00000000-0000-0000-0000-000000000000",
+                placeName = "B",
+                notes = "",
+                latitude = 0.0,
+                longitude = 0.0,
+                dayNumber = 1,
+            )
         }
     }
 
     @Test
-    fun `removeItineraryItem rejects invalid index`() {
-        val trip = createTrip()
+    fun `updateItineraryItemById rejects day outside trip range`() {
+        val trip = createTrip().addItineraryItemToDay("A", "", 0.0, 0.0, dayNumber = 1)
+        val itemId = trip.generatedDays()[0].items[0].id.toString()
         assertThrows(IllegalArgumentException::class.java) {
-            trip.removeItineraryItem(0)
+            trip.updateItineraryItemById(
+                itemId = itemId,
+                placeName = "B",
+                notes = "",
+                latitude = 0.0,
+                longitude = 0.0,
+                dayNumber = 11,
+            )
+        }
+    }
+
+    @Test
+    fun `removeItineraryItemById rejects unknown id`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            createTrip().removeItineraryItemById("00000000-0000-0000-0000-000000000000")
         }
     }
 
