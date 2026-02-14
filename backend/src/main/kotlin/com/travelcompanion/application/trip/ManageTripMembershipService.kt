@@ -44,8 +44,16 @@ class ManageTripMembershipService(
         val existingUser = userRepository.findByEmail(normalizedEmail)
         if (existingUser != null) {
             val existingMembership = trip.memberships.firstOrNull { it.userId == existingUser.id }
-            if (existingMembership?.role == TripRole.OWNER && existingUser.id != actorUserId) {
-                throw IllegalArgumentException("Owners cannot change other owners roles")
+            if (existingMembership?.role == TripRole.OWNER && role != TripRole.OWNER) {
+                if (existingUser.id != actorUserId) {
+                    throw IllegalArgumentException("Owners cannot change other owners roles")
+                }
+                val remainingOwners = trip.memberships.count {
+                    it.role == TripRole.OWNER && it.userId != existingUser.id
+                }
+                if (remainingOwners == 0) {
+                    throw IllegalArgumentException("Trip must have at least one owner")
+                }
             }
             val updatedMemberships = upsertMembershipRole(trip.memberships, existingUser.id, role)
             val updatedInvites = trip.invites.map { invite ->

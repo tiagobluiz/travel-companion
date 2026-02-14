@@ -188,6 +188,20 @@ class ManageTripMembershipServiceTest {
     }
 
     @Test
+    fun `invite cannot demote self when user is last owner`() {
+        val existingOwnerUser = createUser(email = "owner@example.com", id = ownerId)
+        val trip = createTrip(
+            memberships = listOf(TripMembership(ownerId, TripRole.OWNER))
+        )
+        whenever(repository.findById(tripId)).thenReturn(trip)
+        whenever(userRepository.findByEmail("owner@example.com")).thenReturn(existingOwnerUser)
+
+        assertThrows(IllegalArgumentException::class.java) {
+            service.inviteMember(tripId, ownerId, "owner@example.com", TripRole.EDITOR)
+        }
+    }
+
+    @Test
     fun `change member role cannot demote last owner`() {
         val trip = createTrip(
             memberships = listOf(TripMembership(ownerId, TripRole.OWNER))
