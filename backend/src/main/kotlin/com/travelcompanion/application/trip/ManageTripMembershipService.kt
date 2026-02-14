@@ -38,11 +38,15 @@ class ManageTripMembershipService(
 
     fun inviteMember(tripId: TripId, actorUserId: UserId, email: String, role: TripRole): Trip? {
         val trip = tripRepository.findById(tripId) ?: return null
-        require(trip.hasRole(actorUserId, TripRole.OWNER)) { "Only owners can manage invites" }
+        ensureOwner(trip, actorUserId, "Only owners can manage invites")
 
         val normalizedEmail = normalizeEmail(email)
         val existingUser = userRepository.findByEmail(normalizedEmail)
         if (existingUser != null) {
+            val existingMembership = trip.memberships.firstOrNull { it.userId == existingUser.id }
+            if (existingMembership?.role == TripRole.OWNER && existingUser.id != actorUserId) {
+                throw IllegalArgumentException("Owners cannot change other owners roles")
+            }
             val updatedMemberships = upsertMembershipRole(trip.memberships, existingUser.id, role)
             val updatedInvites = trip.invites.map { invite ->
                 if (invite.email.equals(normalizedEmail, ignoreCase = true)) {
@@ -102,7 +106,7 @@ class ManageTripMembershipService(
 
     fun removePendingOrDeclinedInvite(tripId: TripId, actorUserId: UserId, email: String): Trip? {
         val trip = tripRepository.findById(tripId) ?: return null
-        require(trip.hasRole(actorUserId, TripRole.OWNER)) { "Only owners can remove pending/declined users" }
+        ensureOwner(trip, actorUserId, "Only owners can remove pending/declined users")
 
         val normalizedEmail = normalizeEmail(email)
         val updatedInvites = trip.invites.filterNot {
@@ -114,12 +118,20 @@ class ManageTripMembershipService(
 
     fun changeMemberRole(tripId: TripId, actorUserId: UserId, targetUserId: UserId, role: TripRole): Trip? {
         val trip = tripRepository.findById(tripId) ?: return null
-        require(trip.hasRole(actorUserId, TripRole.OWNER)) { "Only owners can manage roles" }
+        ensureOwner(trip, actorUserId, "Only owners can manage roles")
 
         val targetMembership = trip.memberships.firstOrNull { it.userId == targetUserId }
             ?: throw IllegalArgumentException("Target user is not a member")
         if (targetMembership.role == TripRole.OWNER && targetUserId != actorUserId) {
             throw IllegalArgumentException("Owners cannot change other owners roles")
+        }
+        if (targetMembership.role == TripRole.OWNER && role != TripRole.OWNER) {
+            val remainingOwners = trip.memberships.count {
+                it.role == TripRole.OWNER && it.userId != targetUserId
+            }
+            if (remainingOwners == 0) {
+                throw IllegalArgumentException("Trip must have at least one owner")
+            }
         }
 
         val updatedMemberships = trip.memberships.map {
@@ -130,7 +142,7 @@ class ManageTripMembershipService(
 
     fun changeInviteRole(tripId: TripId, actorUserId: UserId, email: String, role: TripRole): Trip? {
         val trip = tripRepository.findById(tripId) ?: return null
-        require(trip.hasRole(actorUserId, TripRole.OWNER)) { "Only owners can manage roles" }
+        ensureOwner(trip, actorUserId, "Only owners can manage roles")
 
         val normalizedEmail = normalizeEmail(email)
         val inviteIndex = trip.invites.indexOfFirst {
@@ -145,9 +157,12 @@ class ManageTripMembershipService(
 
     fun getCollaborators(tripId: TripId, requesterUserId: UserId): Trip? {
         val trip = tripRepository.findById(tripId) ?: return null
-        if (!trip.hasRole(requesterUserId, TripRole.OWNER)) return null
+        ensureOwner(trip, requesterUserId, "Only owners can view collaborators")
         return trip
     }
+
+    fun existsTrip(tripId: TripId): Boolean =
+        tripRepository.findById(tripId) != null
 
     private fun upsertMembershipRole(
         memberships: List<TripMembership>,
@@ -163,4 +178,10 @@ class ManageTripMembershipService(
     }
 
     private fun normalizeEmail(email: String): String = email.trim().lowercase()
+
+    private fun ensureOwner(trip: Trip, userId: UserId, message: String) {
+        if (!trip.hasRole(userId, TripRole.OWNER)) {
+            throw TripCollaborationAccessDeniedException(message)
+        }
+    }
 }

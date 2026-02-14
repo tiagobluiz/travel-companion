@@ -5,12 +5,14 @@ import com.travelcompanion.domain.trip.TripMembership
 import com.travelcompanion.domain.trip.TripRepository
 import com.travelcompanion.domain.user.User
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class LinkPendingInvitesOnRegistrationService(
     private val tripRepository: TripRepository,
 ) {
 
+    @Transactional
     fun execute(user: User) {
         val inviteTrips = tripRepository.findByInviteEmail(user.email)
         inviteTrips.forEach { trip ->

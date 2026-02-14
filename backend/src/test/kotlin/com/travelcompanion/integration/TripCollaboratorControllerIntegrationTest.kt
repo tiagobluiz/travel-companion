@@ -105,6 +105,20 @@ class TripCollaboratorControllerIntegrationTest {
         }
     }
 
+    @Test
+    fun `non owner gets forbidden when requesting collaborators`() {
+        val ownerToken = registerAndGetToken()
+        val tripId = createTrip(ownerToken, "Private Team Trip", "2026-12-10", "2026-12-12")
+        val viewer = registerAndGetAuth()
+        addMembership(tripId, viewer.second, TripRole.VIEWER)
+
+        mockMvc.get("/trips/$tripId/collaborators") {
+            header("Authorization", "Bearer ${viewer.first}")
+        }.andExpect {
+            status { isForbidden() }
+        }
+    }
+
     private fun registerAndGetToken(): String = registerAndGetAuth().first
 
     private fun registerAndGetAuth(): Pair<String, UserId> {

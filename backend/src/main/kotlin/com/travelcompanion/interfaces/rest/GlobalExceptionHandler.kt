@@ -1,5 +1,6 @@
 package com.travelcompanion.interfaces.rest
 
+import com.travelcompanion.application.trip.TripCollaborationAccessDeniedException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -15,6 +16,12 @@ class GlobalExceptionHandler {
     fun handleIllegalArgument(ex: IllegalArgumentException): ResponseEntity<ErrorResponse> {
         val message = ex.message ?: "Invalid request"
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(message))
+    }
+
+    @ExceptionHandler(TripCollaborationAccessDeniedException::class)
+    fun handleTripCollaborationAccessDenied(ex: TripCollaborationAccessDeniedException): ResponseEntity<ErrorResponse> {
+        val message = ex.message ?: "Forbidden"
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ErrorResponse(message))
     }
 
     @ExceptionHandler(DateTimeParseException::class)
