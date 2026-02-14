@@ -17,8 +17,8 @@ interface SpringDataTripRepository : JpaRepository<TripJpaEntity, UUID> {
         """
         select distinct t
         from TripJpaEntity t
-        left join TripMembershipJpaEntity m on m.tripId = t.id
-        where t.ownerId = :userId or m.userId = :userId
+        left join TripMembershipJpaEntity m on m.tripId = t.id and m.userId = :userId
+        where t.ownerId = :userId or m.userId is not null
         order by t.createdAt desc
         """
     )

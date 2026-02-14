@@ -3,8 +3,6 @@ package com.travelcompanion.application.expense
 import com.travelcompanion.domain.expense.Expense
 import com.travelcompanion.domain.expense.ExpenseId
 import com.travelcompanion.domain.expense.ExpenseRepository
-import com.travelcompanion.domain.trip.Trip
-import com.travelcompanion.domain.trip.TripRole
 import com.travelcompanion.domain.trip.TripRepository
 import com.travelcompanion.domain.user.UserId
 import org.springframework.stereotype.Service
@@ -43,7 +41,7 @@ class UpdateExpenseService(
     ): Expense? {
         val existing = expenseRepository.findById(expenseId) ?: return null
         val trip = tripRepository.findById(existing.tripId) ?: return null
-        if (!canWriteExpenses(trip, userId)) return null
+        if (!trip.canWrite(userId)) return null
         if (date != null) {
             require(!date.isBefore(trip.startDate) && !date.isAfter(trip.endDate)) {
                 "Expense date must be within trip date range (${trip.startDate} - ${trip.endDate})"
@@ -58,7 +56,4 @@ class UpdateExpenseService(
         )
         return expenseRepository.save(updated)
     }
-
-    private fun canWriteExpenses(trip: Trip, userId: UserId): Boolean =
-        trip.hasRole(userId, TripRole.OWNER) || trip.hasRole(userId, TripRole.EDITOR)
 }

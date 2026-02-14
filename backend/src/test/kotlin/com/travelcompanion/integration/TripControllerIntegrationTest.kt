@@ -176,8 +176,15 @@ class TripControllerIntegrationTest {
     private fun extractJsonValue(json: String, field: String): String =
         """"$field":"([^"]+)"""".toRegex().find(json)!!.groupValues[1]
 
-    private fun extractNthJsonValue(json: String, field: String, index: Int): String =
-        """"$field":"([^"]+)"""".toRegex().findAll(json).toList()[index].groupValues[1]
+    private fun extractNthJsonValue(json: String, field: String, index: Int): String {
+        val matches = """"$field":"([^"]+)"""".toRegex().findAll(json).toList()
+        if (index < 0 || index >= matches.size) {
+            throw IllegalStateException(
+                "Expected field \"$field\" at index $index, but found ${matches.size} matches in response: $json"
+            )
+        }
+        return matches[index].groupValues[1]
+    }
 
     private fun addMembership(tripId: String, userId: UserId, role: TripRole) {
         val domainTripId = TripId.fromString(tripId)!!
