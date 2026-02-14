@@ -14,7 +14,7 @@ import java.time.LocalDate
 /**
  * Handles the use case of creating an expense for a trip.
  *
- * Validates that the trip exists and belongs to the user before adding the expense.
+ * Validates that the trip exists and the user has write access before adding the expense.
  */
 @Service
 class CreateExpenseService(
@@ -26,12 +26,12 @@ class CreateExpenseService(
      * Creates a new expense for the trip.
      *
      * @param tripId The trip ID
-     * @param userId The user creating the expense (must own the trip)
+     * @param userId The user creating the expense (must have write access: OWNER or EDITOR)
      * @param amount The expense amount
      * @param currency The currency code (e.g., USD)
      * @param description Optional description
      * @param date The expense date
-     * @return The created expense, or null if trip not found/not owned
+     * @return The created expense, or null if trip is not found or trip.canWrite(userId) is false
      */
     fun execute(
         tripId: TripId,
