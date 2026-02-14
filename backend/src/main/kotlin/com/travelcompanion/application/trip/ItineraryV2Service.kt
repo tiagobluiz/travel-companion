@@ -2,6 +2,7 @@ package com.travelcompanion.application.trip
 
 import com.travelcompanion.domain.trip.Trip
 import com.travelcompanion.domain.trip.TripId
+import com.travelcompanion.domain.trip.TripRole
 import com.travelcompanion.domain.trip.TripRepository
 import com.travelcompanion.domain.user.UserId
 import org.springframework.stereotype.Service
@@ -13,7 +14,7 @@ class ItineraryV2Service(
 
     fun get(tripId: TripId, userId: UserId): Trip? {
         val trip = tripRepository.findById(tripId) ?: return null
-        if (trip.userId != userId) return null
+        if (!trip.canView(userId)) return null
         return trip
     }
 
@@ -27,7 +28,7 @@ class ItineraryV2Service(
         dayNumber: Int?,
     ): Trip? {
         val trip = tripRepository.findById(tripId) ?: return null
-        if (trip.userId != userId) return null
+        if (!canWriteItinerary(trip, userId)) return null
 
         val updated = if (dayNumber == null) {
             trip.addItineraryItemToPlacesToVisit(placeName, notes, latitude, longitude)
@@ -48,7 +49,7 @@ class ItineraryV2Service(
         dayNumber: Int?,
     ): Trip? {
         val trip = tripRepository.findById(tripId) ?: return null
-        if (trip.userId != userId) return null
+        if (!canWriteItinerary(trip, userId)) return null
 
         val updated = trip.updateItineraryItemById(
             itemId = itemId,
@@ -67,7 +68,7 @@ class ItineraryV2Service(
         itemId: String,
     ): Trip? {
         val trip = tripRepository.findById(tripId) ?: return null
-        if (trip.userId != userId) return null
+        if (!canWriteItinerary(trip, userId)) return null
 
         val updated = trip.removeItineraryItemById(itemId)
         return tripRepository.save(updated)
@@ -82,7 +83,7 @@ class ItineraryV2Service(
         afterItemId: String?,
     ): Trip? {
         val trip = tripRepository.findById(tripId) ?: return null
-        if (trip.userId != userId) return null
+        if (!canWriteItinerary(trip, userId)) return null
 
         val updated = trip.moveItineraryItem(
             itemId = itemId,
@@ -92,5 +93,8 @@ class ItineraryV2Service(
         )
         return tripRepository.save(updated)
     }
+
+    private fun canWriteItinerary(trip: Trip, userId: UserId): Boolean =
+        trip.hasRole(userId, TripRole.OWNER) || trip.hasRole(userId, TripRole.EDITOR)
 }
 

@@ -2,6 +2,8 @@ package com.travelcompanion.application.expense
 
 import com.travelcompanion.domain.expense.ExpenseId
 import com.travelcompanion.domain.expense.ExpenseRepository
+import com.travelcompanion.domain.trip.Trip
+import com.travelcompanion.domain.trip.TripRole
 import com.travelcompanion.domain.trip.TripRepository
 import com.travelcompanion.domain.user.UserId
 import org.springframework.stereotype.Service
@@ -26,8 +28,12 @@ class DeleteExpenseService(
      */
     fun execute(expenseId: ExpenseId, userId: UserId): Boolean {
         val existing = expenseRepository.findById(expenseId) ?: return false
-        if (!tripRepository.existsByIdAndUserId(existing.tripId, userId)) return false
+        val trip = tripRepository.findById(existing.tripId) ?: return false
+        if (!canWriteExpenses(trip, userId)) return false
         expenseRepository.deleteById(expenseId)
         return true
     }
+
+    private fun canWriteExpenses(trip: Trip, userId: UserId): Boolean =
+        trip.hasRole(userId, TripRole.OWNER) || trip.hasRole(userId, TripRole.EDITOR)
 }

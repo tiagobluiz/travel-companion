@@ -1,6 +1,8 @@
 package com.travelcompanion.infrastructure.persistence
 
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
 import java.util.UUID
 
 /**
@@ -11,7 +13,16 @@ import java.util.UUID
  */
 interface SpringDataTripRepository : JpaRepository<TripJpaEntity, UUID> {
 
-    fun findByOwnerIdOrderByCreatedAtDesc(ownerId: UUID): List<TripJpaEntity>
+    @Query(
+        """
+        select distinct t
+        from TripJpaEntity t
+        left join TripMembershipJpaEntity m on m.tripId = t.id
+        where t.ownerId = :userId or m.userId = :userId
+        order by t.createdAt desc
+        """
+    )
+    fun findAccessibleByUserIdOrderByCreatedAtDesc(@Param("userId") userId: UUID): List<TripJpaEntity>
 
     fun existsByIdAndOwnerId(id: UUID, ownerId: UUID): Boolean
 }
