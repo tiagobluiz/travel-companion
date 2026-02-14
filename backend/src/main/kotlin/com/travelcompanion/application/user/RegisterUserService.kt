@@ -1,5 +1,6 @@
 package com.travelcompanion.application.user
 
+import com.travelcompanion.application.trip.LinkPendingInvitesOnRegistrationService
 import com.travelcompanion.domain.user.User
 import com.travelcompanion.domain.user.UserId
 import com.travelcompanion.domain.user.UserRepository
@@ -17,6 +18,7 @@ import java.time.Instant
 class RegisterUserService(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
+    private val linkPendingInvitesOnRegistrationService: LinkPendingInvitesOnRegistrationService,
 ) {
 
     /**
@@ -41,7 +43,9 @@ class RegisterUserService(
             displayName = displayName.trim(),
             createdAt = Instant.now(),
         )
-        return userRepository.save(user)
+        val saved = userRepository.save(user)
+        linkPendingInvitesOnRegistrationService.execute(saved)
+        return saved
     }
 }
 

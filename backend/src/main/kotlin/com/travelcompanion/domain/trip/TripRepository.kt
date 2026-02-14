@@ -34,6 +34,14 @@ interface TripRepository {
     fun findByUserId(userId: UserId): List<Trip>
 
     /**
+     * Finds all trips where an invite exists for the given email (case-insensitive exact match).
+     *
+     * @param email Invitee email
+     * @return List of trips (may be empty)
+     */
+    fun findByInviteEmail(email: String): List<Trip>
+
+    /**
      * Deletes a trip by ID.
      *
      * @param id The trip ID to delete
