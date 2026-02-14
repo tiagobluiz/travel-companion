@@ -36,8 +36,11 @@ class TripCollaboratorController(
     ): ResponseEntity<Any> {
         val requester = requireUserId(authentication) ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val id = TripId.fromString(tripId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
+        if (!manageTripMembershipService.existsTrip(id)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+        }
         val trip = manageTripMembershipService.getCollaborators(id, requester)
-            ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+            ?: return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
         return ResponseEntity.ok(
             CollaboratorsResponse(

@@ -6,6 +6,7 @@ import com.travelcompanion.domain.user.UserId
 import com.travelcompanion.domain.user.UserRepository
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 
 /**
@@ -30,6 +31,7 @@ class RegisterUserService(
      * @return The created user (without password hash in typical DTO mapping)
      * @throws EmailAlreadyExistsException if the email is already registered
      */
+    @Transactional
     fun execute(email: String, password: String, displayName: String): User {
         val normalizedEmail = email.trim().lowercase()
         if (userRepository.existsByEmail(normalizedEmail)) {

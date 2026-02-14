@@ -153,6 +153,52 @@ class ManageTripMembershipServiceTest {
         assertEquals(TripRole.EDITOR, updated!!.invites.single().role)
     }
 
+    @Test
+    fun `invite by non owner throws access denied`() {
+        val nonOwner = UserId.generate()
+        val trip = createTrip(
+            memberships = listOf(
+                TripMembership(ownerId, TripRole.OWNER),
+                TripMembership(nonOwner, TripRole.VIEWER),
+            )
+        )
+        whenever(repository.findById(tripId)).thenReturn(trip)
+
+        assertThrows(TripCollaborationAccessDeniedException::class.java) {
+            service.inviteMember(tripId, nonOwner, "new@example.com", TripRole.VIEWER)
+        }
+    }
+
+    @Test
+    fun `invite cannot demote another owner via existing user link`() {
+        val secondOwner = UserId.generate()
+        val existingOwnerUser = createUser(email = "owner2@example.com", id = secondOwner)
+        val trip = createTrip(
+            memberships = listOf(
+                TripMembership(ownerId, TripRole.OWNER),
+                TripMembership(secondOwner, TripRole.OWNER),
+            )
+        )
+        whenever(repository.findById(tripId)).thenReturn(trip)
+        whenever(userRepository.findByEmail("owner2@example.com")).thenReturn(existingOwnerUser)
+
+        assertThrows(IllegalArgumentException::class.java) {
+            service.inviteMember(tripId, ownerId, "owner2@example.com", TripRole.VIEWER)
+        }
+    }
+
+    @Test
+    fun `change member role cannot demote last owner`() {
+        val trip = createTrip(
+            memberships = listOf(TripMembership(ownerId, TripRole.OWNER))
+        )
+        whenever(repository.findById(tripId)).thenReturn(trip)
+
+        assertThrows(IllegalArgumentException::class.java) {
+            service.changeMemberRole(tripId, ownerId, ownerId, TripRole.EDITOR)
+        }
+    }
+
     private fun createTrip(
         memberships: List<TripMembership> = listOf(TripMembership(ownerId, TripRole.OWNER)),
         invites: List<TripInvite> = emptyList(),
