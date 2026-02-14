@@ -94,7 +94,7 @@ class JpaTripRepository(
         springRepo.findById(id.value).orElse(null)?.let { toDomain(it) }
 
     override fun findByUserId(userId: UserId): List<Trip> =
-        springRepo.findByOwnerIdOrderByCreatedAtDesc(userId.value).map { toDomain(it) }
+        springRepo.findAccessibleByUserIdOrderByCreatedAtDesc(userId.value).map { toDomain(it) }
 
     @Transactional
     override fun deleteById(id: TripId) {

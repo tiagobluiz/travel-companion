@@ -26,7 +26,8 @@ class DeleteExpenseService(
      */
     fun execute(expenseId: ExpenseId, userId: UserId): Boolean {
         val existing = expenseRepository.findById(expenseId) ?: return false
-        if (!tripRepository.existsByIdAndUserId(existing.tripId, userId)) return false
+        val trip = tripRepository.findById(existing.tripId) ?: return false
+        if (!trip.canWrite(userId)) return false
         expenseRepository.deleteById(expenseId)
         return true
     }

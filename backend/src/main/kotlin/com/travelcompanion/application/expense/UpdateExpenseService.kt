@@ -12,7 +12,7 @@ import java.time.LocalDate
 /**
  * Handles the use case of updating an expense.
  *
- * Validates that the expense exists and the trip belongs to the user.
+ * Validates that the expense exists and the user has write access to the trip.
  */
 @Service
 class UpdateExpenseService(
@@ -24,12 +24,12 @@ class UpdateExpenseService(
      * Updates an expense.
      *
      * @param expenseId The expense ID
-     * @param userId The requesting user (must own the trip)
+     * @param userId The requesting user (must have write access: OWNER or EDITOR)
      * @param amount New amount (optional)
      * @param currency New currency (optional)
      * @param description New description (optional)
      * @param date New date (optional)
-     * @return The updated expense, or null if not found/not owned
+     * @return The updated expense, or null if not found or trip.canWrite(userId) is false
      */
     fun execute(
         expenseId: ExpenseId,
@@ -41,7 +41,7 @@ class UpdateExpenseService(
     ): Expense? {
         val existing = expenseRepository.findById(expenseId) ?: return null
         val trip = tripRepository.findById(existing.tripId) ?: return null
-        if (trip.userId != userId) return null
+        if (!trip.canWrite(userId)) return null
         if (date != null) {
             require(!date.isBefore(trip.startDate) && !date.isAfter(trip.endDate)) {
                 "Expense date must be within trip date range (${trip.startDate} - ${trip.endDate})"

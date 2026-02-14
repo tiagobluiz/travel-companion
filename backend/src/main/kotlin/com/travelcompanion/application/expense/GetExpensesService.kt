@@ -26,7 +26,8 @@ class GetExpensesService(
      * @return List of expenses, or null if trip not found/not owned
      */
     fun execute(tripId: TripId, userId: UserId): List<Expense>? {
-        if (!tripRepository.existsByIdAndUserId(tripId, userId)) return null
+        val trip = tripRepository.findById(tripId) ?: return null
+        if (!trip.canView(userId)) return null
         return expenseRepository.findByTripId(tripId)
     }
 }

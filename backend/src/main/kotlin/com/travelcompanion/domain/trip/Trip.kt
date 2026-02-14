@@ -268,6 +268,9 @@ data class Trip(
     fun canView(userId: UserId?): Boolean =
         visibility == TripVisibility.PUBLIC || (userId != null && isMember(userId))
 
+    fun canWrite(userId: UserId): Boolean =
+        hasRole(userId, TripRole.OWNER) || hasRole(userId, TripRole.EDITOR)
+
     fun addOwner(actorUserId: UserId, targetUserId: UserId): Trip {
         require(hasRole(actorUserId, TripRole.OWNER)) { "Only owners can add owners" }
 

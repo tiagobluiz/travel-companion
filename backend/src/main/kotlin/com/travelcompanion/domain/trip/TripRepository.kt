@@ -26,9 +26,9 @@ interface TripRepository {
     fun findById(id: TripId): Trip?
 
     /**
-     * Finds all trips for a given user, ordered by creation date descending.
+     * Finds all trips accessible by a given user, ordered by creation date descending.
      *
-     * @param userId The owner's user ID
+     * @param userId The requesting user's ID
      * @return List of trips (may be empty)
      */
     fun findByUserId(userId: UserId): List<Trip>

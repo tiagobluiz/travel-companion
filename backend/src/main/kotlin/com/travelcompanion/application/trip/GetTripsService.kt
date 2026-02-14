@@ -6,7 +6,7 @@ import com.travelcompanion.domain.user.UserId
 import org.springframework.stereotype.Service
 
 /**
- * Handles the use case of listing all trips for an authenticated user.
+ * Handles the use case of listing all trips accessible to an authenticated user.
  *
  * Returns trips ordered by creation date descending.
  */
@@ -16,9 +16,9 @@ class GetTripsService(
 ) {
 
     /**
-     * Returns all trips owned by the user.
+     * Returns all trips where the user has access (owner/editor/viewer membership).
      *
-     * @param userId The owner's user ID
+     * @param userId The requesting user's ID
      * @return List of trips (may be empty)
      */
     fun execute(userId: UserId): List<Trip> =
