@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service
 /**
  * Handles the use case of fetching a single trip by ID.
  *
- * Ensures the trip exists and belongs to the requesting user.
+ * Ensures the trip exists and can be read by the requesting user context.
  */
 @Service
 class GetTripService(
@@ -17,15 +17,15 @@ class GetTripService(
 ) {
 
     /**
-     * Returns the trip if it exists and belongs to the user.
+     * Returns the trip if it exists and is readable by the user.
      *
      * @param tripId The trip ID
-     * @param userId The requesting user's ID (must be owner)
-     * @return The trip, or null if not found or not owned by user
+     * @param userId The requesting user's ID, or null for anonymous callers
+     * @return The trip, or null if not found or not readable by user
      */
-    fun execute(tripId: TripId, userId: UserId): Trip? {
+    fun execute(tripId: TripId, userId: UserId?): Trip? {
         val trip = tripRepository.findById(tripId) ?: return null
-        if (trip.userId != userId) return null
+        if (!trip.canView(userId)) return null
         return trip
     }
 }
