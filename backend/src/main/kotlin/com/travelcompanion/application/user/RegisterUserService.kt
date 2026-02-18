@@ -1,10 +1,12 @@
 package com.travelcompanion.application.user
 
+import com.travelcompanion.application.trip.LinkPendingInvitesOnRegistrationService
 import com.travelcompanion.domain.user.User
 import com.travelcompanion.domain.user.UserId
 import com.travelcompanion.domain.user.UserRepository
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 
 /**
@@ -17,6 +19,7 @@ import java.time.Instant
 class RegisterUserService(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
+    private val linkPendingInvitesOnRegistrationService: LinkPendingInvitesOnRegistrationService,
 ) {
 
     /**
@@ -28,6 +31,7 @@ class RegisterUserService(
      * @return The created user (without password hash in typical DTO mapping)
      * @throws EmailAlreadyExistsException if the email is already registered
      */
+    @Transactional
     fun execute(email: String, password: String, displayName: String): User {
         val normalizedEmail = email.trim().lowercase()
         if (userRepository.existsByEmail(normalizedEmail)) {
@@ -41,7 +45,9 @@ class RegisterUserService(
             displayName = displayName.trim(),
             createdAt = Instant.now(),
         )
-        return userRepository.save(user)
+        val saved = userRepository.save(user)
+        linkPendingInvitesOnRegistrationService.execute(saved)
+        return saved
     }
 }
 

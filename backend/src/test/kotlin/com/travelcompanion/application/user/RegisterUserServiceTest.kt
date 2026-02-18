@@ -1,7 +1,7 @@
 package com.travelcompanion.application.user
 
+import com.travelcompanion.application.trip.LinkPendingInvitesOnRegistrationService
 import com.travelcompanion.domain.user.User
-import com.travelcompanion.domain.user.UserId
 import com.travelcompanion.domain.user.UserRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.assertThrows
@@ -9,10 +9,10 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.security.crypto.password.PasswordEncoder
-import java.time.Instant
 
 /**
  * Unit tests for [RegisterUserService].
@@ -21,7 +21,12 @@ class RegisterUserServiceTest {
 
     private val userRepository = mock<UserRepository>()
     private val passwordEncoder = mock<PasswordEncoder>()
-    private val service = RegisterUserService(userRepository, passwordEncoder)
+    private val linkPendingInvitesOnRegistrationService = mock<LinkPendingInvitesOnRegistrationService>()
+    private val service = RegisterUserService(
+        userRepository,
+        passwordEncoder,
+        linkPendingInvitesOnRegistrationService,
+    )
 
     @Test
     fun `execute creates user when email is available`() {
@@ -36,6 +41,7 @@ class RegisterUserServiceTest {
         assertEquals("test@example.com", captor.firstValue.email)
         assertEquals("hashed", captor.firstValue.passwordHash)
         assertEquals("Test User", captor.firstValue.displayName)
+        verify(linkPendingInvitesOnRegistrationService, times(1)).execute(captor.firstValue)
     }
 
     @Test

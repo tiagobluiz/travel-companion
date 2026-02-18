@@ -24,5 +24,14 @@ interface SpringDataTripRepository : JpaRepository<TripJpaEntity, UUID> {
     )
     fun findAccessibleByUserIdOrderByCreatedAtDesc(@Param("userId") userId: UUID): List<TripJpaEntity>
 
+    @Query(
+        """
+        select distinct t from TripJpaEntity t
+        join TripInviteJpaEntity i on i.tripId = t.id
+        where lower(i.email) = lower(:email)
+        """
+    )
+    fun findByInviteEmailIgnoreCase(@Param("email") email: String): List<TripJpaEntity>
+
     fun existsByIdAndOwnerId(id: UUID, ownerId: UUID): Boolean
 }

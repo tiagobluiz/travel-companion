@@ -48,6 +48,7 @@ class JpaTripRepository(
         )
 
         inviteRepo.deleteByTripId(saved.id)
+        inviteRepo.flush()
         inviteRepo.saveAll(
             trip.invites.map {
                 TripInviteJpaEntity(
@@ -95,6 +96,9 @@ class JpaTripRepository(
 
     override fun findByUserId(userId: UserId): List<Trip> =
         springRepo.findAccessibleByUserIdOrderByCreatedAtDesc(userId.value).map { toDomain(it) }
+
+    override fun findByInviteEmail(email: String): List<Trip> =
+        springRepo.findByInviteEmailIgnoreCase(email.trim()).map { toDomain(it) }
 
     @Transactional
     override fun deleteById(id: TripId) {
