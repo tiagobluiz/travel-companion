@@ -1,21 +1,22 @@
-import { useParams, useNavigate } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../../stores/authStore'
-import { fetchTrip, deleteTrip } from '../../../api/trips'
+import { deleteTrip, fetchTrip } from '../../../api/trips'
 import {
   addItineraryItem,
-  fetchItineraryV2,
   deleteItineraryItem,
+  fetchItineraryV2,
+  moveItineraryItem,
   type ItineraryItemV2Request,
+  type MoveItineraryItemV2Request,
 } from '../../../api/itinerary'
 import {
-  fetchExpenses,
   createExpense,
   deleteExpense,
+  fetchExpenses,
   type CreateExpenseRequest,
 } from '../../../api/expenses'
-import { useState } from 'react'
 
 function toDayNumber(date: string, startDate: string) {
   const [year, month, day] = date.split('-').map(Number)
@@ -28,8 +29,12 @@ function toDayNumber(date: string, startDate: string) {
 export default function TripDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { user, logout } = useAuthStore()
   const queryClient = useQueryClient()
+  const token = useAuthStore((s) => s.token)
+  const user = useAuthStore((s) => s.user)
+  const logout = useAuthStore((s) => s.logout)
+
+  const canEdit = Boolean(token)
 
   const [showItineraryForm, setShowItineraryForm] = useState(false)
   const [placeName, setPlaceName] = useState('')
@@ -46,13 +51,17 @@ export default function TripDetailPage() {
   const [expenseDate, setExpenseDate] = useState('')
   const [expenseError, setExpenseError] = useState('')
 
-  const { data: trip, isLoading } = useQuery({
+  const { data: trip, isLoading: isTripLoading } = useQuery({
     queryKey: ['trip', id],
     queryFn: () => fetchTrip(id!),
     enabled: !!id,
   })
 
-  const { data: itinerary, isLoading: isItineraryLoading } = useQuery({
+  const {
+    data: itinerary,
+    isLoading: isItineraryLoading,
+    error: itineraryLoadError,
+  } = useQuery({
     queryKey: ['itinerary-v2', id],
     queryFn: () => fetchItineraryV2(id!),
     enabled: !!id,
@@ -88,6 +97,17 @@ export default function TripDetailPage() {
     },
   })
 
+  const moveItineraryMutation = useMutation({
+    mutationFn: ({ itemId, payload }: { itemId: string; payload: MoveItineraryItemV2Request }) =>
+      moveItineraryItem(id!, itemId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['itinerary-v2', id] })
+    },
+    onError: (error: Error) => {
+      setItineraryError(error.message || 'Failed to move itinerary item.')
+    },
+  })
+
   const createExpenseMutation = useMutation({
     mutationFn: (data: CreateExpenseRequest) => createExpense(id!, data),
     onSuccess: () => {
@@ -106,25 +126,41 @@ export default function TripDetailPage() {
     },
   })
 
+  function handleMove(itemId: string, payload: MoveItineraryItemV2Request) {
+    setItineraryError('')
+    moveItineraryMutation.mutate({ itemId, payload })
+  }
+
+  function handleRemove(itemId: string) {
+    setItineraryError('')
+    deleteItineraryItem(id!, itemId)
+      .then(() => queryClient.invalidateQueries({ queryKey: ['itinerary-v2', id] }))
+      .catch((error: Error) => {
+        setItineraryError(error.message || 'Failed to remove itinerary item.')
+      })
+  }
+
   function handleAddItinerary(e: React.FormEvent) {
     e.preventDefault()
     if (!trip) return
     setItineraryError('')
     if (!placeName.trim() || !itemDate || !itemLatitude || !itemLongitude) return
+
     const lat = parseFloat(itemLatitude)
     const lng = parseFloat(itemLongitude)
-    if (isNaN(lat) || isNaN(lng)) return
+    if (Number.isNaN(lat) || Number.isNaN(lng)) return
+
     if (itemDate < trip.startDate || itemDate > trip.endDate) {
       setItineraryError(`Date must be between ${trip.startDate} and ${trip.endDate}.`)
       return
     }
-    const dayNumber = toDayNumber(itemDate, trip.startDate)
+
     addItineraryMutation.mutate({
       placeName: placeName.trim(),
       notes: itemNotes || undefined,
       latitude: lat,
       longitude: lng,
-      dayNumber,
+      dayNumber: toDayNumber(itemDate, trip.startDate),
     })
   }
 
@@ -133,7 +169,7 @@ export default function TripDetailPage() {
     if (!trip) return
     setExpenseError('')
     const amt = parseFloat(amount)
-    if (isNaN(amt) || amt < 0 || !expenseDate) return
+    if (Number.isNaN(amt) || amt < 0 || !expenseDate) return
     if (expenseDate < trip.startDate || expenseDate > trip.endDate) {
       setExpenseError(`Date must be between ${trip.startDate} and ${trip.endDate}.`)
       return
@@ -146,14 +182,10 @@ export default function TripDetailPage() {
     })
   }
 
-  // Sum expenses (MVP: ignores multi-currency)
-  const totalExpenses = expenses.reduce(
-    (sum, e) => sum + parseFloat(e.amount),
-    0
-  )
+  const totalExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0)
 
   if (!id) return null
-  if (isLoading || isItineraryLoading || !trip || !itinerary) {
+  if (isTripLoading || isItineraryLoading || !trip || !itinerary) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p className="text-slate-600">Loading...</p>
@@ -161,68 +193,48 @@ export default function TripDetailPage() {
     )
   }
 
-  const itineraryRows = [
-    ...itinerary.days.flatMap((day) =>
-      day.items.map((item) => ({
-        id: item.id,
-        placeName: item.placeName,
-        notes: item.notes,
-        latitude: item.latitude,
-        longitude: item.longitude,
-        containerLabel: day.date,
-      }))
-    ),
-    ...itinerary.placesToVisit.items.map((item) => ({
-      id: item.id,
-      placeName: item.placeName,
-      notes: item.notes,
-      latitude: item.latitude,
-      longitude: item.longitude,
-      containerLabel: itinerary.placesToVisit.label,
-    })),
-  ]
-
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/" className="text-primary-600 hover:underline">
-              ← Back
+              {'<-'} Back
             </Link>
             <h1 className="text-xl font-bold text-slate-900">{trip.name}</h1>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-slate-600">{user?.displayName}</span>
-            <button
-              onClick={logout}
-              className="text-sm text-primary-600 hover:underline"
-            >
-              Sign out
-            </button>
+            <span className="text-sm text-slate-600">{user?.displayName ?? 'Guest'}</span>
+            {canEdit && (
+              <button onClick={logout} className="text-sm text-primary-600 hover:underline">
+                Sign out
+              </button>
+            )}
           </div>
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-8">
         <div className="mb-6 text-sm text-slate-500">
-          {trip.startDate} – {trip.endDate}
+          {trip.startDate} - {trip.endDate}
         </div>
 
         <section className="mb-10">
-          <h2 className="text-lg font-semibold text-slate-900 mb-3">
-            Itinerary
-          </h2>
-          {showItineraryForm ? (
+          <h2 className="text-lg font-semibold text-slate-900 mb-3">Itinerary</h2>
+          {itineraryLoadError && (
+            <div className="mb-4 p-2 rounded-md bg-red-50 text-red-700 text-sm">
+              Failed to load itinerary.
+            </div>
+          )}
+          {itineraryError && (
+            <div className="mb-4 p-2 rounded-md bg-red-50 text-red-700 text-sm">{itineraryError}</div>
+          )}
+
+          {canEdit && showItineraryForm && (
             <form
               onSubmit={handleAddItinerary}
               className="mb-4 p-4 bg-white rounded-lg border border-slate-200 space-y-3"
             >
-              {itineraryError && (
-                <div className="p-2 rounded-md bg-red-50 text-red-700 text-sm">
-                  {itineraryError}
-                </div>
-              )}
               <input
                 type="text"
                 placeholder="Place or activity"
@@ -251,34 +263,24 @@ export default function TripDetailPage() {
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
               />
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs text-slate-500 mb-1">
-                    Latitude <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    placeholder="e.g. 48.8566"
-                    value={itemLatitude}
-                    onChange={(e) => setItemLatitude(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-slate-500 mb-1">
-                    Longitude <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="any"
-                    placeholder="e.g. 2.3522"
-                    value={itemLongitude}
-                    onChange={(e) => setItemLongitude(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
-                  />
-                </div>
+                <input
+                  type="number"
+                  step="any"
+                  placeholder="Latitude"
+                  value={itemLatitude}
+                  onChange={(e) => setItemLatitude(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
+                />
+                <input
+                  type="number"
+                  step="any"
+                  placeholder="Longitude"
+                  value={itemLongitude}
+                  onChange={(e) => setItemLongitude(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
+                />
               </div>
               <div className="flex gap-2">
                 <button
@@ -297,7 +299,9 @@ export default function TripDetailPage() {
                 </button>
               </div>
             </form>
-          ) : (
+          )}
+
+          {canEdit && !showItineraryForm && (
             <button
               onClick={() => setShowItineraryForm(true)}
               className="mb-4 text-sm text-primary-600 hover:underline"
@@ -305,51 +309,173 @@ export default function TripDetailPage() {
               + Add place
             </button>
           )}
-
-          {itineraryRows.length === 0 ? (
-            <p className="text-slate-500 text-sm">No itinerary items yet.</p>
-          ) : (
-            <ul className="space-y-2">
-              {itineraryRows.map((item) => (
-                <li
-                  key={item.id}
-                  className="p-3 bg-white rounded-lg border border-slate-200 flex justify-between items-center"
-                >
-                  <div>
-                    <span className="font-medium">{item.placeName}</span>
-                    <span className="text-slate-500 text-sm ml-2">
-                      {item.containerLabel}
-                    </span>
-                    {item.notes && (
-                      <p className="text-sm text-slate-500 mt-1">{item.notes}</p>
-                    )}
-                    <p className="text-xs text-slate-400 mt-1">
-                      {item.latitude.toFixed(4)}, {item.longitude.toFixed(4)}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() =>
-                      deleteItineraryItem(id, item.id).then(() =>
-                        queryClient.invalidateQueries({ queryKey: ['itinerary-v2', id] })
-                      )
-                    }
-                    className="text-red-600 text-sm hover:underline"
-                  >
-                    Remove
-                  </button>
-                </li>
-              ))}
-            </ul>
+          {!canEdit && (
+            <p className="mb-4 text-sm text-slate-500">Read-only itinerary view for anonymous users.</p>
           )}
+
+          <div className="space-y-4">
+            {itinerary.days.map((day, dayIndex) => (
+              <section key={day.dayNumber} className="p-4 bg-white rounded-lg border border-slate-200">
+                <h3 className="font-semibold text-slate-900 mb-3">
+                  Day {day.dayNumber} ({day.date})
+                </h3>
+                {day.items.length === 0 ? (
+                  <p className="text-slate-500 text-sm">No items in this day.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {day.items.map((item, itemIndex) => (
+                      <li
+                        key={item.id}
+                        className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex justify-between gap-3"
+                      >
+                        <div>
+                          <p className="font-medium">{item.placeName}</p>
+                          {item.notes && <p className="text-sm text-slate-600">{item.notes}</p>}
+                        </div>
+                        {canEdit && (
+                          <div className="flex flex-wrap items-start gap-2">
+                            <button
+                              onClick={() =>
+                                handleMove(item.id, {
+                                  targetDayNumber: day.dayNumber,
+                                  beforeItemId: day.items[itemIndex - 1]?.id,
+                                })
+                              }
+                              disabled={itemIndex === 0 || moveItineraryMutation.isPending}
+                              className="text-xs px-2 py-1 rounded border border-slate-300 disabled:opacity-40"
+                            >
+                              Move up
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleMove(item.id, {
+                                  targetDayNumber: day.dayNumber,
+                                  afterItemId: day.items[itemIndex + 1]?.id,
+                                })
+                              }
+                              disabled={itemIndex === day.items.length - 1 || moveItineraryMutation.isPending}
+                              className="text-xs px-2 py-1 rounded border border-slate-300 disabled:opacity-40"
+                            >
+                              Move down
+                            </button>
+                            <button
+                              onClick={() => handleMove(item.id, {})}
+                              disabled={moveItineraryMutation.isPending}
+                              className="text-xs px-2 py-1 rounded border border-slate-300"
+                            >
+                              To places
+                            </button>
+                            <button
+                              onClick={() => handleRemove(item.id)}
+                              className="text-xs px-2 py-1 rounded border border-red-300 text-red-700"
+                            >
+                              Remove
+                            </button>
+                            {dayIndex > 0 && (
+                              <button
+                                onClick={() =>
+                                  handleMove(item.id, {
+                                    targetDayNumber: itinerary.days[dayIndex - 1]?.dayNumber,
+                                  })
+                                }
+                                disabled={moveItineraryMutation.isPending}
+                                className="text-xs px-2 py-1 rounded border border-slate-300"
+                              >
+                                Prev day
+                              </button>
+                            )}
+                            {dayIndex < itinerary.days.length - 1 && (
+                              <button
+                                onClick={() =>
+                                  handleMove(item.id, {
+                                    targetDayNumber: itinerary.days[dayIndex + 1]?.dayNumber,
+                                  })
+                                }
+                                disabled={moveItineraryMutation.isPending}
+                                className="text-xs px-2 py-1 rounded border border-slate-300"
+                              >
+                                Next day
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            ))}
+
+            <section className="p-4 bg-white rounded-lg border border-slate-200">
+              <h3 className="font-semibold text-slate-900 mb-3">{itinerary.placesToVisit.label}</h3>
+              {itinerary.placesToVisit.items.length === 0 ? (
+                <p className="text-slate-500 text-sm">No places waiting to be scheduled.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {itinerary.placesToVisit.items.map((item, itemIndex) => (
+                    <li
+                      key={item.id}
+                      className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex justify-between gap-3"
+                    >
+                      <div>
+                        <p className="font-medium">{item.placeName}</p>
+                        {item.notes && <p className="text-sm text-slate-600">{item.notes}</p>}
+                      </div>
+                      {canEdit && (
+                        <div className="flex flex-wrap items-start gap-2">
+                          <button
+                            onClick={() =>
+                              handleMove(item.id, {
+                                beforeItemId: itinerary.placesToVisit.items[itemIndex - 1]?.id,
+                              })
+                            }
+                            disabled={itemIndex === 0 || moveItineraryMutation.isPending}
+                            className="text-xs px-2 py-1 rounded border border-slate-300 disabled:opacity-40"
+                          >
+                            Move up
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleMove(item.id, {
+                                afterItemId: itinerary.placesToVisit.items[itemIndex + 1]?.id,
+                              })
+                            }
+                            disabled={
+                              itemIndex === itinerary.placesToVisit.items.length - 1 ||
+                              moveItineraryMutation.isPending
+                            }
+                            className="text-xs px-2 py-1 rounded border border-slate-300 disabled:opacity-40"
+                          >
+                            Move down
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleMove(item.id, { targetDayNumber: itinerary.days[0]?.dayNumber })
+                            }
+                            disabled={!itinerary.days.length || moveItineraryMutation.isPending}
+                            className="text-xs px-2 py-1 rounded border border-slate-300 disabled:opacity-40"
+                          >
+                            To day 1
+                          </button>
+                          <button
+                            onClick={() => handleRemove(item.id)}
+                            className="text-xs px-2 py-1 rounded border border-red-300 text-red-700"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </div>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-slate-900 mb-3">
-            Expenses
-          </h2>
-          <p className="text-sm text-slate-600 mb-3">
-            Total: {totalExpenses.toFixed(2)}
-          </p>
+          <h2 className="text-lg font-semibold text-slate-900 mb-3">Expenses</h2>
+          <p className="text-sm text-slate-600 mb-3">Total: {totalExpenses.toFixed(2)}</p>
 
           {showExpenseForm ? (
             <form
@@ -357,9 +483,7 @@ export default function TripDetailPage() {
               className="mb-4 p-4 bg-white rounded-lg border border-slate-200 space-y-3"
             >
               {expenseError && (
-                <div className="p-2 rounded-md bg-red-50 text-red-700 text-sm">
-                  {expenseError}
-                </div>
+                <div className="p-2 rounded-md bg-red-50 text-red-700 text-sm">{expenseError}</div>
               )}
               <div className="flex gap-3">
                 <input
