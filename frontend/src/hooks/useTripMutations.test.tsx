@@ -137,4 +137,31 @@ describe('useTripMutations', () => {
     expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: ['trip', 'trip-3'] })
     expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: ['itinerary-v2', 'trip-3'] })
   })
+
+  it('fails fast with clear error when tripId is missing', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    })
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
+
+    const { result } = renderHook(() => useTripMutations({ tripId: undefined }), {
+      wrapper: createWrapper(queryClient),
+    })
+
+    await expect(result.current.deleteTripMutation.mutateAsync()).rejects.toThrow(
+      'tripId is required to perform trip mutations'
+    )
+    await expect(
+      result.current.addItineraryMutation.mutateAsync({
+        placeName: 'Museum',
+        latitude: 1,
+        longitude: 1,
+      })
+    ).rejects.toThrow('tripId is required to perform trip mutations')
+
+    expect(mockDeleteTrip).not.toHaveBeenCalled()
+    expect(mockAddItineraryItem).not.toHaveBeenCalled()
+    expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: ['trip', undefined] })
+    expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: ['itinerary-v2', undefined] })
+  })
 })

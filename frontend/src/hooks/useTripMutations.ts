@@ -16,7 +16,15 @@ interface UseTripMutationsOptions {
 export function useTripMutations({ tripId, onTripDeleted }: UseTripMutationsOptions) {
   const queryClient = useQueryClient()
 
+  function requireTripId() {
+    if (!tripId) {
+      throw new Error('tripId is required to perform trip mutations')
+    }
+    return tripId
+  }
+
   function invalidateTripAndItinerary() {
+    if (!tripId) return Promise.resolve()
     return Promise.all([
       queryClient.invalidateQueries({ queryKey: ['trip', tripId] }),
       queryClient.invalidateQueries({ queryKey: ['itinerary-v2', tripId] }),
@@ -24,7 +32,7 @@ export function useTripMutations({ tripId, onTripDeleted }: UseTripMutationsOpti
   }
 
   const deleteTripMutation = useMutation({
-    mutationFn: () => deleteTrip(tripId!),
+    mutationFn: () => deleteTrip(requireTripId()),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['trips'] })
       onTripDeleted?.()
@@ -33,25 +41,25 @@ export function useTripMutations({ tripId, onTripDeleted }: UseTripMutationsOpti
 
   const updateTripMutation = useMutation({
     mutationFn: (data: { name: string; startDate: string; endDate: string; visibility?: TripVisibility }) =>
-      updateTrip(tripId!, data),
+      updateTrip(requireTripId(), data),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['trip', tripId] })
     },
   })
 
   const addItineraryMutation = useMutation({
-    mutationFn: (data: ItineraryItemV2Request) => addItineraryItem(tripId!, data),
+    mutationFn: (data: ItineraryItemV2Request) => addItineraryItem(requireTripId(), data),
     onSuccess: invalidateTripAndItinerary,
   })
 
   const moveItineraryMutation = useMutation({
     mutationFn: ({ itemId, payload }: { itemId: string; payload: MoveItineraryItemV2Request }) =>
-      moveItineraryItem(tripId!, itemId, payload),
+      moveItineraryItem(requireTripId(), itemId, payload),
     onSuccess: invalidateTripAndItinerary,
   })
 
   const removeItineraryMutation = useMutation({
-    mutationFn: (itemId: string) => deleteItineraryItem(tripId!, itemId),
+    mutationFn: (itemId: string) => deleteItineraryItem(requireTripId(), itemId),
     onSuccess: invalidateTripAndItinerary,
   })
 
