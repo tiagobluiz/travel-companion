@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../../stores/authStore'
-import { deleteTrip, fetchTrip } from '../../../api/trips'
+import { deleteTrip, fetchTrip, updateTrip, type TripVisibility } from '../../../api/trips'
 import {
   addItineraryItem,
   deleteItineraryItem,
@@ -42,7 +42,7 @@ export default function TripDetailPage() {
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
 
-  const canEdit = Boolean(token)
+  const isAuthenticated = Boolean(token)
 
   const [showItineraryForm, setShowItineraryForm] = useState(false)
   const [placeName, setPlaceName] = useState('')
@@ -61,6 +61,11 @@ export default function TripDetailPage() {
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState<TripRole>('VIEWER')
   const [collaboratorError, setCollaboratorError] = useState('')
+  const [tripName, setTripName] = useState('')
+  const [tripStartDate, setTripStartDate] = useState('')
+  const [tripEndDate, setTripEndDate] = useState('')
+  const [tripVisibility, setTripVisibility] = useState<TripVisibility>('PRIVATE')
+  const [tripDetailsError, setTripDetailsError] = useState('')
 
   const { data: trip, isLoading: isTripLoading } = useQuery({
     queryKey: ['trip', id],
@@ -91,7 +96,7 @@ export default function TripDetailPage() {
   } = useQuery({
     queryKey: ['collaborators', id],
     queryFn: () => fetchCollaborators(id!),
-    enabled: !!id && canEdit,
+    enabled: !!id && isAuthenticated,
   })
 
   const deleteTripMutation = useMutation({
@@ -194,6 +199,18 @@ export default function TripDetailPage() {
     },
   })
 
+  const updateTripMutation = useMutation({
+    mutationFn: (data: { name: string; startDate: string; endDate: string; visibility?: TripVisibility }) =>
+      updateTrip(id!, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trip', id] })
+      setTripDetailsError('')
+    },
+    onError: (error: Error) => {
+      setTripDetailsError(error.message || 'Failed to update trip details.')
+    },
+  })
+
   function handleMove(itemId: string, payload: MoveItineraryItemV2Request) {
     setItineraryError('')
     moveItineraryMutation.mutate({ itemId, payload })
@@ -260,6 +277,39 @@ export default function TripDetailPage() {
     inviteMutation.mutate({ email: inviteEmail.trim(), role: inviteRole })
   }
 
+  function handleUpdateTripDetails(e: React.FormEvent, canEditPrivacy: boolean) {
+    e.preventDefault()
+    setTripDetailsError('')
+
+    if (!tripName.trim()) {
+      setTripDetailsError('Trip name is required.')
+      return
+    }
+    if (!tripStartDate || !tripEndDate) {
+      setTripDetailsError('Start date and end date are required.')
+      return
+    }
+    if (tripStartDate > tripEndDate) {
+      setTripDetailsError('Start date must be before or equal to end date.')
+      return
+    }
+
+    updateTripMutation.mutate({
+      name: tripName.trim(),
+      startDate: tripStartDate,
+      endDate: tripEndDate,
+      visibility: canEditPrivacy ? tripVisibility : undefined,
+    })
+  }
+
+  useEffect(() => {
+    if (!trip) return
+    setTripName(trip.name)
+    setTripStartDate(trip.startDate)
+    setTripEndDate(trip.endDate)
+    setTripVisibility((trip.visibility ?? 'PRIVATE') as TripVisibility)
+  }, [trip])
+
   const totalExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0)
 
   if (!id) return null
@@ -273,7 +323,16 @@ export default function TripDetailPage() {
 
   const myRole = collaborators?.memberships.find((member) => member.userId === user?.id)?.role
   const isOwner = myRole === 'OWNER'
+  const isEditor = myRole === 'EDITOR'
   const isMember = Boolean(myRole)
+  const isPendingInvitee = Boolean(
+    collaborators?.invites.some(
+      (invite) => invite.status === 'PENDING' && invite.email.toLowerCase() === user?.email?.toLowerCase()
+    )
+  )
+  const canEditTripDetails = isOwner || isEditor
+  const canEditPrivacy = isOwner
+  const canEditPlanning = isOwner || isEditor || isPendingInvitee
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -287,7 +346,7 @@ export default function TripDetailPage() {
           </div>
           <div className="flex items-center gap-3">
             <span className="text-sm text-slate-600">{user?.displayName ?? 'Guest'}</span>
-            {canEdit && (
+            {isAuthenticated && (
               <button onClick={logout} className="text-sm text-primary-600 hover:underline">
                 Sign out
               </button>
@@ -297,9 +356,73 @@ export default function TripDetailPage() {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-8">
-        <div className="mb-6 text-sm text-slate-500">
-          {trip.startDate} - {trip.endDate}
-        </div>
+        <section className="mb-8 p-4 bg-white rounded-lg border border-slate-200 space-y-3">
+          <h2 className="text-lg font-semibold text-slate-900">Trip details</h2>
+          {tripDetailsError && (
+            <div className="p-2 rounded-md bg-red-50 text-red-700 text-sm">{tripDetailsError}</div>
+          )}
+          {canEditTripDetails ? (
+            <form onSubmit={(e) => handleUpdateTripDetails(e, canEditPrivacy)} className="space-y-3">
+              <input
+                type="text"
+                placeholder="Trip name"
+                value={tripName}
+                onChange={(e) => setTripName(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
+                required
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input
+                  type="date"
+                  value={tripStartDate}
+                  onChange={(e) => setTripStartDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
+                  required
+                />
+                <input
+                  type="date"
+                  value={tripEndDate}
+                  onChange={(e) => setTripEndDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="trip-visibility" className="block text-xs text-slate-500">
+                  Privacy
+                </label>
+                <select
+                  id="trip-visibility"
+                  value={tripVisibility}
+                  onChange={(e) => setTripVisibility(e.target.value as TripVisibility)}
+                  disabled={!canEditPrivacy}
+                  className="px-3 py-2 border border-slate-300 rounded-lg bg-white disabled:opacity-60"
+                >
+                  <option value="PRIVATE">Private</option>
+                  <option value="PUBLIC">Public</option>
+                </select>
+                {!canEditPrivacy && (
+                  <p className="text-xs text-slate-500">Only owners can change privacy.</p>
+                )}
+              </div>
+              <button
+                type="submit"
+                disabled={updateTripMutation.isPending}
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
+              >
+                Save details
+              </button>
+            </form>
+          ) : (
+            <div className="text-sm text-slate-600 space-y-1">
+              <p>{trip.name}</p>
+              <p>
+                {trip.startDate} - {trip.endDate}
+              </p>
+              <p>Privacy: {trip.visibility ?? 'PRIVATE'}</p>
+            </div>
+          )}
+        </section>
 
         <section className="mb-10">
           <h2 className="text-lg font-semibold text-slate-900 mb-3">Itinerary</h2>
@@ -312,7 +435,7 @@ export default function TripDetailPage() {
             <div className="mb-4 p-2 rounded-md bg-red-50 text-red-700 text-sm">{itineraryError}</div>
           )}
 
-          {canEdit && showItineraryForm && (
+          {canEditPlanning && showItineraryForm && (
             <form
               onSubmit={handleAddItinerary}
               className="mb-4 p-4 bg-white rounded-lg border border-slate-200 space-y-3"
@@ -383,7 +506,7 @@ export default function TripDetailPage() {
             </form>
           )}
 
-          {canEdit && !showItineraryForm && (
+          {canEditPlanning && !showItineraryForm && (
             <button
               onClick={() => setShowItineraryForm(true)}
               className="mb-4 text-sm text-primary-600 hover:underline"
@@ -391,8 +514,10 @@ export default function TripDetailPage() {
               + Add place
             </button>
           )}
-          {!canEdit && (
-            <p className="mb-4 text-sm text-slate-500">Read-only itinerary view for anonymous users.</p>
+          {!canEditPlanning && (
+            <p className="mb-4 text-sm text-slate-500">
+              Read-only itinerary view. Editors/owners (and pending invitees) can plan items.
+            </p>
           )}
 
           <div className="space-y-4">
@@ -414,7 +539,7 @@ export default function TripDetailPage() {
                           <p className="font-medium">{item.placeName}</p>
                           {item.notes && <p className="text-sm text-slate-600">{item.notes}</p>}
                         </div>
-                        {canEdit && (
+                        {canEditPlanning && (
                           <div className="flex flex-wrap items-start gap-2">
                             <button
                               onClick={() =>
@@ -503,7 +628,7 @@ export default function TripDetailPage() {
                         <p className="font-medium">{item.placeName}</p>
                         {item.notes && <p className="text-sm text-slate-600">{item.notes}</p>}
                       </div>
-                      {canEdit && (
+                      {canEditPlanning && (
                         <div className="flex flex-wrap items-start gap-2">
                           <button
                             onClick={() =>
@@ -557,7 +682,7 @@ export default function TripDetailPage() {
 
         <section className="mb-10">
           <h2 className="text-lg font-semibold text-slate-900 mb-3">Collaborators</h2>
-          {canEdit ? (
+          {isAuthenticated ? (
             <>
               {collaboratorsLoadError && (
                 <div className="mb-4 p-2 rounded-md bg-red-50 text-red-700 text-sm">
@@ -722,7 +847,7 @@ export default function TripDetailPage() {
           <h2 className="text-lg font-semibold text-slate-900 mb-3">Expenses</h2>
           <p className="text-sm text-slate-600 mb-3">Total: {totalExpenses.toFixed(2)}</p>
 
-          {showExpenseForm ? (
+          {canEditPlanning && showExpenseForm ? (
             <form
               onSubmit={handleAddExpense}
               className="mb-4 p-4 bg-white rounded-lg border border-slate-200 space-y-3"
@@ -784,13 +909,17 @@ export default function TripDetailPage() {
                 </button>
               </div>
             </form>
-          ) : (
+          ) : canEditPlanning ? (
             <button
               onClick={() => setShowExpenseForm(true)}
               className="mb-4 text-sm text-primary-600 hover:underline"
             >
               + Add expense
             </button>
+          ) : (
+            <p className="mb-4 text-sm text-slate-500">
+              Read-only expenses view. Editors/owners (and pending invitees) can add expenses.
+            </p>
           )}
 
           {expenses.length === 0 ? (
@@ -811,27 +940,31 @@ export default function TripDetailPage() {
                     )}
                     <span className="text-xs text-slate-400">{expense.date}</span>
                   </div>
-                  <button
-                    onClick={() => deleteExpenseMutation.mutate(expense.id)}
-                    className="text-red-600 text-sm hover:underline"
-                  >
-                    Remove
-                  </button>
+                  {canEditPlanning && (
+                    <button
+                      onClick={() => deleteExpenseMutation.mutate(expense.id)}
+                      className="text-red-600 text-sm hover:underline"
+                    >
+                      Remove
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
           )}
         </section>
 
-        <div className="mt-10 pt-6 border-t border-slate-200">
-          <button
-            onClick={() => deleteTripMutation.mutate()}
-            disabled={deleteTripMutation.isPending}
-            className="text-red-600 text-sm hover:underline disabled:opacity-50"
-          >
-            Delete trip
-          </button>
-        </div>
+        {isOwner && (
+          <div className="mt-10 pt-6 border-t border-slate-200">
+            <button
+              onClick={() => deleteTripMutation.mutate()}
+              disabled={deleteTripMutation.isPending}
+              className="text-red-600 text-sm hover:underline disabled:opacity-50"
+            >
+              Delete trip
+            </button>
+          </div>
+        )}
       </main>
     </div>
   )

@@ -1,11 +1,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import TripDetailPage from './TripDetailPage'
 
 const mockFetchTrip = vi.fn()
 const mockDeleteTrip = vi.fn()
+const mockUpdateTrip = vi.fn()
 const mockFetchItineraryV2 = vi.fn()
 const mockAddItineraryItem = vi.fn()
 const mockMoveItineraryItem = vi.fn()
@@ -28,6 +29,7 @@ let authState: {
 vi.mock('../../../api/trips', () => ({
   fetchTrip: (...args: unknown[]) => mockFetchTrip(...args),
   deleteTrip: (...args: unknown[]) => mockDeleteTrip(...args),
+  updateTrip: (...args: unknown[]) => mockUpdateTrip(...args),
 }))
 
 vi.mock('../../../api/itinerary', () => ({
@@ -79,6 +81,7 @@ const baseTrip = {
   name: 'Paris',
   startDate: '2026-01-01',
   endDate: '2026-01-03',
+  visibility: 'PRIVATE',
   itineraryItems: [],
   createdAt: '2026-01-01T00:00:00Z',
 }
@@ -154,6 +157,7 @@ describe('TripDetailPage', () => {
     mockDeleteItineraryItem.mockResolvedValue(itineraryWithItems)
     mockAddItineraryItem.mockResolvedValue(itineraryWithItems)
     mockFetchCollaborators.mockResolvedValue(collaboratorsData)
+    mockUpdateTrip.mockResolvedValue(baseTrip)
     mockInviteMember.mockResolvedValue(collaboratorsData)
     mockRespondInvite.mockResolvedValue(collaboratorsData)
     mockRemoveInvite.mockResolvedValue(collaboratorsData)
@@ -192,12 +196,82 @@ describe('TripDetailPage', () => {
     }
 
     renderPage()
-    await screen.findByText('Read-only itinerary view for anonymous users.')
+    await screen.findByText('Read-only itinerary view. Editors/owners (and pending invitees) can plan items.')
 
     expect(screen.queryByText('+ Add place')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Move up' })).not.toBeInTheDocument()
     expect(screen.getByText('Sign in to manage collaborators and invites.')).toBeInTheDocument()
     expect(mockFetchCollaborators).not.toHaveBeenCalled()
+  })
+
+  it('owner can edit trip details including privacy (permission matrix)', async () => {
+    renderPage()
+    const tripDetailsHeading = await screen.findByRole('heading', { name: 'Trip details' })
+    const tripDetailsSection = tripDetailsHeading.closest('section')
+    expect(tripDetailsSection).not.toBeNull()
+    const tripDetails = within(tripDetailsSection!)
+    await tripDetails.findByRole('button', { name: 'Save details' })
+
+    fireEvent.change(tripDetails.getByPlaceholderText('Trip name'), { target: { value: 'Paris Updated' } })
+    fireEvent.change(tripDetails.getByDisplayValue('2026-01-01'), { target: { value: '2026-01-02' } })
+    fireEvent.change(tripDetails.getByDisplayValue('2026-01-03'), { target: { value: '2026-01-04' } })
+    fireEvent.change(tripDetails.getByLabelText('Privacy'), { target: { value: 'PUBLIC' } })
+    fireEvent.click(tripDetails.getByRole('button', { name: 'Save details' }))
+
+    await waitFor(() => {
+      expect(mockUpdateTrip).toHaveBeenCalledWith('trip-1', {
+        name: 'Paris Updated',
+        startDate: '2026-01-02',
+        endDate: '2026-01-04',
+        visibility: 'PUBLIC',
+      })
+    })
+  })
+
+  it('editor can edit non-privacy fields but cannot edit privacy (permission matrix)', async () => {
+    authState = {
+      token: 'token-1',
+      user: { displayName: 'Editor', email: 'editor@example.com', id: 'user-editor' },
+      logout: vi.fn(),
+    }
+    renderPage()
+    const tripDetailsHeading = await screen.findByRole('heading', { name: 'Trip details' })
+    const tripDetailsSection = tripDetailsHeading.closest('section')
+    expect(tripDetailsSection).not.toBeNull()
+    const tripDetails = within(tripDetailsSection!)
+    await tripDetails.findByRole('button', { name: 'Save details' })
+
+    const privacySelect = tripDetails.getByLabelText('Privacy')
+    expect(privacySelect).toBeDisabled()
+
+    fireEvent.change(tripDetails.getByPlaceholderText('Trip name'), { target: { value: 'Editor Updated' } })
+    fireEvent.click(tripDetails.getByRole('button', { name: 'Save details' }))
+
+    await waitFor(() => {
+      expect(mockUpdateTrip).toHaveBeenCalledWith('trip-1', {
+        name: 'Editor Updated',
+        startDate: '2026-01-01',
+        endDate: '2026-01-03',
+        visibility: undefined,
+      })
+    })
+  })
+
+  it('viewer gets read-only trip details and no save action (permission matrix)', async () => {
+    authState = {
+      token: 'token-1',
+      user: { displayName: 'Viewer', email: 'viewer@example.com', id: 'user-viewer' },
+      logout: vi.fn(),
+    }
+    mockFetchCollaborators.mockResolvedValue({
+      memberships: [{ userId: 'user-viewer', role: 'VIEWER' as const }],
+      invites: [],
+    })
+
+    renderPage()
+    expect(await screen.findByText('Trip details')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Save details' })).not.toBeInTheDocument()
+    expect(screen.getByText('Privacy: PRIVATE')).toBeInTheDocument()
   })
 
   it('validates itinerary date range before mutation (validation failure)', async () => {
@@ -208,14 +282,14 @@ describe('TripDetailPage', () => {
     fireEvent.change(screen.getByPlaceholderText('Place or activity'), {
       target: { value: 'Notre Dame' },
     })
-    const dateInput = document.querySelector('input[type="date"]')
+    const dateInput = document.querySelector('input[type="date"][min="2026-01-01"][max="2026-01-03"]')
     expect(dateInput).not.toBeNull()
     fireEvent.change(dateInput!, {
       target: { value: '2026-01-08' },
     })
     fireEvent.change(screen.getByPlaceholderText('Latitude'), { target: { value: '1' } })
     fireEvent.change(screen.getByPlaceholderText('Longitude'), { target: { value: '1' } })
-    const itineraryForm = document.querySelector('form')
+    const itineraryForm = screen.getByPlaceholderText('Place or activity').closest('form')
     expect(itineraryForm).not.toBeNull()
     fireEvent.submit(itineraryForm!)
 

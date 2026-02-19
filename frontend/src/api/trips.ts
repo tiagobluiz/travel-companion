@@ -5,9 +5,12 @@ export interface Trip {
   name: string
   startDate: string
   endDate: string
+  visibility: TripVisibility
   itineraryItems: ItineraryItem[]
   createdAt: string
 }
+
+export type TripVisibility = 'PUBLIC' | 'PRIVATE'
 
 export interface ItineraryItem {
   placeName: string
@@ -21,6 +24,7 @@ export interface CreateTripRequest {
   name: string
   startDate: string
   endDate: string
+  visibility?: TripVisibility
 }
 
 export async function fetchTrips() {
@@ -35,7 +39,9 @@ export async function createTrip(data: CreateTripRequest) {
   return api.post<Trip>('/trips', data)
 }
 
-export async function updateTrip(id: string, data: Partial<CreateTripRequest>) {
+export type UpdateTripRequest = Partial<CreateTripRequest>
+
+export async function updateTrip(id: string, data: UpdateTripRequest) {
   return api.put<Trip>(`/trips/${id}`, data)
 }
 
