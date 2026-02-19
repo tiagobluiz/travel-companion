@@ -1,5 +1,6 @@
 import type { FormEvent } from 'react'
 import type { CollaboratorsResponse, TripRole } from '../../../../api/collaborators'
+import { getErrorMessage } from '../../../../utils/getErrorMessage'
 
 interface CollaboratorsSectionProps {
   isAuthenticated: boolean
@@ -48,12 +49,10 @@ export function CollaboratorsSection({
   onRevokeInvite,
   onLeaveTrip,
 }: CollaboratorsSectionProps) {
-  const collaboratorsLoadErrorText =
-    collaboratorsLoadError instanceof Error
-      ? collaboratorsLoadError.message
-      : typeof collaboratorsLoadError === 'string'
-        ? collaboratorsLoadError
-        : 'Failed to load collaborators.'
+  const collaboratorsLoadErrorText = getErrorMessage(
+    collaboratorsLoadError,
+    'Failed to load collaborators.'
+  )
 
   return (
     <section className="mb-10">

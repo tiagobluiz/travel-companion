@@ -19,6 +19,7 @@ import {
   type TripRole,
 } from '../../../api/collaborators'
 import { useTripDetailData } from '../../../hooks/useTripDetailData'
+import { getErrorMessage } from '../../../utils/getErrorMessage'
 import { CollaboratorsSection } from './detail/CollaboratorsSection'
 import { ExpensesSection } from './detail/ExpensesSection'
 import { ItinerarySection } from './detail/ItinerarySection'
@@ -69,6 +70,7 @@ export default function TripDetailPage() {
   const {
     trip,
     isTripLoading,
+    tripLoadError,
     itinerary,
     isItineraryLoading,
     itineraryLoadError,
@@ -295,6 +297,19 @@ export default function TripDetailPage() {
   }, 0)
 
   if (!id) return null
+  if (tripLoadError || itineraryLoadError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="max-w-md w-full p-4 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">
+          {getErrorMessage(
+            tripLoadError ?? itineraryLoadError,
+            'Failed to load trip details.'
+          )}
+        </div>
+      </div>
+    )
+  }
+
   if (isTripLoading || isItineraryLoading || !trip || !itinerary) {
     return (
       <div className="min-h-screen flex items-center justify-center">
