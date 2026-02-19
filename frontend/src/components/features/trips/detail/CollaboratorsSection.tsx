@@ -48,6 +48,13 @@ export function CollaboratorsSection({
   onRevokeInvite,
   onLeaveTrip,
 }: CollaboratorsSectionProps) {
+  const collaboratorsLoadErrorText =
+    collaboratorsLoadError instanceof Error
+      ? collaboratorsLoadError.message
+      : typeof collaboratorsLoadError === 'string'
+        ? collaboratorsLoadError
+        : 'Failed to load collaborators.'
+
   return (
     <section className="mb-10">
       <h2 className="text-lg font-semibold text-slate-900 mb-3">Collaborators</h2>
@@ -55,7 +62,7 @@ export function CollaboratorsSection({
         <>
           {Boolean(collaboratorsLoadError) && (
             <div className="mb-4 p-2 rounded-md bg-red-50 text-red-700 text-sm">
-              {(collaboratorsLoadError as Error).message || 'Failed to load collaborators.'}
+              {collaboratorsLoadErrorText}
             </div>
           )}
           {collaboratorError && (
