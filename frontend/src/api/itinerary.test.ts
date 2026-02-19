@@ -2,9 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthStore } from '../stores/authStore'
 import {
   addItineraryItem,
-  deleteItineraryItem,
+  deleteItineraryItemV2,
   fetchItineraryV2,
-  moveItineraryItem,
+  moveItineraryItemV2,
+  updateItineraryItemV2,
 } from './itinerary'
 
 function jsonResponse(body: unknown, status = 200) {
@@ -100,7 +101,7 @@ describe('itinerary api v2', () => {
     )
     vi.stubGlobal('fetch', fetchMock)
 
-    await moveItineraryItem('trip-5', 'item-2', {
+    await moveItineraryItemV2('trip-5', 'item-2', {
       targetDayNumber: 3,
       beforeItemId: 'item-7',
       afterItemId: 'item-6',
@@ -122,6 +123,31 @@ describe('itinerary api v2', () => {
     expect(payload.afterItemId).toBe('item-6')
   })
 
+  it('puts update payload to v2 item route', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      jsonResponse({
+        days: [],
+        placesToVisit: { label: 'Places To Visit', items: [] },
+      })
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await updateItineraryItemV2('trip-3', 'item-9', {
+      placeName: 'Cafe',
+      notes: 'Lunch',
+      latitude: 48.85,
+      longitude: 2.35,
+      dayNumber: 2,
+    })
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/trips/trip-3/itinerary/v2/items/item-9',
+      expect.objectContaining({
+        method: 'PUT',
+      })
+    )
+  })
+
   it('deletes by item id path (regression: no index route)', async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(
       jsonResponse({
@@ -131,7 +157,7 @@ describe('itinerary api v2', () => {
     )
     vi.stubGlobal('fetch', fetchMock)
 
-    await deleteItineraryItem('trip-9', 'item-42')
+    await deleteItineraryItemV2('trip-9', 'item-42')
 
     expect(fetchMock).toHaveBeenCalledWith(
       '/trips/trip-9/itinerary/v2/items/item-42',
@@ -145,7 +171,7 @@ describe('itinerary api v2', () => {
     )
     vi.stubGlobal('fetch', fetchMock)
 
-    await expect(deleteItineraryItem('trip-1', 'item-1')).rejects.toThrow(
+    await expect(deleteItineraryItemV2('trip-1', 'item-1')).rejects.toThrow(
       'Internal Server Error'
     )
   })
