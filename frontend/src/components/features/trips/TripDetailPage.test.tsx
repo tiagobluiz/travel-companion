@@ -315,6 +315,14 @@ describe('TripDetailPage', () => {
     expect(screen.getByText('Loading...')).toBeInTheDocument()
   })
 
+  it('shows explicit error when trip query fails (error state)', async () => {
+    mockFetchTrip.mockRejectedValueOnce(new Error('Trip not found'))
+
+    renderPage()
+
+    expect(await screen.findByText('Trip not found')).toBeInTheDocument()
+  })
+
   it('renders empty day and places containers (empty state)', async () => {
     mockFetchItineraryV2.mockResolvedValue({
       days: [{ dayNumber: 1, date: '2026-01-01', items: [] }],
