@@ -5,8 +5,9 @@ import { useAuthStore } from '../../../stores/authStore'
 import { fetchTrip, deleteTrip } from '../../../api/trips'
 import {
   addItineraryItem,
+  fetchItineraryV2,
   deleteItineraryItem,
-  type ItineraryItemRequest,
+  type ItineraryItemV2Request,
 } from '../../../api/itinerary'
 import {
   fetchExpenses,
@@ -15,6 +16,14 @@ import {
   type CreateExpenseRequest,
 } from '../../../api/expenses'
 import { useState } from 'react'
+
+function toDayNumber(date: string, startDate: string) {
+  const [year, month, day] = date.split('-').map(Number)
+  const [startYear, startMonth, startDay] = startDate.split('-').map(Number)
+  const selectedUtc = Date.UTC(year, month - 1, day)
+  const startUtc = Date.UTC(startYear, startMonth - 1, startDay)
+  return Math.floor((selectedUtc - startUtc) / 86_400_000) + 1
+}
 
 export default function TripDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -43,6 +52,12 @@ export default function TripDetailPage() {
     enabled: !!id,
   })
 
+  const { data: itinerary, isLoading: isItineraryLoading } = useQuery({
+    queryKey: ['itinerary-v2', id],
+    queryFn: () => fetchItineraryV2(id!),
+    enabled: !!id,
+  })
+
   const { data: expenses = [] } = useQuery({
     queryKey: ['expenses', id],
     queryFn: () => fetchExpenses(id!),
@@ -58,9 +73,9 @@ export default function TripDetailPage() {
   })
 
   const addItineraryMutation = useMutation({
-    mutationFn: (data: ItineraryItemRequest) => addItineraryItem(id!, data),
+    mutationFn: (data: ItineraryItemV2Request) => addItineraryItem(id!, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['trip', id] })
+      queryClient.invalidateQueries({ queryKey: ['itinerary-v2', id] })
       setShowItineraryForm(false)
       setPlaceName('')
       setItemDate('')
@@ -103,12 +118,13 @@ export default function TripDetailPage() {
       setItineraryError(`Date must be between ${trip.startDate} and ${trip.endDate}.`)
       return
     }
+    const dayNumber = toDayNumber(itemDate, trip.startDate)
     addItineraryMutation.mutate({
       placeName: placeName.trim(),
-      date: itemDate,
       notes: itemNotes || undefined,
       latitude: lat,
       longitude: lng,
+      dayNumber,
     })
   }
 
@@ -137,13 +153,34 @@ export default function TripDetailPage() {
   )
 
   if (!id) return null
-  if (isLoading || !trip) {
+  if (isLoading || isItineraryLoading || !trip || !itinerary) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p className="text-slate-600">Loading...</p>
       </div>
     )
   }
+
+  const itineraryRows = [
+    ...itinerary.days.flatMap((day) =>
+      day.items.map((item) => ({
+        id: item.id,
+        placeName: item.placeName,
+        notes: item.notes,
+        latitude: item.latitude,
+        longitude: item.longitude,
+        containerLabel: day.date,
+      }))
+    ),
+    ...itinerary.placesToVisit.items.map((item) => ({
+      id: item.id,
+      placeName: item.placeName,
+      notes: item.notes,
+      latitude: item.latitude,
+      longitude: item.longitude,
+      containerLabel: itinerary.placesToVisit.label,
+    })),
+  ]
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -269,19 +306,19 @@ export default function TripDetailPage() {
             </button>
           )}
 
-          {trip.itineraryItems.length === 0 ? (
+          {itineraryRows.length === 0 ? (
             <p className="text-slate-500 text-sm">No itinerary items yet.</p>
           ) : (
             <ul className="space-y-2">
-              {trip.itineraryItems.map((item, idx) => (
+              {itineraryRows.map((item) => (
                 <li
-                  key={idx}
+                  key={item.id}
                   className="p-3 bg-white rounded-lg border border-slate-200 flex justify-between items-center"
                 >
                   <div>
                     <span className="font-medium">{item.placeName}</span>
                     <span className="text-slate-500 text-sm ml-2">
-                      {item.date}
+                      {item.containerLabel}
                     </span>
                     {item.notes && (
                       <p className="text-sm text-slate-500 mt-1">{item.notes}</p>
@@ -292,8 +329,8 @@ export default function TripDetailPage() {
                   </div>
                   <button
                     onClick={() =>
-                      deleteItineraryItem(id, idx).then(() =>
-                        queryClient.invalidateQueries({ queryKey: ['trip', id] })
+                      deleteItineraryItem(id, item.id).then(() =>
+                        queryClient.invalidateQueries({ queryKey: ['itinerary-v2', id] })
                       )
                     }
                     className="text-red-600 text-sm hover:underline"
