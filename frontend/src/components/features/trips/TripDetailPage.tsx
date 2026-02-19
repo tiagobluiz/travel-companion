@@ -2,12 +2,8 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../../stores/authStore'
-import { deleteTrip, updateTrip, type TripVisibility } from '../../../api/trips'
+import { type TripVisibility } from '../../../api/trips'
 import {
-  addItineraryItem,
-  deleteItineraryItem,
-  moveItineraryItem,
-  type ItineraryItemV2Request,
   type MoveItineraryItemV2Request,
 } from '../../../api/itinerary'
 import { createExpense, deleteExpense, type CreateExpenseRequest } from '../../../api/expenses'
@@ -19,6 +15,7 @@ import {
   type TripRole,
 } from '../../../api/collaborators'
 import { useTripDetailData } from '../../../hooks/useTripDetailData'
+import { useTripMutations } from '../../../hooks/useTripMutations'
 import { getErrorMessage } from '../../../utils/getErrorMessage'
 import { CollaboratorsSection } from './detail/CollaboratorsSection'
 import { ExpensesSection } from './detail/ExpensesSection'
@@ -80,38 +77,16 @@ export default function TripDetailPage() {
     collaboratorsLoadError,
   } = useTripDetailData({ id, isAuthenticated })
 
-  const deleteTripMutation = useMutation({
-    mutationFn: () => deleteTrip(id!),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['trips'] })
+  const {
+    deleteTripMutation,
+    updateTripMutation,
+    addItineraryMutation,
+    moveItineraryMutation,
+    removeItineraryMutation,
+  } = useTripMutations({
+    tripId: id,
+    onTripDeleted: () => {
       navigate('/')
-    },
-  })
-
-  const addItineraryMutation = useMutation({
-    mutationFn: (data: ItineraryItemV2Request) => addItineraryItem(id!, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['itinerary-v2', id] })
-      setShowItineraryForm(false)
-      setPlaceName('')
-      setItemDate('')
-      setItemNotes('')
-      setItemLatitude('')
-      setItemLongitude('')
-    },
-    onError: (error: Error) => {
-      setItineraryError(error.message || 'Failed to add itinerary item.')
-    },
-  })
-
-  const moveItineraryMutation = useMutation({
-    mutationFn: ({ itemId, payload }: { itemId: string; payload: MoveItineraryItemV2Request }) =>
-      moveItineraryItem(id!, itemId, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['itinerary-v2', id] })
-    },
-    onError: (error: Error) => {
-      setItineraryError(error.message || 'Failed to move itinerary item.')
     },
   })
 
@@ -180,30 +155,25 @@ export default function TripDetailPage() {
     },
   })
 
-  const updateTripMutation = useMutation({
-    mutationFn: (data: { name: string; startDate: string; endDate: string; visibility?: TripVisibility }) =>
-      updateTrip(id!, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['trip', id] })
-      setTripDetailsError('')
-    },
-    onError: (error: Error) => {
-      setTripDetailsError(error.message || 'Failed to update trip details.')
-    },
-  })
-
   function handleMove(itemId: string, payload: MoveItineraryItemV2Request) {
     setItineraryError('')
-    moveItineraryMutation.mutate({ itemId, payload })
+    moveItineraryMutation.mutate(
+      { itemId, payload },
+      {
+        onError: (error: Error) => {
+          setItineraryError(error.message || 'Failed to move itinerary item.')
+        },
+      }
+    )
   }
 
   function handleRemove(itemId: string) {
     setItineraryError('')
-    deleteItineraryItem(id!, itemId)
-      .then(() => queryClient.invalidateQueries({ queryKey: ['itinerary-v2', id] }))
-      .catch((error: Error) => {
+    removeItineraryMutation.mutate(itemId, {
+      onError: (error: Error) => {
         setItineraryError(error.message || 'Failed to remove itinerary item.')
-      })
+      },
+    })
   }
 
   function handleAddItinerary(e: FormEvent<HTMLFormElement>) {
@@ -221,13 +191,28 @@ export default function TripDetailPage() {
       return
     }
 
-    addItineraryMutation.mutate({
-      placeName: placeName.trim(),
-      notes: itemNotes || undefined,
-      latitude: lat,
-      longitude: lng,
-      dayNumber: toDayNumber(itemDate, trip.startDate),
-    })
+    addItineraryMutation.mutate(
+      {
+        placeName: placeName.trim(),
+        notes: itemNotes || undefined,
+        latitude: lat,
+        longitude: lng,
+        dayNumber: toDayNumber(itemDate, trip.startDate),
+      },
+      {
+        onSuccess: () => {
+          setShowItineraryForm(false)
+          setPlaceName('')
+          setItemDate('')
+          setItemNotes('')
+          setItemLatitude('')
+          setItemLongitude('')
+        },
+        onError: (error: Error) => {
+          setItineraryError(error.message || 'Failed to add itinerary item.')
+        },
+      }
+    )
   }
 
   function handleAddExpense(e: FormEvent<HTMLFormElement>) {
@@ -275,12 +260,22 @@ export default function TripDetailPage() {
       return
     }
 
-    updateTripMutation.mutate({
-      name: tripName.trim(),
-      startDate: tripStartDate,
-      endDate: tripEndDate,
-      visibility: canEditPrivacy ? tripVisibility : undefined,
-    })
+    updateTripMutation.mutate(
+      {
+        name: tripName.trim(),
+        startDate: tripStartDate,
+        endDate: tripEndDate,
+        visibility: canEditPrivacy ? tripVisibility : undefined,
+      },
+      {
+        onSuccess: () => {
+          setTripDetailsError('')
+        },
+        onError: (error: Error) => {
+          setTripDetailsError(error.message || 'Failed to update trip details.')
+        },
+      }
+    )
   }
 
   useEffect(() => {
