@@ -17,6 +17,14 @@ import {
   fetchExpenses,
   type CreateExpenseRequest,
 } from '../../../api/expenses'
+import {
+  fetchCollaborators,
+  inviteMember,
+  leaveTrip,
+  removeInvite,
+  respondInvite,
+  type TripRole,
+} from '../../../api/collaborators'
 
 function toDayNumber(date: string, startDate: string) {
   const [year, month, day] = date.split('-').map(Number)
@@ -50,6 +58,9 @@ export default function TripDetailPage() {
   const [expenseDesc, setExpenseDesc] = useState('')
   const [expenseDate, setExpenseDate] = useState('')
   const [expenseError, setExpenseError] = useState('')
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteRole, setInviteRole] = useState<TripRole>('VIEWER')
+  const [collaboratorError, setCollaboratorError] = useState('')
 
   const { data: trip, isLoading: isTripLoading } = useQuery({
     queryKey: ['trip', id],
@@ -71,6 +82,15 @@ export default function TripDetailPage() {
     queryKey: ['expenses', id],
     queryFn: () => fetchExpenses(id!),
     enabled: !!id,
+  })
+
+  const {
+    data: collaborators,
+    isLoading: isCollaboratorsLoading,
+  } = useQuery({
+    queryKey: ['collaborators', id],
+    queryFn: () => fetchCollaborators(id!),
+    enabled: !!id && canEdit,
   })
 
   const deleteTripMutation = useMutation({
@@ -123,6 +143,49 @@ export default function TripDetailPage() {
     mutationFn: (expenseId: string) => deleteExpense(id!, expenseId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses', id] })
+    },
+  })
+
+  const inviteMutation = useMutation({
+    mutationFn: ({ email, role }: { email: string; role: TripRole }) => inviteMember(id!, { email, role }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['collaborators', id] })
+      setInviteEmail('')
+      setInviteRole('VIEWER')
+    },
+    onError: (error: Error) => {
+      setCollaboratorError(error.message || 'Failed to invite collaborator.')
+    },
+  })
+
+  const respondInviteMutation = useMutation({
+    mutationFn: (accept: boolean) => respondInvite(id!, { accept }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['collaborators', id] })
+    },
+    onError: (error: Error) => {
+      setCollaboratorError(error.message || 'Failed to respond to invite.')
+    },
+  })
+
+  const revokeInviteMutation = useMutation({
+    mutationFn: (email: string) => removeInvite(id!, email),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['collaborators', id] })
+    },
+    onError: (error: Error) => {
+      setCollaboratorError(error.message || 'Failed to revoke invite.')
+    },
+  })
+
+  const leaveTripMutation = useMutation({
+    mutationFn: () => leaveTrip(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trips'] })
+      navigate('/')
+    },
+    onError: (error: Error) => {
+      setCollaboratorError(error.message || 'Failed to leave trip.')
     },
   })
 
@@ -182,6 +245,16 @@ export default function TripDetailPage() {
     })
   }
 
+  function handleInviteSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setCollaboratorError('')
+    if (!inviteEmail.trim()) {
+      setCollaboratorError('Invite email is required.')
+      return
+    }
+    inviteMutation.mutate({ email: inviteEmail.trim(), role: inviteRole })
+  }
+
   const totalExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0)
 
   if (!id) return null
@@ -192,6 +265,10 @@ export default function TripDetailPage() {
       </div>
     )
   }
+
+  const myRole = collaborators?.memberships.find((member) => member.userId === user?.id)?.role
+  const isOwner = myRole === 'OWNER'
+  const isMember = Boolean(myRole)
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -471,6 +548,152 @@ export default function TripDetailPage() {
               )}
             </section>
           </div>
+        </section>
+
+        <section className="mb-10">
+          <h2 className="text-lg font-semibold text-slate-900 mb-3">Collaborators</h2>
+          {canEdit ? (
+            <>
+              {collaboratorError && (
+                <div className="mb-4 p-2 rounded-md bg-red-50 text-red-700 text-sm">{collaboratorError}</div>
+              )}
+              {isCollaboratorsLoading ? (
+                <p className="text-slate-500 text-sm">Loading collaborators...</p>
+              ) : (
+                <>
+                  <div className="mb-4 p-4 bg-white rounded-lg border border-slate-200">
+                    <h3 className="font-semibold text-slate-900 mb-3">Members</h3>
+                    {!collaborators?.memberships.length ? (
+                      <p className="text-slate-500 text-sm">No collaborators yet.</p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {collaborators.memberships.map((member) => (
+                          <li
+                            key={member.userId}
+                            className="flex items-center justify-between p-2 rounded-md bg-slate-50"
+                          >
+                            <span className="text-sm text-slate-700">{member.userId}</span>
+                            <span className="text-xs px-2 py-1 rounded bg-slate-200 text-slate-700">
+                              {member.role}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  <div className="mb-4 p-4 bg-white rounded-lg border border-slate-200">
+                    <h3 className="font-semibold text-slate-900 mb-3">Invites</h3>
+                    {!collaborators?.invites.length ? (
+                      <p className="text-slate-500 text-sm">No invites yet.</p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {collaborators.invites.map((invite) => {
+                          const isMyInvite =
+                            user?.email?.toLowerCase() === invite.email.toLowerCase() &&
+                            invite.status === 'PENDING'
+                          return (
+                            <li
+                              key={`${invite.email}-${invite.status}`}
+                              className="p-2 rounded-md bg-slate-50 flex flex-wrap items-center justify-between gap-2"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-slate-700">{invite.email}</span>
+                                <span className="text-xs px-2 py-1 rounded bg-slate-200 text-slate-700">
+                                  {invite.role}
+                                </span>
+                                <span
+                                  className={`text-xs px-2 py-1 rounded ${
+                                    invite.status === 'DECLINED'
+                                      ? 'bg-rose-100 text-rose-700'
+                                      : 'bg-amber-100 text-amber-700'
+                                  }`}
+                                >
+                                  {invite.status}
+                                </span>
+                              </div>
+                              <div className="flex gap-2">
+                                {isMyInvite && (
+                                  <>
+                                    <button
+                                      onClick={() => respondInviteMutation.mutate(true)}
+                                      className="text-xs px-2 py-1 rounded border border-emerald-300 text-emerald-700"
+                                    >
+                                      Accept
+                                    </button>
+                                    <button
+                                      onClick={() => respondInviteMutation.mutate(false)}
+                                      className="text-xs px-2 py-1 rounded border border-amber-300 text-amber-700"
+                                    >
+                                      Decline
+                                    </button>
+                                  </>
+                                )}
+                                {isOwner && (invite.status === 'PENDING' || invite.status === 'DECLINED') && (
+                                  <button
+                                    onClick={() => revokeInviteMutation.mutate(invite.email)}
+                                    className="text-xs px-2 py-1 rounded border border-red-300 text-red-700"
+                                  >
+                                    Revoke
+                                  </button>
+                                )}
+                              </div>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    )}
+                  </div>
+
+                  {isOwner && (
+                    <form
+                      onSubmit={handleInviteSubmit}
+                      className="mb-4 p-4 bg-white rounded-lg border border-slate-200 space-y-3"
+                    >
+                      <h3 className="font-semibold text-slate-900">Invite collaborator</h3>
+                      <div className="flex gap-2">
+                        <input
+                          type="email"
+                          placeholder="Email"
+                          value={inviteEmail}
+                          onChange={(e) => setInviteEmail(e.target.value)}
+                          className="flex-1 px-3 py-2 border border-slate-300 rounded-lg bg-white"
+                        />
+                        <select
+                          value={inviteRole}
+                          onChange={(e) => setInviteRole(e.target.value as TripRole)}
+                          className="px-3 py-2 border border-slate-300 rounded-lg bg-white"
+                        >
+                          <option value="VIEWER">Viewer</option>
+                          <option value="EDITOR">Editor</option>
+                          <option value="OWNER">Owner</option>
+                        </select>
+                        <button
+                          type="submit"
+                          disabled={inviteMutation.isPending}
+                          className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
+                        >
+                          Invite
+                        </button>
+                      </div>
+                    </form>
+                  )}
+
+                  {isMember && (
+                    <button
+                      onClick={() => leaveTripMutation.mutate()}
+                      disabled={leaveTripMutation.isPending}
+                      className="text-sm px-3 py-2 rounded border border-red-300 text-red-700 disabled:opacity-50"
+                    >
+                      Leave trip
+                    </button>
+                  )}
+                </>
+              )}
+            </>
+          ) : (
+            <p className="text-slate-500 text-sm">Sign in to manage collaborators and invites.</p>
+          )}
         </section>
 
         <section>
