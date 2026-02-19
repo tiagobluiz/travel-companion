@@ -289,7 +289,10 @@ export default function TripDetailPage() {
     setTripVisibility((trip.visibility ?? 'PRIVATE') as TripVisibility)
   }, [trip])
 
-  const totalExpenses = expenses.reduce((sum, expense) => sum + parseFloat(expense.amount), 0)
+  const totalExpenses = expenses.reduce((sum, expense) => {
+    const parsedAmount = parseFloat(expense.amount)
+    return sum + (Number.isNaN(parsedAmount) ? 0 : parsedAmount)
+  }, 0)
 
   if (!id) return null
   if (isTripLoading || isItineraryLoading || !trip || !itinerary) {

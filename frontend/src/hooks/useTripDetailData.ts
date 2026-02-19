@@ -37,10 +37,12 @@ export function useTripDetailData({ id, isAuthenticated }: UseTripDetailDataOpti
   return {
     trip: tripQuery.data,
     isTripLoading: tripQuery.isLoading,
+    tripLoadError: tripQuery.error,
     itinerary: itineraryQuery.data,
     isItineraryLoading: itineraryQuery.isLoading,
     itineraryLoadError: itineraryQuery.error,
     expenses: expensesQuery.data ?? [],
+    expensesLoadError: expensesQuery.error,
     collaborators: collaboratorsQuery.data,
     isCollaboratorsLoading: collaboratorsQuery.isLoading,
     collaboratorsLoadError: collaboratorsQuery.error,
