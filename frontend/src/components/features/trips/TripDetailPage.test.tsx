@@ -13,10 +13,15 @@ const mockDeleteItineraryItem = vi.fn()
 const mockFetchExpenses = vi.fn()
 const mockCreateExpense = vi.fn()
 const mockDeleteExpense = vi.fn()
+const mockFetchCollaborators = vi.fn()
+const mockInviteMember = vi.fn()
+const mockRespondInvite = vi.fn()
+const mockRemoveInvite = vi.fn()
+const mockLeaveTrip = vi.fn()
 
 let authState: {
   token: string | null
-  user: { displayName: string } | null
+  user: { id: string; email: string; displayName: string } | null
   logout: () => void
 }
 
@@ -36,6 +41,14 @@ vi.mock('../../../api/expenses', () => ({
   fetchExpenses: (...args: unknown[]) => mockFetchExpenses(...args),
   createExpense: (...args: unknown[]) => mockCreateExpense(...args),
   deleteExpense: (...args: unknown[]) => mockDeleteExpense(...args),
+}))
+
+vi.mock('../../../api/collaborators', () => ({
+  fetchCollaborators: (...args: unknown[]) => mockFetchCollaborators(...args),
+  inviteMember: (...args: unknown[]) => mockInviteMember(...args),
+  respondInvite: (...args: unknown[]) => mockRespondInvite(...args),
+  removeInvite: (...args: unknown[]) => mockRemoveInvite(...args),
+  leaveTrip: (...args: unknown[]) => mockLeaveTrip(...args),
 }))
 
 vi.mock('../../../stores/authStore', () => ({
@@ -115,12 +128,23 @@ const itineraryWithItems = {
   },
 }
 
+const collaboratorsData = {
+  memberships: [
+    { userId: 'user-owner', role: 'OWNER' as const },
+    { userId: 'user-editor', role: 'EDITOR' as const },
+  ],
+  invites: [
+    { email: 'owner@example.com', role: 'EDITOR' as const, status: 'PENDING' as const },
+    { email: 'declined@example.com', role: 'VIEWER' as const, status: 'DECLINED' as const },
+  ],
+}
+
 describe('TripDetailPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     authState = {
       token: 'token-1',
-      user: { displayName: 'Owner' },
+      user: { displayName: 'Owner', email: 'owner@example.com', id: 'user-owner' },
       logout: vi.fn(),
     }
     mockFetchTrip.mockResolvedValue(baseTrip)
@@ -129,6 +153,11 @@ describe('TripDetailPage', () => {
     mockMoveItineraryItem.mockResolvedValue(itineraryWithItems)
     mockDeleteItineraryItem.mockResolvedValue(itineraryWithItems)
     mockAddItineraryItem.mockResolvedValue(itineraryWithItems)
+    mockFetchCollaborators.mockResolvedValue(collaboratorsData)
+    mockInviteMember.mockResolvedValue(collaboratorsData)
+    mockRespondInvite.mockResolvedValue(collaboratorsData)
+    mockRemoveInvite.mockResolvedValue(collaboratorsData)
+    mockLeaveTrip.mockResolvedValue({})
   })
 
   it('renders day/list containers and items (happy path)', async () => {
@@ -167,6 +196,8 @@ describe('TripDetailPage', () => {
 
     expect(screen.queryByText('+ Add place')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Move up' })).not.toBeInTheDocument()
+    expect(screen.getByText('Sign in to manage collaborators and invites.')).toBeInTheDocument()
+    expect(mockFetchCollaborators).not.toHaveBeenCalled()
   })
 
   it('validates itinerary date range before mutation (validation failure)', async () => {
@@ -230,6 +261,72 @@ describe('TripDetailPage', () => {
 
     await waitFor(() => {
       expect(mockDeleteItineraryItem).toHaveBeenCalledWith('trip-1', 'day1-a')
+    })
+  })
+
+  it('shows collaborator role and pending/declined badges (happy path)', async () => {
+    renderPage()
+
+    expect(await screen.findByText('Collaborators')).toBeInTheDocument()
+    expect(screen.getByText('OWNER')).toBeInTheDocument()
+    expect(screen.getAllByText('EDITOR').length).toBeGreaterThan(0)
+    expect(screen.getByText('PENDING')).toBeInTheDocument()
+    expect(screen.getByText('DECLINED')).toBeInTheDocument()
+  })
+
+  it('accepts pending invite for current user (invite flow)', async () => {
+    renderPage()
+    await screen.findByText('PENDING')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Accept' }))
+
+    await waitFor(() => {
+      expect(mockRespondInvite).toHaveBeenCalledWith('trip-1', { accept: true })
+    })
+  })
+
+  it('revokes a declined invite (edge case)', async () => {
+    renderPage()
+    await screen.findByText('DECLINED')
+
+    const revokeButtons = screen.getAllByRole('button', { name: 'Revoke' })
+    fireEvent.click(revokeButtons[1]!)
+
+    await waitFor(() => {
+      expect(mockRemoveInvite).toHaveBeenCalledWith('trip-1', 'declined@example.com')
+    })
+  })
+
+  it('validates invite form before submit (validation failure)', async () => {
+    renderPage()
+    await screen.findByText('Invite collaborator')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Invite' }))
+
+    expect(await screen.findByText('Invite email is required.')).toBeInTheDocument()
+    expect(mockInviteMember).not.toHaveBeenCalled()
+  })
+
+  it('shows collaborator mutation error state', async () => {
+    mockRemoveInvite.mockRejectedValueOnce(new Error('Only owners can manage invites'))
+
+    renderPage()
+    await screen.findByText('DECLINED')
+
+    const revokeButtons = screen.getAllByRole('button', { name: 'Revoke' })
+    fireEvent.click(revokeButtons[1]!)
+
+    expect(await screen.findByText('Only owners can manage invites')).toBeInTheDocument()
+  })
+
+  it('supports self-remove flow (regression)', async () => {
+    renderPage()
+    await screen.findByRole('button', { name: 'Leave trip' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Leave trip' }))
+
+    await waitFor(() => {
+      expect(mockLeaveTrip).toHaveBeenCalledWith('trip-1')
     })
   })
 })
