@@ -47,11 +47,7 @@ function App() {
         />
         <Route
           path="/trips/:id"
-          element={
-            <ProtectedRoute>
-              <TripDetailPage />
-            </ProtectedRoute>
-          }
+          element={<TripDetailPage />}
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
