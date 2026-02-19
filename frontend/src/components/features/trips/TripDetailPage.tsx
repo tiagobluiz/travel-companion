@@ -87,6 +87,7 @@ export default function TripDetailPage() {
   const {
     data: collaborators,
     isLoading: isCollaboratorsLoading,
+    error: collaboratorsLoadError,
   } = useQuery({
     queryKey: ['collaborators', id],
     queryFn: () => fetchCollaborators(id!),
@@ -152,6 +153,7 @@ export default function TripDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['collaborators', id] })
       setInviteEmail('')
       setInviteRole('VIEWER')
+      setCollaboratorError('')
     },
     onError: (error: Error) => {
       setCollaboratorError(error.message || 'Failed to invite collaborator.')
@@ -162,6 +164,7 @@ export default function TripDetailPage() {
     mutationFn: (accept: boolean) => respondInvite(id!, { accept }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['collaborators', id] })
+      setCollaboratorError('')
     },
     onError: (error: Error) => {
       setCollaboratorError(error.message || 'Failed to respond to invite.')
@@ -172,6 +175,7 @@ export default function TripDetailPage() {
     mutationFn: (email: string) => removeInvite(id!, email),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['collaborators', id] })
+      setCollaboratorError('')
     },
     onError: (error: Error) => {
       setCollaboratorError(error.message || 'Failed to revoke invite.')
@@ -182,6 +186,7 @@ export default function TripDetailPage() {
     mutationFn: () => leaveTrip(id!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trips'] })
+      setCollaboratorError('')
       navigate('/')
     },
     onError: (error: Error) => {
@@ -554,6 +559,11 @@ export default function TripDetailPage() {
           <h2 className="text-lg font-semibold text-slate-900 mb-3">Collaborators</h2>
           {canEdit ? (
             <>
+              {collaboratorsLoadError && (
+                <div className="mb-4 p-2 rounded-md bg-red-50 text-red-700 text-sm">
+                  {(collaboratorsLoadError as Error).message || 'Failed to load collaborators.'}
+                </div>
+              )}
               {collaboratorError && (
                 <div className="mb-4 p-2 rounded-md bg-red-50 text-red-700 text-sm">{collaboratorError}</div>
               )}
@@ -616,13 +626,19 @@ export default function TripDetailPage() {
                                 {isMyInvite && (
                                   <>
                                     <button
-                                      onClick={() => respondInviteMutation.mutate(true)}
+                                      onClick={() => {
+                                        setCollaboratorError('')
+                                        respondInviteMutation.mutate(true)
+                                      }}
                                       className="text-xs px-2 py-1 rounded border border-emerald-300 text-emerald-700"
                                     >
                                       Accept
                                     </button>
                                     <button
-                                      onClick={() => respondInviteMutation.mutate(false)}
+                                      onClick={() => {
+                                        setCollaboratorError('')
+                                        respondInviteMutation.mutate(false)
+                                      }}
                                       className="text-xs px-2 py-1 rounded border border-amber-300 text-amber-700"
                                     >
                                       Decline
@@ -631,7 +647,10 @@ export default function TripDetailPage() {
                                 )}
                                 {isOwner && (invite.status === 'PENDING' || invite.status === 'DECLINED') && (
                                   <button
-                                    onClick={() => revokeInviteMutation.mutate(invite.email)}
+                                    onClick={() => {
+                                      setCollaboratorError('')
+                                      revokeInviteMutation.mutate(invite.email)
+                                    }}
                                     className="text-xs px-2 py-1 rounded border border-red-300 text-red-700"
                                   >
                                     Revoke
@@ -681,7 +700,10 @@ export default function TripDetailPage() {
 
                   {isMember && (
                     <button
-                      onClick={() => leaveTripMutation.mutate()}
+                      onClick={() => {
+                        setCollaboratorError('')
+                        leaveTripMutation.mutate()
+                      }}
                       disabled={leaveTripMutation.isPending}
                       className="text-sm px-3 py-2 rounded border border-red-300 text-red-700 disabled:opacity-50"
                     >
