@@ -1,43 +1,18 @@
 import { api } from './client'
+import type {
+  ItineraryItemV2Request,
+  ItineraryV2Response,
+  MoveItineraryItemV2Request,
+} from './types/itinerary'
 
-export interface ItineraryItemV2 {
-  id: string
-  placeName: string
-  notes: string
-  latitude: number
-  longitude: number
-  dayNumber: number | null
-}
-
-export interface DayContainer {
-  dayNumber: number
-  date: string
-  items: ItineraryItemV2[]
-}
-
-export interface PlacesToVisitContainer {
-  label: string
-  items: ItineraryItemV2[]
-}
-
-export interface ItineraryV2Response {
-  days: DayContainer[]
-  placesToVisit: PlacesToVisitContainer
-}
-
-export interface ItineraryItemV2Request {
-  placeName: string
-  notes?: string
-  latitude: number
-  longitude: number
-  dayNumber?: number
-}
-
-export interface MoveItineraryItemV2Request {
-  targetDayNumber?: number
-  beforeItemId?: string
-  afterItemId?: string
-}
+export type {
+  DayContainer,
+  ItineraryItemV2,
+  ItineraryItemV2Request,
+  ItineraryV2Response,
+  MoveItineraryItemV2Request,
+  PlacesToVisitContainer,
+} from './types/itinerary'
 
 export async function fetchItineraryV2(tripId: string) {
   return api.get<ItineraryV2Response>(`/trips/${tripId}/itinerary/v2`)
@@ -47,7 +22,7 @@ export async function addItineraryItem(tripId: string, data: ItineraryItemV2Requ
   return api.post<ItineraryV2Response>(`/trips/${tripId}/itinerary/v2/items`, data)
 }
 
-export async function updateItineraryItem(
+export async function updateItineraryItemV2(
   tripId: string,
   itemId: string,
   data: ItineraryItemV2Request
@@ -55,7 +30,7 @@ export async function updateItineraryItem(
   return api.put<ItineraryV2Response>(`/trips/${tripId}/itinerary/v2/items/${itemId}`, data)
 }
 
-export async function moveItineraryItem(
+export async function moveItineraryItemV2(
   tripId: string,
   itemId: string,
   data: MoveItineraryItemV2Request
@@ -63,6 +38,10 @@ export async function moveItineraryItem(
   return api.post<ItineraryV2Response>(`/trips/${tripId}/itinerary/v2/items/${itemId}/move`, data)
 }
 
-export async function deleteItineraryItem(tripId: string, itemId: string) {
+export async function deleteItineraryItemV2(tripId: string, itemId: string) {
   return api.delete<ItineraryV2Response>(`/trips/${tripId}/itinerary/v2/items/${itemId}`)
 }
+
+export const updateItineraryItem = updateItineraryItemV2
+export const moveItineraryItem = moveItineraryItemV2
+export const deleteItineraryItem = deleteItineraryItemV2
