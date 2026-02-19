@@ -1,8 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
-import { fetchTrip } from '../api/trips'
-import { fetchItineraryV2 } from '../api/itinerary'
 import { fetchExpenses } from '../api/expenses'
 import { fetchCollaborators } from '../api/collaborators'
+import { useItineraryV2 } from './useItineraryV2'
 
 interface UseTripDetailDataOptions {
   id?: string
@@ -10,17 +9,14 @@ interface UseTripDetailDataOptions {
 }
 
 export function useTripDetailData({ id, isAuthenticated }: UseTripDetailDataOptions) {
-  const tripQuery = useQuery({
-    queryKey: ['trip', id],
-    queryFn: () => fetchTrip(id!),
-    enabled: Boolean(id),
-  })
-
-  const itineraryQuery = useQuery({
-    queryKey: ['itinerary-v2', id],
-    queryFn: () => fetchItineraryV2(id!),
-    enabled: Boolean(id),
-  })
+  const {
+    trip,
+    itinerary,
+    isTripLoading,
+    isItineraryLoading,
+    tripLoadError,
+    itineraryLoadError,
+  } = useItineraryV2({ tripId: id })
 
   const expensesQuery = useQuery({
     queryKey: ['expenses', id],
@@ -35,12 +31,12 @@ export function useTripDetailData({ id, isAuthenticated }: UseTripDetailDataOpti
   })
 
   return {
-    trip: tripQuery.data,
-    isTripLoading: tripQuery.isLoading,
-    tripLoadError: tripQuery.error,
-    itinerary: itineraryQuery.data,
-    isItineraryLoading: itineraryQuery.isLoading,
-    itineraryLoadError: itineraryQuery.error,
+    trip,
+    isTripLoading,
+    tripLoadError,
+    itinerary,
+    isItineraryLoading,
+    itineraryLoadError,
     expenses: expensesQuery.data ?? [],
     expensesLoadError: expensesQuery.error,
     collaborators: collaboratorsQuery.data,
