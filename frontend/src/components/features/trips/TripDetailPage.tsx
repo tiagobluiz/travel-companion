@@ -103,9 +103,17 @@ export default function TripDetailPage() {
       setItineraryError(`Date must be between ${trip.startDate} and ${trip.endDate}.`)
       return
     }
+
+    const toUtcDate = (value: string) => {
+      const [year, month, day] = value.split('-').map(Number)
+      return Date.UTC(year, month - 1, day)
+    }
+    const dayNumber =
+      Math.floor((toUtcDate(itemDate) - toUtcDate(trip.startDate)) / (24 * 60 * 60 * 1000)) + 1
+
     addItineraryMutation.mutate({
       placeName: placeName.trim(),
-      date: itemDate,
+      dayNumber,
       notes: itemNotes || undefined,
       latitude: lat,
       longitude: lng,

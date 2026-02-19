@@ -66,49 +66,166 @@ Deliver:
 - PR link
 ```
 
-## Queue Mode Prompt (Backend/Frontend)
-Use this when you want the agent to continuously pick work from the backlog.
+## Queue Mode Prompt (Backend)
+Use this when you want the backend agent to continuously pick work from the backlog.
 
 ```text
-Queue mode enabled.
+Queue mode enabled (Backend).
 
-Global rules:
-- At the beginning of each cycle, check open PRs and auto-merge any PR that:
-  - has required approvals; and
-  - has all required checks passing; and
+Objective:
+Continuously process backend backlog with minimal supervision and high throughput.
+
+Cycle order (repeat continuously):
+1) PR maintenance first
+- Check all open PRs in backend scope.
+- Auto-merge any PR that:
+  - has required approvals;
+  - has all required checks passing;
   - has no merge conflicts.
-- If a PR has merge conflicts (`dirty`/`conflicting`), resolve conflicts automatically:
-  - update branch with latest PR target/base branch;
-  - resolve conflicts preserving issue intent and current target/base branch invariants;
-  - run relevant tests;
-  - push the conflict-resolution commit;
-  - re-check mergeability/check status.
-- At the beginning of each cycle, check open issues and auto-close any issue that is already completed:
+- If a PR has merge conflicts (dirty/conflicting):
+  - sync the PR branch with its target/base branch (not hardcoded main);
+  - resolve conflicts preserving issue intent and target/base branch invariants;
+  - run relevant backend tests;
+  - push conflict-resolution commit;
+  - re-check mergeability and checks.
+
+2) Issue hygiene
+- Check open backend issues.
+- Auto-close issues when possible:
   - linked PR is merged and resolves the issue; or
-  - acceptance criteria are fully delivered in the issue's delivery branch (normally the default branch) and validated.
-- Before picking new work, check all open PRs for unanswered review comments.
-- If unanswered comments exist, handle them first in-thread:
-  - answer, challenge with rationale, or ask a clarifying follow-up question;
-  - if the comment is clear and valid, implement the fix, run relevant tests, and push.
-- Do not post self-review comments in PRs (another tool handles self-review).
+  - acceptance criteria are fully delivered in the issue delivery branch and validated.
 
-Issue selection:
-- Pick the next available issue in priority order.
-- You may group related issues that touch the same topic to increase throughput:
-  - target batch size: up to 5 issues;
-  - allowed extension when tightly coupled: up to 7 issues total.
-- For grouped issues, use one branch and one PR with all linked issues listed.
+3) Comment triage before new work
+- Check open backend PRs for unanswered review comments.
+- Handle unanswered comments in-thread first:
+  - answer, challenge with rationale, or ask clarifying follow-up question.
+- If comment is clear and valid:
+  - implement fix;
+  - run relevant backend tests;
+  - push changes.
+- Do not post self-review comments (handled by another tool).
 
-Execution constraints:
-- Respect scope boundaries (`backend/**` for backend queue, `frontend/**` for frontend queue).
-- Run required checks for the touched area before opening/updating PR.
-- After opening/updating PR, continue to the next eligible issue batch automatically.
+4) Pick and execute next work
+- Pick next available backend issue(s) by priority/dependencies.
+- You may group related issues touching the same topic:
+  - target batch size: up to 5;
+  - allowed extension when tightly coupled: up to 7 total.
+- For grouped issues, use one branch and one PR, linking all issues.
+- Scope boundary: edit `backend/**` only.
+- If cross-cutting API contract changes are needed, stop and request/linked contract issue before proceeding.
 
-Deliver each cycle:
-- issues picked
-- changes made
-- tests run + results
-- PR link updated/created
+5) Testing depth requirement (mandatory)
+- Every change must include thorough tests with a scenario matrix covering:
+  - happy paths;
+  - edge cases;
+  - permission/role variants;
+  - validation failures;
+  - error paths;
+  - regressions.
+- Do not consider an issue done without matrix-level backend coverage (unit/integration as applicable).
+
+6) Delivery requirements per cycle
+- Implement changes.
+- Run required backend checks:
+  - `cd backend`
+  - `./gradlew test`
+- Open/update PR.
+- Auto-merge eligible PRs in next cycle.
+- Continue to next eligible issue batch automatically.
+
+Governance:
+- Merge is allowed automatically only when PR is approved + checks pass + no conflicts.
+- If requirements are ambiguous, ask concise clarifying questions and pause only for that blocker.
+- Do not stop unless blocked by missing requirements or broken tooling that cannot be self-resolved.
+
+Output after each cycle:
+- Issues picked
+- Changes made
+- Tests run + results
+- PR link(s)
+- Merge/close actions performed
+```
+
+## Queue Mode Prompt (Frontend)
+Use this when you want the frontend agent to continuously pick work from the backlog.
+
+```text
+Queue mode enabled (Frontend).
+
+Objective:
+Continuously process frontend backlog with minimal supervision and high throughput.
+
+Cycle order (repeat continuously):
+1) PR maintenance first
+- Check all open PRs in frontend scope.
+- Auto-merge any PR that:
+  - has required approvals;
+  - has all required checks passing;
+  - has no merge conflicts.
+- If a PR has merge conflicts (dirty/conflicting):
+  - sync the PR branch with its target/base branch;
+  - resolve conflicts preserving issue intent and target/base branch invariants;
+  - run relevant frontend checks;
+  - push conflict-resolution commit;
+  - re-check mergeability and checks.
+
+2) Issue hygiene
+- Check open frontend issues.
+- Auto-close issues when possible:
+  - linked PR is merged and resolves the issue; or
+  - acceptance criteria are fully delivered in the issue delivery branch and validated.
+
+3) Comment triage before new work
+- Check open frontend PRs for unanswered review comments.
+- Handle unanswered comments in-thread first:
+  - answer, challenge with rationale, or ask clarifying follow-up question.
+- If comment is clear and valid:
+  - implement fix;
+  - run relevant frontend checks;
+  - push changes.
+- Do not post self-review comments (handled by another tool).
+
+4) Pick and execute next work
+- Pick next available frontend issue(s) by priority/dependencies.
+- You may group related issues touching the same topic:
+  - target batch size: up to 5;
+  - allowed extension when tightly coupled: up to 7 total.
+- For grouped issues, use one branch and one PR, linking all issues.
+- Scope boundary: edit `frontend/**` only.
+- If BE/API contract changes are needed, stop and request/linked contract issue before proceeding.
+
+5) Testing depth requirement (mandatory)
+- Every change must include thorough tests with a scenario matrix covering:
+  - happy paths;
+  - edge cases;
+  - permission/role variants (UI access/behavior by user state);
+  - validation failures;
+  - error/loading/empty states;
+  - regressions.
+- Do not consider an issue done without matrix-level frontend coverage (component/integration/e2e as applicable).
+
+6) Delivery requirements per cycle
+- Implement changes.
+- Run required frontend checks:
+  - `cd frontend`
+  - `npm run lint`
+  - `npm run test:run`
+  - `npm run build`
+- Open/update PR.
+- Auto-merge eligible PRs in next cycle.
+- Continue to next eligible issue batch automatically.
+
+Governance:
+- Merge is allowed automatically only when PR is approved + checks pass + no conflicts.
+- If requirements are ambiguous, ask concise clarifying questions and pause only for that blocker.
+- Do not stop unless blocked by missing requirements or broken tooling that cannot be self-resolved.
+
+Output after each cycle:
+- Issues picked
+- Changes made
+- Tests run + results
+- PR link(s)
+- Merge/close actions performed
 ```
 
 ## Escalation Rules
