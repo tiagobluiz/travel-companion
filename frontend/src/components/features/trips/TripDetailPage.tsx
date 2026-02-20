@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../../stores/authStore'
 import { type TripVisibility } from '../../../api/trips'
 import {
+  type ItineraryItemV2,
   type MoveItineraryItemV2Request,
 } from '../../../api/itinerary'
 import { createExpense, deleteExpense, type CreateExpenseRequest } from '../../../api/expenses'
@@ -22,14 +23,7 @@ import { ExpensesSection } from './detail/ExpensesSection'
 import { ItinerarySection } from './detail/ItinerarySection'
 import { TripDetailHeader } from './detail/TripDetailHeader'
 import { TripDetailsSection } from './detail/TripDetailsSection'
-
-function toDayNumber(date: string, startDate: string) {
-  const [year, month, day] = date.split('-').map(Number)
-  const [startYear, startMonth, startDay] = startDate.split('-').map(Number)
-  const selectedUtc = Date.UTC(year, month - 1, day)
-  const startUtc = Date.UTC(startYear, startMonth - 1, startDay)
-  return Math.floor((selectedUtc - startUtc) / 86_400_000) + 1
-}
+import type { ItemFormCreatePayload, ItemFormEditPayload } from './itinerary/ItemForm'
 
 export default function TripDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -42,11 +36,6 @@ export default function TripDetailPage() {
   const isAuthenticated = Boolean(token)
 
   const [showItineraryForm, setShowItineraryForm] = useState(false)
-  const [placeName, setPlaceName] = useState('')
-  const [itemDate, setItemDate] = useState('')
-  const [itemNotes, setItemNotes] = useState('')
-  const [itemLatitude, setItemLatitude] = useState('')
-  const [itemLongitude, setItemLongitude] = useState('')
   const [itineraryError, setItineraryError] = useState('')
 
   const [showExpenseForm, setShowExpenseForm] = useState(false)
@@ -81,6 +70,7 @@ export default function TripDetailPage() {
     deleteTripMutation,
     updateTripMutation,
     addItineraryMutation,
+    updateItineraryMutation,
     moveItineraryMutation,
     removeItineraryMutation,
   } = useTripMutations({
@@ -176,43 +166,39 @@ export default function TripDetailPage() {
     })
   }
 
-  function handleAddItinerary(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    if (!trip) return
+  function handleAddItinerary(payload: ItemFormCreatePayload) {
     setItineraryError('')
-    if (!placeName.trim() || !itemDate || !itemLatitude || !itemLongitude) return
-
-    const lat = parseFloat(itemLatitude)
-    const lng = parseFloat(itemLongitude)
-    if (Number.isNaN(lat) || Number.isNaN(lng)) return
-
-    if (itemDate < trip.startDate || itemDate > trip.endDate) {
-      setItineraryError(`Date must be between ${trip.startDate} and ${trip.endDate}.`)
-      return
-    }
-
     addItineraryMutation.mutate(
-      {
-        placeName: placeName.trim(),
-        notes: itemNotes || undefined,
-        latitude: lat,
-        longitude: lng,
-        dayNumber: toDayNumber(itemDate, trip.startDate),
-      },
+      payload,
       {
         onSuccess: () => {
           setShowItineraryForm(false)
-          setPlaceName('')
-          setItemDate('')
-          setItemNotes('')
-          setItemLatitude('')
-          setItemLongitude('')
         },
         onError: (error: Error) => {
           setItineraryError(error.message || 'Failed to add itinerary item.')
         },
       }
     )
+  }
+
+  async function handleEditItinerary(item: ItineraryItemV2, payload: ItemFormEditPayload) {
+    setItineraryError('')
+    try {
+      const notes = payload.notes ?? item.notes
+      await updateItineraryMutation.mutateAsync({
+        itemId: item.id,
+        data: {
+          placeName: item.placeName,
+          notes,
+          latitude: item.latitude,
+          longitude: item.longitude,
+          dayNumber: payload.dayNumber,
+        },
+      })
+    } catch (error) {
+      setItineraryError(getErrorMessage(error, 'Failed to update itinerary item.'))
+      throw error
+    }
   }
 
   function handleAddExpense(e: FormEvent<HTMLFormElement>) {
@@ -361,21 +347,13 @@ export default function TripDetailPage() {
           showItineraryForm={showItineraryForm}
           itineraryLoadError={itineraryLoadError}
           itineraryError={itineraryError}
-          placeName={placeName}
-          itemDate={itemDate}
-          itemNotes={itemNotes}
-          itemLatitude={itemLatitude}
-          itemLongitude={itemLongitude}
           isAddPending={addItineraryMutation.isPending}
           isMovePending={moveItineraryMutation.isPending}
+          isEditPending={updateItineraryMutation.isPending}
           onShowForm={() => setShowItineraryForm(true)}
           onHideForm={() => setShowItineraryForm(false)}
-          onPlaceNameChange={setPlaceName}
-          onItemDateChange={setItemDate}
-          onItemNotesChange={setItemNotes}
-          onItemLatitudeChange={setItemLatitude}
-          onItemLongitudeChange={setItemLongitude}
           onAddItinerary={handleAddItinerary}
+          onEditItinerary={handleEditItinerary}
           onMove={handleMove}
           onRemove={handleRemove}
         />

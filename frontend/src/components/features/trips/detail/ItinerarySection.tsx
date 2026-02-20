@@ -1,7 +1,15 @@
-import type { FormEvent } from 'react'
-import type { ItineraryV2Response, MoveItineraryItemV2Request } from '../../../../api/itinerary'
+import type {
+  ItineraryV2Response,
+  MoveItineraryItemV2Request,
+  ItineraryItemV2,
+} from '../../../../api/itinerary'
 import type { Trip } from '../../../../api/trips'
 import { ItineraryBoard } from '../itinerary/ItineraryBoard'
+import {
+  ItemForm,
+  type ItemFormCreatePayload,
+  type ItemFormEditPayload,
+} from '../itinerary/ItemForm'
 
 interface ItinerarySectionProps {
   trip: Trip
@@ -11,21 +19,13 @@ interface ItinerarySectionProps {
   showItineraryForm: boolean
   itineraryLoadError: unknown
   itineraryError: string
-  placeName: string
-  itemDate: string
-  itemNotes: string
-  itemLatitude: string
-  itemLongitude: string
   isAddPending: boolean
   isMovePending: boolean
+  isEditPending: boolean
   onShowForm: () => void
   onHideForm: () => void
-  onPlaceNameChange: (value: string) => void
-  onItemDateChange: (value: string) => void
-  onItemNotesChange: (value: string) => void
-  onItemLatitudeChange: (value: string) => void
-  onItemLongitudeChange: (value: string) => void
-  onAddItinerary: (e: FormEvent<HTMLFormElement>) => void
+  onAddItinerary: (payload: ItemFormCreatePayload) => void
+  onEditItinerary: (item: ItineraryItemV2, payload: ItemFormEditPayload) => Promise<void> | void
   onMove: (itemId: string, payload: MoveItineraryItemV2Request) => void
   onRemove: (itemId: string) => void
 }
@@ -38,21 +38,13 @@ export function ItinerarySection({
   showItineraryForm,
   itineraryLoadError,
   itineraryError,
-  placeName,
-  itemDate,
-  itemNotes,
-  itemLatitude,
-  itemLongitude,
   isAddPending,
   isMovePending,
+  isEditPending,
   onShowForm,
   onHideForm,
-  onPlaceNameChange,
-  onItemDateChange,
-  onItemNotesChange,
-  onItemLatitudeChange,
-  onItemLongitudeChange,
   onAddItinerary,
+  onEditItinerary,
   onMove,
   onRemove,
 }: ItinerarySectionProps) {
@@ -64,71 +56,17 @@ export function ItinerarySection({
       )}
 
       {canEditPlanning && showItineraryForm && (
-        <form onSubmit={onAddItinerary} className="mb-4 p-4 bg-white rounded-lg border border-slate-200 space-y-3">
-          <input
-            type="text"
-            placeholder="Place or activity"
-            value={placeName}
-            onChange={(e) => onPlaceNameChange(e.target.value)}
-            required
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
+        <div className="mb-4 p-4 bg-white rounded-lg border border-slate-200 space-y-3">
+          <ItemForm
+            mode="create"
+            tripStartDate={trip.startDate}
+            tripEndDate={trip.endDate}
+            isPending={isAddPending}
+            errorMessage={itineraryError}
+            onCreate={onAddItinerary}
+            onCancel={onHideForm}
           />
-          <div>
-            <label className="block text-xs text-slate-500 mb-1">Date</label>
-            <input
-              type="date"
-              value={itemDate}
-              onChange={(e) => onItemDateChange(e.target.value)}
-              min={trip.startDate}
-              max={trip.endDate}
-              required
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
-            />
-          </div>
-          <input
-            type="text"
-            placeholder="Notes"
-            value={itemNotes}
-            onChange={(e) => onItemNotesChange(e.target.value)}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <input
-              type="number"
-              step="any"
-              placeholder="Latitude"
-              value={itemLatitude}
-              onChange={(e) => onItemLatitudeChange(e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
-            />
-            <input
-              type="number"
-              step="any"
-              placeholder="Longitude"
-              value={itemLongitude}
-              onChange={(e) => onItemLongitudeChange(e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
-            />
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={isAddPending}
-              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
-            >
-              Add
-            </button>
-            <button
-              type="button"
-              onClick={onHideForm}
-              className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
+        </div>
       )}
 
       {canEditPlanning && !showItineraryForm && (
@@ -148,7 +86,17 @@ export function ItinerarySection({
         loadError={itineraryLoadError}
         canEditPlanning={canEditPlanning}
         isMovePending={isMovePending}
+        isEditPending={isEditPending}
+        tripStartDate={trip.startDate}
+        tripEndDate={trip.endDate}
         onMove={onMove}
+        onEdit={(itemId, payload) => {
+          const item =
+            itinerary.days.flatMap((day) => day.items).find((dayItem) => dayItem.id === itemId) ??
+            itinerary.placesToVisit.items.find((placeItem) => placeItem.id === itemId)
+          if (!item) return Promise.resolve()
+          return onEditItinerary(item, payload)
+        }}
         onRemove={onRemove}
       />
     </section>

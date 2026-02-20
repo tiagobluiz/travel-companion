@@ -30,7 +30,11 @@ describe('ItineraryBoard', () => {
         loadError={null}
         canEditPlanning={false}
         isMovePending={false}
+        isEditPending={false}
+        tripStartDate="2026-01-01"
+        tripEndDate="2026-01-03"
         onMove={vi.fn()}
+        onEdit={vi.fn()}
         onRemove={vi.fn()}
       />
     )
@@ -47,7 +51,11 @@ describe('ItineraryBoard', () => {
         loadError={null}
         canEditPlanning={false}
         isMovePending={false}
+        isEditPending={false}
+        tripStartDate="2026-01-01"
+        tripEndDate="2026-01-03"
         onMove={vi.fn()}
+        onEdit={vi.fn()}
         onRemove={vi.fn()}
       />
     )
@@ -67,7 +75,11 @@ describe('ItineraryBoard', () => {
         loadError={null}
         canEditPlanning
         isMovePending={false}
+        isEditPending={false}
+        tripStartDate="2026-01-01"
+        tripEndDate="2026-01-03"
         onMove={vi.fn()}
+        onEdit={vi.fn()}
         onRemove={vi.fn()}
       />
     )
@@ -88,7 +100,11 @@ describe('ItineraryBoard', () => {
         loadError={null}
         canEditPlanning={false}
         isMovePending={false}
+        isEditPending={false}
+        tripStartDate="2026-01-01"
+        tripEndDate="2026-01-03"
         onMove={vi.fn()}
+        onEdit={vi.fn()}
         onRemove={vi.fn()}
       />
     )
@@ -105,7 +121,11 @@ describe('ItineraryBoard', () => {
         loadError={new Error('load failed')}
         canEditPlanning={false}
         isMovePending={false}
+        isEditPending={false}
+        tripStartDate="2026-01-01"
+        tripEndDate="2026-01-03"
         onMove={vi.fn()}
+        onEdit={vi.fn()}
         onRemove={vi.fn()}
       />
     )
