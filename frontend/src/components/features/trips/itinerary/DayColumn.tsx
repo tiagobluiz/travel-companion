@@ -50,7 +50,11 @@ export function DayColumn({
         <SortableContext items={day.items.map((item) => item.id)} strategy={verticalListSortingStrategy}>
           <ul ref={setNodeRef} className="space-y-2">
             {day.items.map((item, itemIndex) => (
-              <SortableItineraryItem key={item.id} itemId={item.id} containerId={containerId}>
+              <SortableItineraryItem
+                key={item.id}
+                itemId={item.id}
+                containerId={containerId}
+              >
                 {({ dragAttributes, dragListeners, isDragging }) => (
                   <li
                     className={`p-3 rounded-lg border flex justify-between gap-3 ${
