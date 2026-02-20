@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTripMutations } from './useTripMutations'
 
 const mockAddItineraryItem = vi.fn()
+const mockUpdateItineraryItem = vi.fn()
 const mockMoveItineraryItem = vi.fn()
 const mockDeleteItineraryItem = vi.fn()
 const mockDeleteTrip = vi.fn()
@@ -12,6 +13,7 @@ const mockUpdateTrip = vi.fn()
 
 vi.mock('../api/itinerary', () => ({
   addItineraryItem: (...args: unknown[]) => mockAddItineraryItem(...args),
+  updateItineraryItem: (...args: unknown[]) => mockUpdateItineraryItem(...args),
   moveItineraryItem: (...args: unknown[]) => mockMoveItineraryItem(...args),
   deleteItineraryItem: (...args: unknown[]) => mockDeleteItineraryItem(...args),
 }))
@@ -62,6 +64,41 @@ describe('useTripMutations', () => {
     expect(mockAddItineraryItem).toHaveBeenCalledWith('trip-1', expect.any(Object))
     expect(mockMoveItineraryItem).toHaveBeenCalledWith('trip-1', 'item-1', { targetDayNumber: 2 })
     expect(mockDeleteItineraryItem).toHaveBeenCalledWith('trip-1', 'item-1')
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['trip', 'trip-1'] })
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['itinerary-v2', 'trip-1'] })
+  })
+
+  it('invalidates trip and itinerary queries after itinerary edit mutation', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    })
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
+    mockUpdateItineraryItem.mockResolvedValue({})
+
+    const { result } = renderHook(() => useTripMutations({ tripId: 'trip-1' }), {
+      wrapper: createWrapper(queryClient),
+    })
+
+    await act(async () => {
+      await result.current.updateItineraryMutation.mutateAsync({
+        itemId: 'item-1',
+        data: {
+          placeName: 'Louvre',
+          latitude: 1,
+          longitude: 1,
+          notes: 'Updated',
+          dayNumber: undefined,
+        },
+      })
+    })
+
+    expect(mockUpdateItineraryItem).toHaveBeenCalledWith('trip-1', 'item-1', {
+      placeName: 'Louvre',
+      latitude: 1,
+      longitude: 1,
+      notes: 'Updated',
+      dayNumber: undefined,
+    })
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['trip', 'trip-1'] })
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['itinerary-v2', 'trip-1'] })
   })

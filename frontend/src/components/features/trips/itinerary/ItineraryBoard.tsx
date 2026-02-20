@@ -1,4 +1,5 @@
 import type { ItineraryV2Response, MoveItineraryItemV2Request } from '../../../../api/itinerary'
+import type { ItemFormEditPayload } from './ItemForm'
 import { DayColumn } from './DayColumn'
 import { PlacesToVisitColumn } from './PlacesToVisitColumn'
 import { ItineraryDragContext } from './dnd/DragContext'
@@ -10,7 +11,11 @@ interface ItineraryBoardProps {
   loadError: unknown
   canEditPlanning: boolean
   isMovePending: boolean
+  isEditPending: boolean
+  tripStartDate: string
+  tripEndDate: string
   onMove: (itemId: string, payload: MoveItineraryItemV2Request) => void
+  onEdit: (itemId: string, payload: ItemFormEditPayload) => Promise<void> | void
   onRemove: (itemId: string) => void
 }
 
@@ -20,7 +25,11 @@ export function ItineraryBoard({
   loadError,
   canEditPlanning,
   isMovePending,
+  isEditPending,
+  tripStartDate,
+  tripEndDate,
   onMove,
+  onEdit,
   onRemove,
 }: ItineraryBoardProps) {
   if (isLoading) {
@@ -62,7 +71,7 @@ export function ItineraryBoard({
   return (
     <ItineraryDragContext
       itinerary={itinerary}
-      disabled={!canEditPlanning || isMovePending}
+      disabled={!canEditPlanning || isMovePending || isEditPending}
       onMove={onMove}
     >
       <div className="space-y-4">
@@ -77,7 +86,11 @@ export function ItineraryBoard({
             nextDayNumber={itinerary.days[dayIndex + 1]?.dayNumber}
             canEditPlanning={canEditPlanning}
             isMovePending={isMovePending}
+            isEditPending={isEditPending}
+            tripStartDate={tripStartDate}
+            tripEndDate={tripEndDate}
             onMove={onMove}
+            onEdit={onEdit}
             onRemove={onRemove}
           />
         ))}
@@ -88,7 +101,11 @@ export function ItineraryBoard({
           firstDayNumber={itinerary.days[0]?.dayNumber}
           canEditPlanning={canEditPlanning}
           isMovePending={isMovePending}
+          isEditPending={isEditPending}
+          tripStartDate={tripStartDate}
+          tripEndDate={tripEndDate}
           onMove={onMove}
+          onEdit={onEdit}
           onRemove={onRemove}
         />
       </div>

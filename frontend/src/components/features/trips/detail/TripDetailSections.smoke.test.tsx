@@ -75,28 +75,20 @@ describe('Trip detail extracted sections', () => {
         showItineraryForm={false}
         itineraryLoadError={null}
         itineraryError=""
-        placeName=""
-        itemDate=""
-        itemNotes=""
-        itemLatitude=""
-        itemLongitude=""
         isAddPending={false}
         isMovePending={false}
+        isEditPending={false}
         onShowForm={vi.fn()}
         onHideForm={vi.fn()}
-        onPlaceNameChange={vi.fn()}
-        onItemDateChange={vi.fn()}
-        onItemNotesChange={vi.fn()}
-        onItemLatitudeChange={vi.fn()}
-        onItemLongitudeChange={vi.fn()}
         onAddItinerary={vi.fn()}
+        onEditItinerary={vi.fn()}
         onMove={vi.fn()}
         onRemove={vi.fn()}
       />
     )
 
     expect(screen.getByText('Day 1 (2026-01-01)')).toBeInTheDocument()
-    expect(screen.getByText('Read-only itinerary view. Editors/owners (and pending invitees) can plan items.')).toBeInTheDocument()
+    expect(screen.getByText('Read-only itinerary view. Only editors and owners can plan items.')).toBeInTheDocument()
   })
 
   it('renders collaborators unauthenticated message and authenticated list (smoke)', () => {
