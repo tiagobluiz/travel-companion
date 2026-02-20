@@ -161,13 +161,19 @@ export function ItemForm({
         </>
       )}
 
-      <input
-        type="text"
-        placeholder="Notes"
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-        className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
-      />
+      <div className="space-y-1">
+        <label htmlFor="itinerary-notes" className="block text-xs text-slate-500">
+          Notes
+        </label>
+        <input
+          id="itinerary-notes"
+          type="text"
+          placeholder="Notes"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
+        />
+      </div>
 
       <div className="space-y-2">
         <label htmlFor="itinerary-destination" className="block text-xs text-slate-500">
