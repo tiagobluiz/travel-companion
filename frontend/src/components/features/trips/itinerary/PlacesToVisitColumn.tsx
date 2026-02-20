@@ -49,7 +49,11 @@ export function PlacesToVisitColumn({
         >
           <ul ref={setNodeRef} className="space-y-2">
             {placesToVisit.items.map((item: ItineraryItemV2, itemIndex: number) => (
-              <SortableItineraryItem key={item.id} itemId={item.id} containerId={containerId}>
+              <SortableItineraryItem
+                key={item.id}
+                itemId={item.id}
+                containerId={containerId}
+              >
                 {({ dragAttributes, dragListeners, isDragging }) => (
                   <li
                     className={`p-3 rounded-lg border flex justify-between gap-3 ${
@@ -101,10 +105,7 @@ export function PlacesToVisitColumn({
                           To day 1
                         </button>
                         <button
-                          onClick={() => {
-                            if (isMovePending) return
-                            onRemove(item.id)
-                          }}
+                          onClick={() => onRemove(item.id)}
                           disabled={isMovePending}
                           aria-disabled={isMovePending}
                           className="text-xs px-2 py-1 rounded border border-red-300 text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"

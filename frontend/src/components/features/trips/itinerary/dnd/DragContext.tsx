@@ -30,14 +30,27 @@ export function ItineraryDragContext({
     useSensor(KeyboardSensor)
   )
 
+  function readOverData(
+    over: DragEndEvent['over']
+  ): { overType: string | undefined; overContainerId: ItineraryContainerId | undefined } {
+    const data = over?.data.current
+    const overType = typeof data?.type === 'string' ? data.type : undefined
+    const rawContainerId = data?.containerId
+    const overContainerId =
+      typeof rawContainerId === 'string' ? (rawContainerId as ItineraryContainerId) : undefined
+    return { overType, overContainerId }
+  }
+
   function handleDragEnd(event: DragEndEvent) {
     if (disabled) return
     if (!event.over) return
 
+    if (typeof event.active.id !== 'string' && typeof event.active.id !== 'number') return
+    if (typeof event.over.id !== 'string' && typeof event.over.id !== 'number') return
+
     const activeItemId = String(event.active.id)
     const overId = String(event.over.id)
-    const overType = event.over.data.current?.type as string | undefined
-    const overContainerId = event.over.data.current?.containerId as ItineraryContainerId | undefined
+    const { overType, overContainerId } = readOverData(event.over)
 
     const command = resolveMoveCommandFromDrag({
       itinerary,
