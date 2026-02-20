@@ -25,8 +25,8 @@ class TripJpaEntity(
     @Column(name = "id", updatable = false)
     val id: UUID,
 
-    @Column(name = "owner_id", nullable = false, updatable = false)
-    val ownerId: UUID,
+    @Column(name = "owner_id", nullable = false)
+    var ownerId: UUID,
 
     @Column(name = "name", nullable = false)
     var name: String,
