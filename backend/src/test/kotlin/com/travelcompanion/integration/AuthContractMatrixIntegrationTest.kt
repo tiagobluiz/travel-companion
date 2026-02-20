@@ -38,7 +38,7 @@ class AuthContractMatrixIntegrationTest {
         }
 
         mockMvc.get("/auth/me").andExpect {
-            status { isUnauthorized() }
+            status { isForbidden() }
         }
 
         mockMvc.get("/auth/me") {

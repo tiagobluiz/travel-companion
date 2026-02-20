@@ -86,8 +86,8 @@ class TripAccessContractMatrixIntegrationTest {
     }
 
     private fun addMembership(tripId: String, userId: com.travelcompanion.domain.user.UserId, role: TripRole) {
-        val domainTripId = TripId.fromString(tripId)!!
-        val trip = tripRepository.findById(domainTripId)!!
+        val domainTripId = requireNotNull(TripId.fromString(tripId)) { "Invalid trip ID: $tripId" }
+        val trip = requireNotNull(tripRepository.findById(domainTripId)) { "Trip not found for ID: $domainTripId" }
         val updated = trip.copy(memberships = trip.memberships + TripMembership(userId = userId, role = role))
         tripRepository.save(updated)
     }

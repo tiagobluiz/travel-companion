@@ -51,6 +51,12 @@ class ExpenseAccessContractMatrixIntegrationTest {
         val expenseId = JsonAssertions.stringAt(createResponse.response.contentAsString, "id")
 
         mockMvc.get("/trips/$tripA/expenses") {
+            header("Authorization", "Bearer ${owner.token}")
+        }.andExpect {
+            status { isOk() }
+        }
+
+        mockMvc.get("/trips/$tripA/expenses") {
             header("Authorization", "Bearer ${outsider.token}")
         }.andExpect {
             status { isForbidden() }
