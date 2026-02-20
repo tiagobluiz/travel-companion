@@ -9,6 +9,7 @@ const mockDeleteTrip = vi.fn()
 const mockUpdateTrip = vi.fn()
 const mockFetchItineraryV2 = vi.fn()
 const mockAddItineraryItem = vi.fn()
+const mockUpdateItineraryItem = vi.fn()
 const mockMoveItineraryItem = vi.fn()
 const mockDeleteItineraryItem = vi.fn()
 const mockFetchExpenses = vi.fn()
@@ -35,6 +36,7 @@ vi.mock('../../../api/trips', () => ({
 vi.mock('../../../api/itinerary', () => ({
   fetchItineraryV2: (...args: unknown[]) => mockFetchItineraryV2(...args),
   addItineraryItem: (...args: unknown[]) => mockAddItineraryItem(...args),
+  updateItineraryItem: (...args: unknown[]) => mockUpdateItineraryItem(...args),
   moveItineraryItem: (...args: unknown[]) => mockMoveItineraryItem(...args),
   deleteItineraryItem: (...args: unknown[]) => mockDeleteItineraryItem(...args),
 }))
@@ -156,6 +158,7 @@ describe('TripDetailPage', () => {
     mockMoveItineraryItem.mockResolvedValue(itineraryWithItems)
     mockDeleteItineraryItem.mockResolvedValue(itineraryWithItems)
     mockAddItineraryItem.mockResolvedValue(itineraryWithItems)
+    mockUpdateItineraryItem.mockResolvedValue(itineraryWithItems)
     mockFetchCollaborators.mockResolvedValue(collaboratorsData)
     mockUpdateTrip.mockResolvedValue(baseTrip)
     mockInviteMember.mockResolvedValue(collaboratorsData)
@@ -295,6 +298,63 @@ describe('TripDetailPage', () => {
 
     expect(await screen.findByText('Date must be between 2026-01-01 and 2026-01-03.')).toBeInTheDocument()
     expect(mockAddItineraryItem).not.toHaveBeenCalled()
+  })
+
+  it('adds item to places to visit when destination is places (happy path)', async () => {
+    renderPage()
+    await screen.findByText('+ Add place')
+
+    fireEvent.click(screen.getByText('+ Add place'))
+    fireEvent.change(screen.getByPlaceholderText('Place or activity'), {
+      target: { value: 'Arc de Triomphe' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('Latitude'), { target: { value: '48.87' } })
+    fireEvent.change(screen.getByPlaceholderText('Longitude'), { target: { value: '2.29' } })
+    fireEvent.change(screen.getByLabelText('Destination'), { target: { value: 'PLACES' } })
+    const itineraryForm = screen.getByPlaceholderText('Place or activity').closest('form')
+    expect(itineraryForm).not.toBeNull()
+    fireEvent.submit(itineraryForm!)
+
+    await waitFor(() => {
+      expect(mockAddItineraryItem).toHaveBeenCalledWith('trip-1', {
+        placeName: 'Arc de Triomphe',
+        notes: undefined,
+        latitude: 48.87,
+        longitude: 2.29,
+        dayNumber: undefined,
+      })
+    })
+  })
+
+  it('updates itinerary item notes and destination day from edit form (happy path)', async () => {
+    renderPage()
+    await screen.findByText('Louvre')
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit' })[0]!)
+    fireEvent.change(screen.getByPlaceholderText('Notes'), { target: { value: 'Updated note' } })
+    fireEvent.change(screen.getByLabelText('Destination'), { target: { value: 'PLACES' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => {
+      expect(mockUpdateItineraryItem).toHaveBeenCalledWith('trip-1', 'day1-a', {
+        placeName: 'Louvre',
+        notes: 'Updated note',
+        latitude: 1,
+        longitude: 1,
+        dayNumber: undefined,
+      })
+    })
+  })
+
+  it('shows update error from itinerary item edit mutation (error state)', async () => {
+    mockUpdateItineraryItem.mockRejectedValueOnce(new Error('Edit failed'))
+    renderPage()
+    await screen.findByText('Louvre')
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit' })[0]!)
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(await screen.findByText('Edit failed')).toBeInTheDocument()
   })
 
   it('shows mutation error on move failure (error state)', async () => {
