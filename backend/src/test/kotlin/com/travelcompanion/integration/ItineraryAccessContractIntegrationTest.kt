@@ -45,7 +45,7 @@ class ItineraryAccessContractIntegrationTest {
         }
 
         mockMvc.get("/trips/$tripId/itinerary/v2").andExpect {
-            status { isUnauthorized() }
+            status { isForbidden() }
         }
 
         mockMvc.get("/trips/${UUID.randomUUID()}/itinerary/v2") {
@@ -66,7 +66,7 @@ class ItineraryAccessContractIntegrationTest {
             contentType = MediaType.APPLICATION_JSON
             content = """{"placeName":"Museum","notes":"Visit","latitude":10.0,"longitude":20.0,"dayNumber":1}"""
         }.andExpect {
-            status { isUnauthorized() }
+            status { isForbidden() }
         }
     }
 }

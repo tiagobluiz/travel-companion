@@ -63,7 +63,7 @@ class ExpenseAccessContractIntegrationTest {
         }
 
         mockMvc.get("/trips/$tripA/expenses").andExpect {
-            status { isUnauthorized() }
+            status { isForbidden() }
         }
 
         mockMvc.post("/trips/$tripA/expenses") {
@@ -78,7 +78,7 @@ class ExpenseAccessContractIntegrationTest {
             contentType = MediaType.APPLICATION_JSON
             content = """{"amount":20.00,"currency":"USD","description":"Taxi","date":"2026-12-03"}"""
         }.andExpect {
-            status { isUnauthorized() }
+            status { isForbidden() }
         }
 
         mockMvc.put("/trips/$tripB/expenses/$expenseId") {
@@ -93,7 +93,7 @@ class ExpenseAccessContractIntegrationTest {
             contentType = MediaType.APPLICATION_JSON
             content = """{"amount":55.00,"currency":"USD","description":"Dinner+","date":"2026-12-02"}"""
         }.andExpect {
-            status { isUnauthorized() }
+            status { isForbidden() }
         }
 
         mockMvc.put("/trips/${UUID.randomUUID()}/expenses/${UUID.randomUUID()}") {
