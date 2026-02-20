@@ -44,6 +44,10 @@ class ItineraryAccessContractIntegrationTest {
             status { isForbidden() }
         }
 
+        mockMvc.get("/trips/$tripId/itinerary/v2").andExpect {
+            status { isUnauthorized() }
+        }
+
         mockMvc.get("/trips/${UUID.randomUUID()}/itinerary/v2") {
             header("Authorization", "Bearer ${owner.token}")
         }.andExpect {
@@ -56,6 +60,13 @@ class ItineraryAccessContractIntegrationTest {
             content = """{"placeName":"Museum","notes":"Visit","latitude":10.0,"longitude":20.0,"dayNumber":1}"""
         }.andExpect {
             status { isForbidden() }
+        }
+
+        mockMvc.post("/trips/$tripId/itinerary/v2/items") {
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"placeName":"Museum","notes":"Visit","latitude":10.0,"longitude":20.0,"dayNumber":1}"""
+        }.andExpect {
+            status { isUnauthorized() }
         }
     }
 }

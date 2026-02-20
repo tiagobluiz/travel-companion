@@ -62,6 +62,10 @@ class ExpenseAccessContractIntegrationTest {
             status { isForbidden() }
         }
 
+        mockMvc.get("/trips/$tripA/expenses").andExpect {
+            status { isUnauthorized() }
+        }
+
         mockMvc.post("/trips/$tripA/expenses") {
             header("Authorization", "Bearer ${outsider.token}")
             contentType = MediaType.APPLICATION_JSON
@@ -70,12 +74,26 @@ class ExpenseAccessContractIntegrationTest {
             status { isForbidden() }
         }
 
+        mockMvc.post("/trips/$tripA/expenses") {
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"amount":20.00,"currency":"USD","description":"Taxi","date":"2026-12-03"}"""
+        }.andExpect {
+            status { isUnauthorized() }
+        }
+
         mockMvc.put("/trips/$tripB/expenses/$expenseId") {
             header("Authorization", "Bearer ${owner.token}")
             contentType = MediaType.APPLICATION_JSON
             content = """{"amount":55.00,"currency":"USD","description":"Dinner+","date":"2026-12-02"}"""
         }.andExpect {
             status { isNotFound() }
+        }
+
+        mockMvc.put("/trips/$tripA/expenses/$expenseId") {
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"amount":55.00,"currency":"USD","description":"Dinner+","date":"2026-12-02"}"""
+        }.andExpect {
+            status { isUnauthorized() }
         }
 
         mockMvc.put("/trips/${UUID.randomUUID()}/expenses/${UUID.randomUUID()}") {
