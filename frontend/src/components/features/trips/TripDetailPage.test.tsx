@@ -346,6 +346,25 @@ describe('TripDetailPage', () => {
     })
   })
 
+  it('preserves existing notes when edit payload omits notes', async () => {
+    renderPage()
+    await screen.findByText('Louvre')
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit' })[0]!)
+    fireEvent.change(screen.getByPlaceholderText('Notes'), { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => {
+      expect(mockUpdateItineraryItem).toHaveBeenCalledWith('trip-1', 'day1-a', {
+        placeName: 'Louvre',
+        notes: 'Morning',
+        latitude: 1,
+        longitude: 1,
+        dayNumber: 1,
+      })
+    })
+  })
+
   it('shows update error from itinerary item edit mutation (error state)', async () => {
     mockUpdateItineraryItem.mockRejectedValueOnce(new Error('Edit failed'))
     renderPage()

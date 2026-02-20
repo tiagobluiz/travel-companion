@@ -166,7 +166,7 @@ export default function TripDetailPage() {
     })
   }
 
-function handleAddItinerary(payload: ItemFormCreatePayload) {
+  function handleAddItinerary(payload: ItemFormCreatePayload) {
     setItineraryError('')
     addItineraryMutation.mutate(
       payload,
@@ -184,11 +184,12 @@ function handleAddItinerary(payload: ItemFormCreatePayload) {
   async function handleEditItinerary(item: ItineraryItemV2, payload: ItemFormEditPayload) {
     setItineraryError('')
     try {
+      const notes = payload.notes ?? item.notes
       await updateItineraryMutation.mutateAsync({
         itemId: item.id,
         data: {
           placeName: item.placeName,
-          notes: payload.notes,
+          notes,
           latitude: item.latitude,
           longitude: item.longitude,
           dayNumber: payload.dayNumber,
