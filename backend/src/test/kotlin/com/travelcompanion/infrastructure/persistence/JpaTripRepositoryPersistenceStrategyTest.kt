@@ -128,6 +128,14 @@ class JpaTripRepositoryPersistenceStrategyTest {
         val keptInvite = inviteCaptor.firstValue.first { it.email == "kept@example.com" }
         assertEquals(existingInviteId, keptInvite.id)
         assertEquals(2, saved.invites.size)
+        val membershipDeleteCaptor = argumentCaptor<List<TripMembershipJpaEntity>>()
+        verify(membershipRepo).deleteAll(membershipDeleteCaptor.capture())
+        assertEquals(1, membershipDeleteCaptor.firstValue.size)
+        assertEquals(staleMembershipUser, membershipDeleteCaptor.firstValue[0].userId)
+        val inviteDeleteCaptor = argumentCaptor<List<TripInviteJpaEntity>>()
+        verify(inviteRepo).deleteAll(inviteDeleteCaptor.capture())
+        assertEquals(1, inviteDeleteCaptor.firstValue.size)
+        assertEquals("stale@example.com", inviteDeleteCaptor.firstValue[0].email)
         verify(membershipRepo, never()).deleteByTripId(any())
         verify(inviteRepo, never()).deleteByTripId(any())
     }
