@@ -5,6 +5,7 @@ import com.travelcompanion.application.expense.DeleteExpenseService
 import com.travelcompanion.application.expense.GetExpensesService
 import com.travelcompanion.application.expense.UpdateExpenseService
 import com.travelcompanion.domain.expense.ExpenseId
+import com.travelcompanion.domain.expense.ExpenseRepository
 import com.travelcompanion.domain.trip.TripId
 import com.travelcompanion.domain.user.UserId
 import com.travelcompanion.interfaces.rest.dto.CreateExpenseRequest
@@ -35,6 +36,7 @@ class ExpenseController(
     private val getExpensesService: GetExpensesService,
     private val updateExpenseService: UpdateExpenseService,
     private val deleteExpenseService: DeleteExpenseService,
+    private val expenseRepository: ExpenseRepository,
 ) {
 
     @PostMapping
@@ -76,7 +78,10 @@ class ExpenseController(
         @Valid @RequestBody request: UpdateExpenseRequest,
     ): ResponseEntity<Any> {
         val userId = requireUserId(authentication) ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        val tripIdUuid = TripId.fromString(tripId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         val expenseIdUuid = ExpenseId.fromString(expenseId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
+        val existingExpense = expenseRepository.findById(expenseIdUuid) ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+        if (existingExpense.tripId != tripIdUuid) return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
         val expense = updateExpenseService.execute(
             expenseId = expenseIdUuid,
             userId = userId,
@@ -95,7 +100,10 @@ class ExpenseController(
         @PathVariable expenseId: String,
     ): ResponseEntity<Any> {
         val userId = requireUserId(authentication) ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        val tripIdUuid = TripId.fromString(tripId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         val expenseIdUuid = ExpenseId.fromString(expenseId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
+        val existingExpense = expenseRepository.findById(expenseIdUuid) ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+        if (existingExpense.tripId != tripIdUuid) return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
         val deleted = deleteExpenseService.execute(expenseIdUuid, userId)
         return if (deleted) ResponseEntity.noContent().build()
         else ResponseEntity.status(HttpStatus.NOT_FOUND).build()
