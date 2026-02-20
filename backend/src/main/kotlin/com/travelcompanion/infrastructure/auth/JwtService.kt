@@ -59,8 +59,4 @@ class JwtService(
             .parseSignedClaims(token)
             .payload
 
-    /**
-     * Extracts the user ID from a valid JWT.
-     */
-    fun getUserIdFromToken(token: String): String = parseToken(token).subject
 }
