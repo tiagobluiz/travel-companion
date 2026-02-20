@@ -113,7 +113,7 @@ export function ExpensesSection({
         </button>
       ) : (
         <p className="mb-4 text-sm text-slate-500">
-          Read-only expenses view. Editors/owners (and pending invitees) can add expenses.
+          Read-only expenses view. Only editors and owners can add expenses.
         </p>
       )}
 

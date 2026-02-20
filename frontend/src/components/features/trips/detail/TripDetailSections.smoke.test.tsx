@@ -96,7 +96,7 @@ describe('Trip detail extracted sections', () => {
     )
 
     expect(screen.getByText('Day 1 (2026-01-01)')).toBeInTheDocument()
-    expect(screen.getByText('Read-only itinerary view. Editors/owners (and pending invitees) can plan items.')).toBeInTheDocument()
+    expect(screen.getByText('Read-only itinerary view. Only editors and owners can plan items.')).toBeInTheDocument()
   })
 
   it('renders collaborators unauthenticated message and authenticated list (smoke)', () => {

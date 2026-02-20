@@ -23,6 +23,20 @@ import { ItinerarySection } from './detail/ItinerarySection'
 import { TripDetailHeader } from './detail/TripDetailHeader'
 import { TripDetailsSection } from './detail/TripDetailsSection'
 
+function isUnauthorizedMutationError(error: unknown) {
+  const message = getErrorMessage(error, '').toLowerCase()
+  return (
+    message.includes('401') ||
+    message.includes('403') ||
+    message.includes('unauthorized') ||
+    message.includes('forbidden')
+  )
+}
+
+function permissionDeniedMessage(actionLabel: string) {
+  return `You do not have permission to ${actionLabel} for this trip.`
+}
+
 function toDayNumber(date: string, startDate: string) {
   const [year, month, day] = date.split('-').map(Number)
   const [startYear, startMonth, startDay] = startDate.split('-').map(Number)
@@ -156,11 +170,19 @@ export default function TripDetailPage() {
   })
 
   function handleMove(itemId: string, payload: MoveItineraryItemV2Request) {
+    if (!canEditPlanning) {
+      setItineraryError(permissionDeniedMessage('modify itinerary items'))
+      return
+    }
     setItineraryError('')
     moveItineraryMutation.mutate(
       { itemId, payload },
       {
         onError: (error: Error) => {
+          if (isUnauthorizedMutationError(error)) {
+            setItineraryError(permissionDeniedMessage('move itinerary items'))
+            return
+          }
           setItineraryError(error.message || 'Failed to move itinerary item.')
         },
       }
@@ -168,9 +190,17 @@ export default function TripDetailPage() {
   }
 
   function handleRemove(itemId: string) {
+    if (!canEditPlanning) {
+      setItineraryError(permissionDeniedMessage('modify itinerary items'))
+      return
+    }
     setItineraryError('')
     removeItineraryMutation.mutate(itemId, {
       onError: (error: Error) => {
+        if (isUnauthorizedMutationError(error)) {
+          setItineraryError(permissionDeniedMessage('remove itinerary items'))
+          return
+        }
         setItineraryError(error.message || 'Failed to remove itinerary item.')
       },
     })
@@ -179,6 +209,11 @@ export default function TripDetailPage() {
   function handleAddItinerary(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!trip) return
+    if (!canEditPlanning) {
+      setItineraryError(permissionDeniedMessage('add itinerary items'))
+      setShowItineraryForm(false)
+      return
+    }
     setItineraryError('')
     if (!placeName.trim() || !itemDate || !itemLatitude || !itemLongitude) return
 
@@ -209,6 +244,11 @@ export default function TripDetailPage() {
           setItemLongitude('')
         },
         onError: (error: Error) => {
+          if (isUnauthorizedMutationError(error)) {
+            setShowItineraryForm(false)
+            setItineraryError(permissionDeniedMessage('add itinerary items'))
+            return
+          }
           setItineraryError(error.message || 'Failed to add itinerary item.')
         },
       }
@@ -317,14 +357,9 @@ export default function TripDetailPage() {
   const isOwner = myRole === 'OWNER'
   const isEditor = myRole === 'EDITOR'
   const isMember = Boolean(myRole)
-  const isPendingInvitee = Boolean(
-    collaborators?.invites.some(
-      (invite) => invite.status === 'PENDING' && invite.email.toLowerCase() === user?.email?.toLowerCase()
-    )
-  )
   const canEditTripDetails = isOwner || isEditor
   const canEditPrivacy = isOwner
-  const canEditPlanning = isOwner || isEditor || isPendingInvitee
+  const canEditPlanning = isOwner || isEditor
 
   return (
     <div className="min-h-screen bg-slate-50">

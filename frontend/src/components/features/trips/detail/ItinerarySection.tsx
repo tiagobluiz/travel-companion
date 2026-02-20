@@ -138,7 +138,7 @@ export function ItinerarySection({
       )}
       {!canEditPlanning && (
         <p className="mb-4 text-sm text-slate-500">
-          Read-only itinerary view. Editors/owners (and pending invitees) can plan items.
+          Read-only itinerary view. Only editors and owners can plan items.
         </p>
       )}
 
