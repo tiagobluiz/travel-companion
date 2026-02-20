@@ -1,6 +1,8 @@
 import type { ItineraryV2Response, MoveItineraryItemV2Request } from '../../../../api/itinerary'
 import { DayColumn } from './DayColumn'
 import { PlacesToVisitColumn } from './PlacesToVisitColumn'
+import { ItineraryDragContext } from './dnd/DragContext'
+import { dayContainerId } from './dnd/mappers'
 
 interface ItineraryBoardProps {
   itinerary?: ItineraryV2Response
@@ -58,30 +60,38 @@ export function ItineraryBoard({
   }
 
   return (
-    <div className="space-y-4">
-      {itinerary.days.map((day, dayIndex) => (
-        <DayColumn
-          key={day.dayNumber}
-          day={day}
-          dayIndex={dayIndex}
-          totalDays={itinerary.days.length}
-          previousDayNumber={itinerary.days[dayIndex - 1]?.dayNumber}
-          nextDayNumber={itinerary.days[dayIndex + 1]?.dayNumber}
+    <ItineraryDragContext
+      itinerary={itinerary}
+      disabled={!canEditPlanning || isMovePending}
+      onMove={onMove}
+    >
+      <div className="space-y-4">
+        {itinerary.days.map((day, dayIndex) => (
+          <DayColumn
+            key={day.dayNumber}
+            containerId={dayContainerId(day.dayNumber)}
+            day={day}
+            dayIndex={dayIndex}
+            totalDays={itinerary.days.length}
+            previousDayNumber={itinerary.days[dayIndex - 1]?.dayNumber}
+            nextDayNumber={itinerary.days[dayIndex + 1]?.dayNumber}
+            canEditPlanning={canEditPlanning}
+            isMovePending={isMovePending}
+            onMove={onMove}
+            onRemove={onRemove}
+          />
+        ))}
+
+        <PlacesToVisitColumn
+          containerId="places"
+          placesToVisit={itinerary.placesToVisit}
+          firstDayNumber={itinerary.days[0]?.dayNumber}
           canEditPlanning={canEditPlanning}
           isMovePending={isMovePending}
           onMove={onMove}
           onRemove={onRemove}
         />
-      ))}
-
-      <PlacesToVisitColumn
-        placesToVisit={itinerary.placesToVisit}
-        firstDayNumber={itinerary.days[0]?.dayNumber}
-        canEditPlanning={canEditPlanning}
-        isMovePending={isMovePending}
-        onMove={onMove}
-        onRemove={onRemove}
-      />
-    </div>
+      </div>
+    </ItineraryDragContext>
   )
 }
