@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mapDragTargetToMovePayload } from './mappers'
+import { getTargetDayNumber, mapDragTargetToMovePayload } from './mappers'
 
 const containers = {
   'day:1': ['a', 'b', 'c'],
@@ -8,6 +8,10 @@ const containers = {
 }
 
 describe('mapDragTargetToMovePayload', () => {
+  it('returns undefined target day for malformed day container id', () => {
+    expect(getTargetDayNumber('day:not-a-number' as never)).toBeUndefined()
+  })
+
   it('maps same-list move to top using beforeItemId', () => {
     const payload = mapDragTargetToMovePayload({
       itemId: 'b',

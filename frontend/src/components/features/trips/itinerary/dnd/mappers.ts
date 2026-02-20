@@ -17,7 +17,11 @@ export function dayContainerId(dayNumber: number): ItineraryContainerId {
 
 export function getTargetDayNumber(containerId: ItineraryContainerId): number | undefined {
   if (containerId === 'places') return undefined
-  return Number(containerId.replace('day:', ''))
+  if (!containerId.startsWith('day:')) return undefined
+  const rawDayNumber = containerId.slice(4)
+  const parsedDayNumber = Number.parseInt(rawDayNumber, 10)
+  if (!Number.isFinite(parsedDayNumber) || Number.isNaN(parsedDayNumber)) return undefined
+  return parsedDayNumber
 }
 
 export function buildDndContainers(itinerary: ItineraryV2Response): ItineraryDndContainers {
