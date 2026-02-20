@@ -102,7 +102,7 @@ export function PlacesToVisitColumn({
                           disabled={!firstDayNumber || isMovePending}
                           className="text-xs px-2 py-1 rounded border border-slate-300 disabled:opacity-40"
                         >
-                          To day 1
+                          {firstDayNumber ? `To day ${firstDayNumber}` : 'To first day'}
                         </button>
                         <button
                           onClick={() => onRemove(item.id)}

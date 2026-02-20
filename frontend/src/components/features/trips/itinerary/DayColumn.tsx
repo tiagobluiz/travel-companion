@@ -115,7 +115,7 @@ export function DayColumn({
                         >
                           Remove
                         </button>
-                        {dayIndex > 0 && (
+                        {dayIndex > 0 && previousDayNumber !== undefined && (
                           <button
                             onClick={() => onMove(item.id, { targetDayNumber: previousDayNumber })}
                             disabled={isMovePending}
@@ -124,7 +124,7 @@ export function DayColumn({
                             Prev day
                           </button>
                         )}
-                        {dayIndex < totalDays - 1 && (
+                        {dayIndex < totalDays - 1 && nextDayNumber !== undefined && (
                           <button
                             onClick={() => onMove(item.id, { targetDayNumber: nextDayNumber })}
                             disabled={isMovePending}
