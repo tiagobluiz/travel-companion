@@ -64,7 +64,9 @@ class JwtAuthenticationFilter(
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             return authHeader.substring(7).takeIf { it.isNotBlank() }
         }
-        request.cookies?.find { it.name == cookieName }?.value?.takeIf { it.isNotBlank() }
-        return null
+        return request.cookies
+            ?.find { it.name == cookieName }
+            ?.value
+            ?.takeIf { it.isNotBlank() }
     }
 }
