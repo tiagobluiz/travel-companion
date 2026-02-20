@@ -28,7 +28,7 @@ export interface ItineraryItemV2Request {
   notes?: string
   latitude: number
   longitude: number
-  dayNumber?: number
+  dayNumber?: number | null
 }
 
 export interface MoveItineraryItemV2Request {

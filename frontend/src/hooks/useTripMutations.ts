@@ -3,6 +3,7 @@ import {
   addItineraryItem,
   deleteItineraryItem,
   moveItineraryItem,
+  updateItineraryItem,
   type ItineraryItemV2Request,
   type MoveItineraryItemV2Request,
 } from '../api/itinerary'
@@ -52,6 +53,12 @@ export function useTripMutations({ tripId, onTripDeleted }: UseTripMutationsOpti
     onSuccess: invalidateTripAndItinerary,
   })
 
+  const updateItineraryMutation = useMutation({
+    mutationFn: ({ itemId, data }: { itemId: string; data: ItineraryItemV2Request }) =>
+      updateItineraryItem(requireTripId(), itemId, data),
+    onSuccess: invalidateTripAndItinerary,
+  })
+
   const moveItineraryMutation = useMutation({
     mutationFn: ({ itemId, payload }: { itemId: string; payload: MoveItineraryItemV2Request }) =>
       moveItineraryItem(requireTripId(), itemId, payload),
@@ -67,6 +74,7 @@ export function useTripMutations({ tripId, onTripDeleted }: UseTripMutationsOpti
     deleteTripMutation,
     updateTripMutation,
     addItineraryMutation,
+    updateItineraryMutation,
     moveItineraryMutation,
     removeItineraryMutation,
   }
