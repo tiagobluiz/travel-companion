@@ -5,6 +5,7 @@ import java.util.UUID
 
 interface SpringDataTripInviteRepository : JpaRepository<TripInviteJpaEntity, UUID> {
     fun findByTripId(tripId: UUID): List<TripInviteJpaEntity>
+    fun findByTripIdIn(tripIds: Collection<UUID>): List<TripInviteJpaEntity>
     fun deleteByTripId(tripId: UUID)
 }
 
