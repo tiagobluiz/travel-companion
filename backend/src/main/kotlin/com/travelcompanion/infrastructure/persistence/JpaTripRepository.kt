@@ -31,38 +31,16 @@ class JpaTripRepository(
 
     @Transactional
     override fun save(trip: Trip): Trip {
-        val existing = springRepo.findById(trip.id.value).orElse(null)?.let { toDomain(it) }
+        val existingEntity = springRepo.findById(trip.id.value).orElse(null)
+        val existingMemberships = existingEntity?.let { membershipRepo.findByTripId(it.id) } ?: emptyList()
+        val existingInvites = existingEntity?.let { inviteRepo.findByTripId(it.id) } ?: emptyList()
+        val existing = existingEntity?.let { toDomain(it, existingMemberships, existingInvites) }
         val entity = toEntity(trip)
         val saved = springRepo.save(entity)
 
-        membershipRepo.deleteByTripId(saved.id)
-        membershipRepo.saveAll(
-            trip.memberships.map {
-                TripMembershipJpaEntity(
-                    tripId = saved.id,
-                    userId = it.userId.value,
-                    role = it.role.name,
-                    createdAt = Instant.now(),
-                )
-            }
-        )
-
-        inviteRepo.deleteByTripId(saved.id)
-        inviteRepo.flush()
-        inviteRepo.saveAll(
-            trip.invites.map {
-                TripInviteJpaEntity(
-                    id = UUID.randomUUID(),
-                    tripId = saved.id,
-                    email = it.email,
-                    role = it.role.name,
-                    status = it.status.name,
-                    createdAt = it.createdAt,
-                )
-            }
-        )
-
-        val savedDomain = toDomain(saved)
+        val savedMembershipEntities = syncMemberships(saved.id, trip.memberships)
+        val savedInviteEntities = syncInvites(saved.id, trip.invites)
+        val savedDomain = toDomain(saved, savedMembershipEntities, savedInviteEntities)
 
         val metadata = mapOf(
             "aggregate" to "trip",
@@ -92,13 +70,19 @@ class JpaTripRepository(
     }
 
     override fun findById(id: TripId): Trip? =
-        springRepo.findById(id.value).orElse(null)?.let { toDomain(it) }
+        springRepo.findById(id.value).orElse(null)?.let { entity ->
+            toDomain(
+                entity = entity,
+                membershipEntities = membershipRepo.findByTripId(entity.id),
+                inviteEntities = inviteRepo.findByTripId(entity.id),
+            )
+        }
 
     override fun findByUserId(userId: UserId): List<Trip> =
-        springRepo.findAccessibleByUserIdOrderByCreatedAtDesc(userId.value).map { toDomain(it) }
+        hydrateTrips(springRepo.findAccessibleByUserIdOrderByCreatedAtDesc(userId.value))
 
     override fun findByInviteEmail(email: String): List<Trip> =
-        springRepo.findByInviteEmailIgnoreCase(email.trim()).map { toDomain(it) }
+        hydrateTrips(springRepo.findByInviteEmailIgnoreCase(email.trim()))
 
     @Transactional
     override fun deleteById(id: TripId) {
@@ -191,9 +175,73 @@ class JpaTripRepository(
         }
     }
 
-    private fun toDomain(entity: TripJpaEntity): Trip {
+    private fun hydrateTrips(entities: List<TripJpaEntity>): List<Trip> {
+        if (entities.isEmpty()) return emptyList()
+        val tripIds = entities.map { it.id }
+        val membershipsByTripId = membershipRepo.findByTripIdIn(tripIds).groupBy { it.tripId }
+        val invitesByTripId = inviteRepo.findByTripIdIn(tripIds).groupBy { it.tripId }
+        return entities.map { entity ->
+            toDomain(
+                entity = entity,
+                membershipEntities = membershipsByTripId[entity.id].orEmpty(),
+                inviteEntities = invitesByTripId[entity.id].orEmpty(),
+            )
+        }
+    }
+
+    private fun syncMemberships(
+        tripId: UUID,
+        desiredMemberships: List<TripMembership>,
+    ): List<TripMembershipJpaEntity> {
+        val existing = membershipRepo.findByTripId(tripId)
+        val existingByUserId = existing.associateBy { it.userId }
+        val desiredUserIds = desiredMemberships.map { it.userId.value }.toSet()
+        val stale = existing.filter { it.userId !in desiredUserIds }
+        if (stale.isNotEmpty()) membershipRepo.deleteAll(stale)
+
+        val synced = desiredMemberships.map { desired ->
+            val persisted = existingByUserId[desired.userId.value]
+            TripMembershipJpaEntity(
+                tripId = tripId,
+                userId = desired.userId.value,
+                role = desired.role.name,
+                createdAt = persisted?.createdAt ?: Instant.now(),
+            )
+        }
+        return membershipRepo.saveAll(synced)
+    }
+
+    private fun syncInvites(
+        tripId: UUID,
+        desiredInvites: List<TripInvite>,
+    ): List<TripInviteJpaEntity> {
+        val existing = inviteRepo.findByTripId(tripId)
+        val existingByEmail = existing.associateBy { normalizeEmail(it.email) }
+        val desiredEmails = desiredInvites.map { normalizeEmail(it.email) }.toSet()
+        val stale = existing.filter { normalizeEmail(it.email) !in desiredEmails }
+        if (stale.isNotEmpty()) inviteRepo.deleteAll(stale)
+
+        val synced = desiredInvites.map { desired ->
+            val persisted = existingByEmail[normalizeEmail(desired.email)]
+            TripInviteJpaEntity(
+                id = persisted?.id ?: UUID.randomUUID(),
+                tripId = tripId,
+                email = normalizeEmail(desired.email),
+                role = desired.role.name,
+                status = desired.status.name,
+                createdAt = persisted?.createdAt ?: desired.createdAt,
+            )
+        }
+        return inviteRepo.saveAll(synced)
+    }
+
+    private fun toDomain(
+        entity: TripJpaEntity,
+        membershipEntities: List<TripMembershipJpaEntity>,
+        inviteEntities: List<TripInviteJpaEntity>,
+    ): Trip {
         val ownerId = UserId(entity.ownerId)
-        val persistedMemberships = membershipRepo.findByTripId(entity.id).map {
+        val persistedMemberships = membershipEntities.map {
             TripMembership(
                 userId = UserId(it.userId),
                 role = TripRole.valueOf(it.role),
@@ -205,7 +253,7 @@ class JpaTripRepository(
             persistedMemberships
         }
 
-        val invites = inviteRepo.findByTripId(entity.id).map {
+        val invites = inviteEntities.map {
             TripInvite(
                 email = it.email,
                 role = TripRole.valueOf(it.role),
@@ -228,4 +276,6 @@ class JpaTripRepository(
             createdAt = entity.createdAt,
         )
     }
+
+    private fun normalizeEmail(email: String): String = email.trim().lowercase()
 }

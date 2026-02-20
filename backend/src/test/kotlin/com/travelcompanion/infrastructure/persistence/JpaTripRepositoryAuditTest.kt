@@ -23,7 +23,6 @@ import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.time.LocalDate
 import java.util.Optional
-import java.util.UUID
 
 class JpaTripRepositoryAuditTest {
 
@@ -93,28 +92,17 @@ class JpaTripRepositoryAuditTest {
                     userId = ownerId.value,
                     role = TripRole.OWNER.name,
                     createdAt = createdAt,
-                ),
-                TripMembershipJpaEntity(
-                    tripId = tripId.value,
-                    userId = editorId.value,
-                    role = TripRole.EDITOR.name,
-                    createdAt = createdAt,
                 )
             ),
         )
         whenever(inviteRepo.findByTripId(tripId.value)).thenReturn(
             emptyList(),
-            listOf(
-                TripInviteJpaEntity(
-                    id = UUID.randomUUID(),
-                    tripId = tripId.value,
-                    email = "new@example.com",
-                    role = TripRole.VIEWER.name,
-                    status = InviteStatus.PENDING.name,
-                    createdAt = createdAt,
-                )
-            ),
+            emptyList(),
         )
+        whenever(membershipRepo.saveAll(any<List<TripMembershipJpaEntity>>()))
+            .thenAnswer { it.arguments[0] as List<TripMembershipJpaEntity> }
+        whenever(inviteRepo.saveAll(any<List<TripInviteJpaEntity>>()))
+            .thenAnswer { it.arguments[0] as List<TripInviteJpaEntity> }
 
         val persistedEvents = mutableListOf<AuditEventJpaEntity>()
         whenever(auditRepo.save(any<AuditEventJpaEntity>())).thenAnswer {
