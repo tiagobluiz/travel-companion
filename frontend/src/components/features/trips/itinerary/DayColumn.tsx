@@ -76,7 +76,9 @@ export function DayColumn({
                   </button>
                   <button
                     onClick={() => onRemove(item.id)}
-                    className="text-xs px-2 py-1 rounded border border-red-300 text-red-700"
+                    disabled={isMovePending}
+                    aria-disabled={isMovePending}
+                    className="text-xs px-2 py-1 rounded border border-red-300 text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Remove
                   </button>

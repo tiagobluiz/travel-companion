@@ -356,6 +356,7 @@ export default function TripDetailPage() {
         <ItinerarySection
           trip={trip}
           itinerary={itinerary}
+          isItineraryLoading={isItineraryLoading}
           canEditPlanning={canEditPlanning}
           showItineraryForm={showItineraryForm}
           itineraryLoadError={itineraryLoadError}

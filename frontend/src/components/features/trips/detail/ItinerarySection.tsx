@@ -6,6 +6,7 @@ import { ItineraryBoard } from '../itinerary/ItineraryBoard'
 interface ItinerarySectionProps {
   trip: Trip
   itinerary: ItineraryV2Response
+  isItineraryLoading: boolean
   canEditPlanning: boolean
   showItineraryForm: boolean
   itineraryLoadError: unknown
@@ -32,6 +33,7 @@ interface ItinerarySectionProps {
 export function ItinerarySection({
   trip,
   itinerary,
+  isItineraryLoading,
   canEditPlanning,
   showItineraryForm,
   itineraryLoadError,
@@ -142,7 +144,7 @@ export function ItinerarySection({
 
       <ItineraryBoard
         itinerary={itinerary}
-        isLoading={false}
+        isLoading={isItineraryLoading}
         loadError={itineraryLoadError}
         canEditPlanning={canEditPlanning}
         isMovePending={isMovePending}

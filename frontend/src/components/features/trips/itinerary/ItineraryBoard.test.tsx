@@ -59,6 +59,24 @@ describe('ItineraryBoard', () => {
     expect(screen.getByText('Montmartre')).toBeInTheDocument()
   })
 
+  it('renders edit controls when planning is enabled', () => {
+    render(
+      <ItineraryBoard
+        itinerary={itinerary}
+        isLoading={false}
+        loadError={null}
+        canEditPlanning
+        isMovePending={false}
+        onMove={vi.fn()}
+        onRemove={vi.fn()}
+      />
+    )
+
+    expect(screen.getAllByRole('button', { name: 'Move up' }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('button', { name: 'Move down' }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('button', { name: 'Remove' }).length).toBeGreaterThan(0)
+  })
+
   it('renders empty states for day and places containers', () => {
     render(
       <ItineraryBoard

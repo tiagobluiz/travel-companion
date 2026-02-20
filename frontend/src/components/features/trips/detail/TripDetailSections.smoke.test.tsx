@@ -70,6 +70,7 @@ describe('Trip detail extracted sections', () => {
           days: [{ dayNumber: 1, date: '2026-01-01', items: [] }],
           placesToVisit: { label: 'Places To Visit', items: [] },
         }}
+        isItineraryLoading={false}
         canEditPlanning={false}
         showItineraryForm={false}
         itineraryLoadError={null}
