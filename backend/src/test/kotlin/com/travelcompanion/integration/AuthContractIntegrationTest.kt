@@ -13,7 +13,7 @@ import org.springframework.test.web.servlet.post
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
+@ActiveProfiles("integ")
 class AuthContractIntegrationTest {
 
     @Autowired
