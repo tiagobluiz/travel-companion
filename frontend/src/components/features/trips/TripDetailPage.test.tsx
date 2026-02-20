@@ -341,12 +341,12 @@ describe('TripDetailPage', () => {
         notes: 'Updated note',
         latitude: 1,
         longitude: 1,
-        dayNumber: undefined,
+        dayNumber: null,
       })
     })
   })
 
-  it('preserves existing notes when edit payload omits notes', async () => {
+  it('allows clearing notes from edit form', async () => {
     renderPage()
     await screen.findByText('Louvre')
 
@@ -357,7 +357,7 @@ describe('TripDetailPage', () => {
     await waitFor(() => {
       expect(mockUpdateItineraryItem).toHaveBeenCalledWith('trip-1', 'day1-a', {
         placeName: 'Louvre',
-        notes: 'Morning',
+        notes: '',
         latitude: 1,
         longitude: 1,
         dayNumber: 1,

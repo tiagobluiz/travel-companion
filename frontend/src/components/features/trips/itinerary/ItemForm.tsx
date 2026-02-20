@@ -12,7 +12,7 @@ export interface ItemFormCreatePayload {
 
 export interface ItemFormEditPayload {
   notes?: string
-  dayNumber?: number
+  dayNumber?: number | null
 }
 
 interface ItemFormProps {
@@ -81,7 +81,7 @@ export function ItemForm({
     e.preventDefault()
     setValidationError('')
 
-    let dayNumber: number | undefined
+    let dayNumber: number | null | undefined
     if (destinationType === 'DAY') {
       if (!date) {
         setValidationError('Date is required when destination is a day.')
@@ -93,9 +93,12 @@ export function ItemForm({
       }
       dayNumber = toDayNumber(date, tripStartDate)
     }
+    if (mode === 'edit' && destinationType === 'PLACES') {
+      dayNumber = null
+    }
 
     if (mode === 'edit') {
-      onEdit?.({ notes: notes || undefined, dayNumber })
+      onEdit?.({ notes, dayNumber })
       return
     }
 
@@ -116,7 +119,7 @@ export function ItemForm({
       notes: notes || undefined,
       latitude: lat,
       longitude: lng,
-      dayNumber,
+      dayNumber: dayNumber ?? undefined,
     })
   }
 
@@ -131,6 +134,7 @@ export function ItemForm({
       {mode === 'create' && (
         <>
           <input
+            aria-label="Place name"
             type="text"
             placeholder="Place or activity"
             value={placeName}
@@ -140,6 +144,7 @@ export function ItemForm({
           />
           <div className="grid grid-cols-2 gap-3">
             <input
+              aria-label="Latitude"
               type="number"
               step="any"
               placeholder="Latitude"
@@ -149,6 +154,7 @@ export function ItemForm({
               className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
             />
             <input
+              aria-label="Longitude"
               type="number"
               step="any"
               placeholder="Longitude"
@@ -190,6 +196,7 @@ export function ItemForm({
         </select>
         {destinationType === 'DAY' && (
           <input
+            aria-label="Trip date"
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
