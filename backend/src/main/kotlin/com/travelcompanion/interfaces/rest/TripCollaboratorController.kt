@@ -4,11 +4,10 @@ import com.travelcompanion.application.trip.ManageTripMembershipService
 import com.travelcompanion.domain.trip.TripId
 import com.travelcompanion.domain.user.UserId
 import com.travelcompanion.interfaces.rest.dto.ChangeRoleRequest
-import com.travelcompanion.interfaces.rest.dto.CollaboratorsResponse
-import com.travelcompanion.interfaces.rest.dto.InviteDto
 import com.travelcompanion.interfaces.rest.dto.InviteMemberRequest
 import com.travelcompanion.interfaces.rest.dto.InviteResponseRequest
-import com.travelcompanion.interfaces.rest.dto.MembershipDto
+import com.travelcompanion.interfaces.rest.support.AuthPrincipalResolver
+import com.travelcompanion.interfaces.rest.support.CollaboratorResponseMapper
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -27,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/trips/{tripId}")
 class TripCollaboratorController(
     private val manageTripMembershipService: ManageTripMembershipService,
+    private val authPrincipalResolver: AuthPrincipalResolver,
 ) {
 
     @GetMapping("/collaborators")
@@ -34,7 +34,8 @@ class TripCollaboratorController(
         authentication: Authentication,
         @PathVariable tripId: String,
     ): ResponseEntity<Any> {
-        val requester = requireUserId(authentication) ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        val requester = authPrincipalResolver.userId(authentication)
+            ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val id = TripId.fromString(tripId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         if (!manageTripMembershipService.existsTrip(id)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
@@ -42,12 +43,7 @@ class TripCollaboratorController(
         val trip = manageTripMembershipService.getCollaborators(id, requester)
             ?: return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
 
-        return ResponseEntity.ok(
-            CollaboratorsResponse(
-                memberships = trip.memberships.map { MembershipDto(it.userId.toString(), it.role.name) },
-                invites = trip.invites.map { InviteDto(it.email, it.role.name, it.status.name) },
-            )
-        )
+        return ResponseEntity.ok(CollaboratorResponseMapper.toResponse(trip))
     }
 
     @PostMapping("/invites")
@@ -56,11 +52,12 @@ class TripCollaboratorController(
         @PathVariable tripId: String,
         @Valid @RequestBody request: InviteMemberRequest,
     ): ResponseEntity<Any> {
-        val actor = requireUserId(authentication) ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        val actor = authPrincipalResolver.userId(authentication)
+            ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val id = TripId.fromString(tripId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         val trip = manageTripMembershipService.inviteMember(id, actor, request.email, request.role)
             ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
-        return ResponseEntity.ok(toCollaboratorsResponse(trip))
+        return ResponseEntity.ok(CollaboratorResponseMapper.toResponse(trip))
     }
 
     @PostMapping("/invites/respond")
@@ -69,11 +66,12 @@ class TripCollaboratorController(
         @PathVariable tripId: String,
         @Valid @RequestBody request: InviteResponseRequest,
     ): ResponseEntity<Any> {
-        val actor = requireUserId(authentication) ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        val actor = authPrincipalResolver.userId(authentication)
+            ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val id = TripId.fromString(tripId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         val trip = manageTripMembershipService.respondToInvite(id, actor, request.accept)
             ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
-        return ResponseEntity.ok(toCollaboratorsResponse(trip))
+        return ResponseEntity.ok(CollaboratorResponseMapper.toResponse(trip))
     }
 
     @DeleteMapping("/invites")
@@ -82,11 +80,12 @@ class TripCollaboratorController(
         @PathVariable tripId: String,
         @RequestParam email: String,
     ): ResponseEntity<Any> {
-        val actor = requireUserId(authentication) ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        val actor = authPrincipalResolver.userId(authentication)
+            ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val id = TripId.fromString(tripId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         val trip = manageTripMembershipService.removePendingOrDeclinedInvite(id, actor, email)
             ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
-        return ResponseEntity.ok(toCollaboratorsResponse(trip))
+        return ResponseEntity.ok(CollaboratorResponseMapper.toResponse(trip))
     }
 
     @PatchMapping("/members/{memberId}/role")
@@ -96,12 +95,13 @@ class TripCollaboratorController(
         @PathVariable memberId: String,
         @Valid @RequestBody request: ChangeRoleRequest,
     ): ResponseEntity<Any> {
-        val actor = requireUserId(authentication) ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        val actor = authPrincipalResolver.userId(authentication)
+            ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val id = TripId.fromString(tripId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         val targetUserId = UserId.fromString(memberId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         val trip = manageTripMembershipService.changeMemberRole(id, actor, targetUserId, request.role)
             ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
-        return ResponseEntity.ok(toCollaboratorsResponse(trip))
+        return ResponseEntity.ok(CollaboratorResponseMapper.toResponse(trip))
     }
 
     @PatchMapping("/invites/role")
@@ -111,11 +111,12 @@ class TripCollaboratorController(
         @RequestParam email: String,
         @Valid @RequestBody request: ChangeRoleRequest,
     ): ResponseEntity<Any> {
-        val actor = requireUserId(authentication) ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        val actor = authPrincipalResolver.userId(authentication)
+            ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val id = TripId.fromString(tripId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         val trip = manageTripMembershipService.changeInviteRole(id, actor, email, request.role)
             ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
-        return ResponseEntity.ok(toCollaboratorsResponse(trip))
+        return ResponseEntity.ok(CollaboratorResponseMapper.toResponse(trip))
     }
 
     @DeleteMapping("/members/{memberId}")
@@ -124,12 +125,13 @@ class TripCollaboratorController(
         @PathVariable tripId: String,
         @PathVariable memberId: String,
     ): ResponseEntity<Any> {
-        val actor = requireUserId(authentication) ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        val actor = authPrincipalResolver.userId(authentication)
+            ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val id = TripId.fromString(tripId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         val target = UserId.fromString(memberId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         val trip = manageTripMembershipService.removeMember(id, actor, target)
             ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
-        return ResponseEntity.ok(toCollaboratorsResponse(trip))
+        return ResponseEntity.ok(CollaboratorResponseMapper.toResponse(trip))
     }
 
     @DeleteMapping("/members/me")
@@ -138,7 +140,8 @@ class TripCollaboratorController(
         @PathVariable tripId: String,
         @RequestParam(required = false) successorOwnerUserId: String?,
     ): ResponseEntity<Any> {
-        val actor = requireUserId(authentication) ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        val actor = authPrincipalResolver.userId(authentication)
+            ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val id = TripId.fromString(tripId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         val successor = successorOwnerUserId?.let { UserId.fromString(it) }
         if (successorOwnerUserId != null && successor == null) {
@@ -147,17 +150,6 @@ class TripCollaboratorController(
 
         val trip = manageTripMembershipService.leaveTrip(id, actor, successor)
             ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
-        return ResponseEntity.ok(toCollaboratorsResponse(trip))
+        return ResponseEntity.ok(CollaboratorResponseMapper.toResponse(trip))
     }
-
-    private fun requireUserId(authentication: Authentication): UserId? {
-        val principal = authentication.principal as? String ?: return null
-        return UserId.fromString(principal)
-    }
-
-    private fun toCollaboratorsResponse(trip: com.travelcompanion.domain.trip.Trip): CollaboratorsResponse =
-        CollaboratorsResponse(
-            memberships = trip.memberships.map { MembershipDto(it.userId.toString(), it.role.name) },
-            invites = trip.invites.map { InviteDto(it.email, it.role.name, it.status.name) },
-        )
 }

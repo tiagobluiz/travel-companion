@@ -5,13 +5,11 @@ import com.travelcompanion.application.trip.DeleteTripService
 import com.travelcompanion.application.trip.GetTripService
 import com.travelcompanion.application.trip.GetTripsService
 import com.travelcompanion.application.trip.UpdateTripService
-import com.travelcompanion.domain.trip.Trip
 import com.travelcompanion.domain.trip.TripId
-import com.travelcompanion.domain.user.UserId
 import com.travelcompanion.interfaces.rest.dto.CreateTripRequest
-import com.travelcompanion.interfaces.rest.dto.ItineraryItemResponse
-import com.travelcompanion.interfaces.rest.dto.TripResponse
 import com.travelcompanion.interfaces.rest.dto.UpdateTripRequest
+import com.travelcompanion.interfaces.rest.support.AuthPrincipalResolver
+import com.travelcompanion.interfaces.rest.support.TripResponseMapper
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -39,6 +37,7 @@ class TripController(
     private val getTripService: GetTripService,
     private val updateTripService: UpdateTripService,
     private val deleteTripService: DeleteTripService,
+    private val authPrincipalResolver: AuthPrincipalResolver,
 ) {
 
     @PostMapping
@@ -46,7 +45,8 @@ class TripController(
         authentication: Authentication,
         @Valid @RequestBody request: CreateTripRequest,
     ): ResponseEntity<Any> {
-        val userId = resolveUserId(authentication) ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        val userId = authPrincipalResolver.userId(authentication)
+            ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val trip = createTripService.execute(
             userId = userId,
             name = request.name,
@@ -54,14 +54,15 @@ class TripController(
             endDate = request.endDate,
             visibility = request.visibility,
         )
-        return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(trip))
+        return ResponseEntity.status(HttpStatus.CREATED).body(TripResponseMapper.toResponse(trip))
     }
 
     @GetMapping
     fun list(authentication: Authentication): ResponseEntity<Any> {
-        val userId = resolveUserId(authentication) ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        val userId = authPrincipalResolver.userId(authentication)
+            ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val trips = getTripsService.execute(userId)
-        return ResponseEntity.ok(trips.map { toResponse(it) })
+        return ResponseEntity.ok(trips.map { TripResponseMapper.toResponse(it) })
     }
 
     @GetMapping("/{id}")
@@ -69,11 +70,11 @@ class TripController(
         authentication: Authentication?,
         @PathVariable id: String,
     ): ResponseEntity<Any> {
-        val userId = resolveUserId(authentication)
+        val userId = authPrincipalResolver.userId(authentication)
         val tripId = TripId.fromString(id) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         val trip = getTripService.execute(tripId, userId)
             ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
-        return ResponseEntity.ok(toResponse(trip))
+        return ResponseEntity.ok(TripResponseMapper.toResponse(trip))
     }
 
     @PutMapping("/{id}")
@@ -82,7 +83,8 @@ class TripController(
         @PathVariable id: String,
         @Valid @RequestBody request: UpdateTripRequest,
     ): ResponseEntity<Any> {
-        val userId = resolveUserId(authentication) ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        val userId = authPrincipalResolver.userId(authentication)
+            ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val tripId = TripId.fromString(id) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         val trip = updateTripService.execute(
             tripId = tripId,
@@ -92,7 +94,7 @@ class TripController(
             endDate = request.endDate,
             visibility = request.visibility,
         ) ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
-        return ResponseEntity.ok(toResponse(trip))
+        return ResponseEntity.ok(TripResponseMapper.toResponse(trip))
     }
 
     @DeleteMapping("/{id}")
@@ -100,34 +102,11 @@ class TripController(
         authentication: Authentication,
         @PathVariable id: String,
     ): ResponseEntity<Any> {
-        val userId = resolveUserId(authentication) ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        val userId = authPrincipalResolver.userId(authentication)
+            ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val tripId = TripId.fromString(id) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         val deleted = deleteTripService.execute(tripId, userId)
         return if (deleted) ResponseEntity.noContent().build()
         else ResponseEntity.status(HttpStatus.NOT_FOUND).build()
     }
-
-    private fun resolveUserId(authentication: Authentication?): UserId? {
-        if (authentication == null) return null
-        val principal = authentication.principal as? String ?: return null
-        return UserId.fromString(principal)
-    }
-
-    private fun toResponse(trip: Trip) = TripResponse(
-        id = trip.id.toString(),
-        name = trip.name,
-        startDate = trip.startDate.toString(),
-        endDate = trip.endDate.toString(),
-        visibility = trip.visibility.name,
-        itineraryItems = trip.itineraryItems.map {
-            ItineraryItemResponse(
-                placeName = it.placeName,
-                date = it.date.toString(),
-                notes = it.notes,
-                latitude = it.latitude,
-                longitude = it.longitude,
-            )
-        },
-        createdAt = trip.createdAt.toString(),
-    )
 }
