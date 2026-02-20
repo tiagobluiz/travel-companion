@@ -8,7 +8,7 @@ interface ItineraryItemCardProps {
   isPending: boolean
   tripStartDate: string
   tripEndDate: string
-  onEdit: (payload: ItemFormEditPayload) => void
+  onEdit: (payload: ItemFormEditPayload) => Promise<void> | void
   children?: ReactNode
 }
 
@@ -33,9 +33,13 @@ export function ItineraryItemCard({
           isPending={isPending}
           initialNotes={item.notes}
           initialDayNumber={item.dayNumber}
-          onEdit={(payload) => {
-            onEdit(payload)
-            setIsEditing(false)
+          onEdit={async (payload) => {
+            try {
+              await onEdit(payload)
+              setIsEditing(false)
+            } catch {
+              // Keep form open so user can retry after parent surfaces the error.
+            }
           }}
           onCancel={() => setIsEditing(false)}
         />

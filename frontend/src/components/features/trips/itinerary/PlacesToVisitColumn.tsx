@@ -14,7 +14,7 @@ interface PlacesToVisitColumnProps {
   tripStartDate: string
   tripEndDate: string
   onMove: (itemId: string, payload: MoveItineraryItemV2Request) => void
-  onEdit: (itemId: string, payload: ItemFormEditPayload) => void
+  onEdit: (itemId: string, payload: ItemFormEditPayload) => Promise<void> | void
   onRemove: (itemId: string) => void
 }
 
@@ -48,30 +48,38 @@ export function PlacesToVisitColumn({
               onEdit={(payload) => onEdit(item.id, payload)}
             >
               <button
-                onClick={() =>
+                onClick={() => {
+                  if (isMovePending || isEditPending) return
                   onMove(item.id, {
                     beforeItemId: placesToVisit.items[itemIndex - 1]?.id,
                   })
-                }
-                disabled={itemIndex === 0 || isMovePending}
+                }}
+                disabled={itemIndex === 0 || isMovePending || isEditPending}
+                aria-disabled={itemIndex === 0 || isMovePending || isEditPending}
                 className="text-xs px-2 py-1 rounded border border-slate-300 disabled:opacity-40"
               >
                 Move up
               </button>
               <button
-                onClick={() =>
+                onClick={() => {
+                  if (isMovePending || isEditPending) return
                   onMove(item.id, {
                     afterItemId: placesToVisit.items[itemIndex + 1]?.id,
                   })
-                }
-                disabled={itemIndex === placesToVisit.items.length - 1 || isMovePending}
+                }}
+                disabled={itemIndex === placesToVisit.items.length - 1 || isMovePending || isEditPending}
+                aria-disabled={itemIndex === placesToVisit.items.length - 1 || isMovePending || isEditPending}
                 className="text-xs px-2 py-1 rounded border border-slate-300 disabled:opacity-40"
               >
                 Move down
               </button>
               <button
-                onClick={() => onMove(item.id, { targetDayNumber: firstDayNumber })}
-                disabled={!firstDayNumber || isMovePending}
+                onClick={() => {
+                  if (isMovePending || isEditPending) return
+                  onMove(item.id, { targetDayNumber: firstDayNumber })
+                }}
+                disabled={!firstDayNumber || isMovePending || isEditPending}
+                aria-disabled={!firstDayNumber || isMovePending || isEditPending}
                 className="text-xs px-2 py-1 rounded border border-slate-300 disabled:opacity-40"
               >
                 To day 1

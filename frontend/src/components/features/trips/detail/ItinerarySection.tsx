@@ -25,7 +25,7 @@ interface ItinerarySectionProps {
   onShowForm: () => void
   onHideForm: () => void
   onAddItinerary: (payload: ItemFormCreatePayload) => void
-  onEditItinerary: (item: ItineraryItemV2, payload: ItemFormEditPayload) => void
+  onEditItinerary: (item: ItineraryItemV2, payload: ItemFormEditPayload) => Promise<void> | void
   onMove: (itemId: string, payload: MoveItineraryItemV2Request) => void
   onRemove: (itemId: string) => void
 }
@@ -94,8 +94,8 @@ export function ItinerarySection({
           const item =
             itinerary.days.flatMap((day) => day.items).find((dayItem) => dayItem.id === itemId) ??
             itinerary.placesToVisit.items.find((placeItem) => placeItem.id === itemId)
-          if (!item) return
-          onEditItinerary(item, payload)
+          if (!item) return Promise.resolve()
+          return onEditItinerary(item, payload)
         }}
         onRemove={onRemove}
       />

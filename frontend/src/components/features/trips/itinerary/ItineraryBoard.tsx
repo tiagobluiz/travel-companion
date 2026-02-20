@@ -13,7 +13,7 @@ interface ItineraryBoardProps {
   tripStartDate: string
   tripEndDate: string
   onMove: (itemId: string, payload: MoveItineraryItemV2Request) => void
-  onEdit: (itemId: string, payload: ItemFormEditPayload) => void
+  onEdit: (itemId: string, payload: ItemFormEditPayload) => Promise<void> | void
   onRemove: (itemId: string) => void
 }
 

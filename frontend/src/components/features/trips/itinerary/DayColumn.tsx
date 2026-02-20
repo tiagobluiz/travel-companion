@@ -14,7 +14,7 @@ interface DayColumnProps {
   tripStartDate: string
   tripEndDate: string
   onMove: (itemId: string, payload: MoveItineraryItemV2Request) => void
-  onEdit: (itemId: string, payload: ItemFormEditPayload) => void
+  onEdit: (itemId: string, payload: ItemFormEditPayload) => Promise<void> | void
   onRemove: (itemId: string) => void
 }
 
@@ -53,32 +53,40 @@ export function DayColumn({
               onEdit={(payload) => onEdit(item.id, payload)}
             >
               <button
-                onClick={() =>
+                onClick={() => {
+                  if (isMovePending || isEditPending) return
                   onMove(item.id, {
                     targetDayNumber: day.dayNumber,
                     beforeItemId: day.items[itemIndex - 1]?.id,
                   })
-                }
-                disabled={itemIndex === 0 || isMovePending}
+                }}
+                disabled={itemIndex === 0 || isMovePending || isEditPending}
+                aria-disabled={itemIndex === 0 || isMovePending || isEditPending}
                 className="text-xs px-2 py-1 rounded border border-slate-300 disabled:opacity-40"
               >
                 Move up
               </button>
               <button
-                onClick={() =>
+                onClick={() => {
+                  if (isMovePending || isEditPending) return
                   onMove(item.id, {
                     targetDayNumber: day.dayNumber,
                     afterItemId: day.items[itemIndex + 1]?.id,
                   })
-                }
-                disabled={itemIndex === day.items.length - 1 || isMovePending}
+                }}
+                disabled={itemIndex === day.items.length - 1 || isMovePending || isEditPending}
+                aria-disabled={itemIndex === day.items.length - 1 || isMovePending || isEditPending}
                 className="text-xs px-2 py-1 rounded border border-slate-300 disabled:opacity-40"
               >
                 Move down
               </button>
               <button
-                onClick={() => onMove(item.id, {})}
-                disabled={isMovePending}
+                onClick={() => {
+                  if (isMovePending || isEditPending) return
+                  onMove(item.id, {})
+                }}
+                disabled={isMovePending || isEditPending}
+                aria-disabled={isMovePending || isEditPending}
                 className="text-xs px-2 py-1 rounded border border-slate-300"
               >
                 To places
@@ -93,8 +101,12 @@ export function DayColumn({
               </button>
               {dayIndex > 0 && (
                 <button
-                  onClick={() => onMove(item.id, { targetDayNumber: previousDayNumber })}
-                  disabled={isMovePending}
+                  onClick={() => {
+                    if (isMovePending || isEditPending) return
+                    onMove(item.id, { targetDayNumber: previousDayNumber })
+                  }}
+                  disabled={isMovePending || isEditPending}
+                  aria-disabled={isMovePending || isEditPending}
                   className="text-xs px-2 py-1 rounded border border-slate-300"
                 >
                   Prev day
@@ -102,8 +114,12 @@ export function DayColumn({
               )}
               {dayIndex < totalDays - 1 && (
                 <button
-                  onClick={() => onMove(item.id, { targetDayNumber: nextDayNumber })}
-                  disabled={isMovePending}
+                  onClick={() => {
+                    if (isMovePending || isEditPending) return
+                    onMove(item.id, { targetDayNumber: nextDayNumber })
+                  }}
+                  disabled={isMovePending || isEditPending}
+                  aria-disabled={isMovePending || isEditPending}
                   className="text-xs px-2 py-1 rounded border border-slate-300"
                 >
                   Next day

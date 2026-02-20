@@ -186,10 +186,10 @@ export default function TripDetailPage() {
     )
   }
 
-  function handleEditItinerary(item: ItineraryItemV2, payload: { notes?: string; dayNumber?: number }) {
+  async function handleEditItinerary(item: ItineraryItemV2, payload: { notes?: string; dayNumber?: number }) {
     setItineraryError('')
-    updateItineraryMutation.mutate(
-      {
+    try {
+      await updateItineraryMutation.mutateAsync({
         itemId: item.id,
         data: {
           placeName: item.placeName,
@@ -198,13 +198,11 @@ export default function TripDetailPage() {
           longitude: item.longitude,
           dayNumber: payload.dayNumber,
         },
-      },
-      {
-        onError: (error: Error) => {
-          setItineraryError(error.message || 'Failed to update itinerary item.')
-        },
-      }
-    )
+      })
+    } catch (error) {
+      setItineraryError(getErrorMessage(error, 'Failed to update itinerary item.'))
+      throw error
+    }
   }
 
   function handleAddExpense(e: FormEvent<HTMLFormElement>) {
