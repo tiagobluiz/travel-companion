@@ -13,7 +13,7 @@ import java.util.UUID
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-class CollaboratorAccessContractMatrixIntegrationTest {
+class CollaboratorAccessContractIntegrationTest {
 
     @Autowired
     private lateinit var mockMvc: MockMvc

@@ -19,7 +19,7 @@ import java.util.UUID
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-class TripAccessContractMatrixIntegrationTest {
+class TripAccessContractIntegrationTest {
 
     @Autowired
     private lateinit var mockMvc: MockMvc

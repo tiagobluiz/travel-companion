@@ -17,7 +17,7 @@ import java.util.UUID
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-class ExpenseAccessContractMatrixIntegrationTest {
+class ExpenseAccessContractIntegrationTest {
 
     @Autowired
     private lateinit var mockMvc: MockMvc

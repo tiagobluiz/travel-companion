@@ -15,7 +15,7 @@ import java.util.UUID
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-class ItineraryAccessContractMatrixIntegrationTest {
+class ItineraryAccessContractIntegrationTest {
 
     @Autowired
     private lateinit var mockMvc: MockMvc

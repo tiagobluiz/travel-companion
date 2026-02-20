@@ -14,7 +14,7 @@ import org.springframework.test.web.servlet.post
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-class AuthContractMatrixIntegrationTest {
+class AuthContractIntegrationTest {
 
     @Autowired
     private lateinit var mockMvc: MockMvc
