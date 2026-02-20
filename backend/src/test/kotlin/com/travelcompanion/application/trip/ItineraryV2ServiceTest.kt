@@ -1,5 +1,6 @@
 package com.travelcompanion.application.trip
 
+import com.travelcompanion.application.AccessResult
 import com.travelcompanion.domain.trip.Trip
 import com.travelcompanion.domain.trip.TripId
 import com.travelcompanion.domain.trip.TripMembership
@@ -7,7 +8,7 @@ import com.travelcompanion.domain.trip.TripRepository
 import com.travelcompanion.domain.trip.TripRole
 import com.travelcompanion.domain.user.UserId
 import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
@@ -42,7 +43,7 @@ class ItineraryV2ServiceTest {
             dayNumber = 1,
         )
 
-        assertNotNull(result)
+        assertNotNull((result as AccessResult.Success).value)
         verify(repository).save(any())
     }
 
@@ -61,7 +62,7 @@ class ItineraryV2ServiceTest {
             dayNumber = 1,
         )
 
-        assertNull(result)
+        assertEquals(AccessResult.Forbidden, result)
         verify(repository, never()).save(any())
     }
 
@@ -72,7 +73,7 @@ class ItineraryV2ServiceTest {
 
         val result = service.get(tripId, viewerId)
 
-        assertNotNull(result)
+        assertNotNull((result as AccessResult.Success).value)
     }
 
     private fun createTrip() = Trip(

@@ -1,5 +1,6 @@
 package com.travelcompanion.application.expense
 
+import com.travelcompanion.application.AccessResult
 import com.travelcompanion.domain.expense.ExpenseId
 import com.travelcompanion.domain.expense.ExpenseRepository
 import com.travelcompanion.domain.trip.TripRepository
@@ -24,11 +25,11 @@ class DeleteExpenseService(
      * @param userId The requesting user (must own the trip)
      * @return true if deleted, false if not found/not owned
      */
-    fun execute(expenseId: ExpenseId, userId: UserId): Boolean {
-        val existing = expenseRepository.findById(expenseId) ?: return false
-        val trip = tripRepository.findById(existing.tripId) ?: return false
-        if (!trip.canWrite(userId)) return false
+    fun execute(expenseId: ExpenseId, userId: UserId): AccessResult<Unit> {
+        val existing = expenseRepository.findById(expenseId) ?: return AccessResult.NotFound
+        val trip = tripRepository.findById(existing.tripId) ?: return AccessResult.NotFound
+        if (!trip.canWrite(userId)) return AccessResult.Forbidden
         expenseRepository.deleteById(expenseId)
-        return true
+        return AccessResult.Success(Unit)
     }
 }

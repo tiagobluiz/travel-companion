@@ -1,5 +1,6 @@
 package com.travelcompanion.interfaces.rest
 
+import com.travelcompanion.application.AccessResult
 import com.travelcompanion.application.trip.ItineraryV2Service
 import com.travelcompanion.domain.trip.TripId
 import com.travelcompanion.interfaces.rest.dto.ItineraryItemV2Request
@@ -36,8 +37,11 @@ class ItineraryController(
         val userId = authPrincipalResolver.userId(authentication)
             ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val id = TripId.fromString(tripId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
-        val trip = itineraryV2Service.get(id, userId) ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
-        return ResponseEntity.ok(ItineraryResponseMapper.toV2Response(trip))
+        return when (val result = itineraryV2Service.get(id, userId)) {
+            is AccessResult.Success -> ResponseEntity.ok(ItineraryResponseMapper.toV2Response(result.value))
+            AccessResult.NotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+            AccessResult.Forbidden -> ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+        }
     }
 
     @PostMapping("/v2/items")
@@ -49,7 +53,7 @@ class ItineraryController(
         val userId = authPrincipalResolver.userId(authentication)
             ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val id = TripId.fromString(tripId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
-        val trip = itineraryV2Service.addItem(
+        return when (val result = itineraryV2Service.addItem(
             tripId = id,
             userId = userId,
             placeName = request.placeName,
@@ -57,8 +61,13 @@ class ItineraryController(
             latitude = request.latitude,
             longitude = request.longitude,
             dayNumber = request.dayNumber,
-        ) ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
-        return ResponseEntity.status(HttpStatus.CREATED).body(ItineraryResponseMapper.toV2Response(trip))
+        )) {
+            is AccessResult.Success -> ResponseEntity.status(HttpStatus.CREATED).body(
+                ItineraryResponseMapper.toV2Response(result.value)
+            )
+            AccessResult.NotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+            AccessResult.Forbidden -> ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+        }
     }
 
     @PutMapping("/v2/items/{itemId}")
@@ -71,7 +80,7 @@ class ItineraryController(
         val userId = authPrincipalResolver.userId(authentication)
             ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val id = TripId.fromString(tripId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
-        val trip = itineraryV2Service.updateItem(
+        return when (val result = itineraryV2Service.updateItem(
             tripId = id,
             userId = userId,
             itemId = itemId,
@@ -80,8 +89,11 @@ class ItineraryController(
             latitude = request.latitude,
             longitude = request.longitude,
             dayNumber = request.dayNumber,
-        ) ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
-        return ResponseEntity.ok(ItineraryResponseMapper.toV2Response(trip))
+        )) {
+            is AccessResult.Success -> ResponseEntity.ok(ItineraryResponseMapper.toV2Response(result.value))
+            AccessResult.NotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+            AccessResult.Forbidden -> ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+        }
     }
 
     @PostMapping("/v2/items/{itemId}/move")
@@ -94,15 +106,18 @@ class ItineraryController(
         val userId = authPrincipalResolver.userId(authentication)
             ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val id = TripId.fromString(tripId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
-        val trip = itineraryV2Service.moveItem(
+        return when (val result = itineraryV2Service.moveItem(
             tripId = id,
             userId = userId,
             itemId = itemId,
             targetDayNumber = request.targetDayNumber,
             beforeItemId = request.beforeItemId,
             afterItemId = request.afterItemId,
-        ) ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
-        return ResponseEntity.ok(ItineraryResponseMapper.toV2Response(trip))
+        )) {
+            is AccessResult.Success -> ResponseEntity.ok(ItineraryResponseMapper.toV2Response(result.value))
+            AccessResult.NotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+            AccessResult.Forbidden -> ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+        }
     }
 
     @DeleteMapping("/v2/items/{itemId}")
@@ -114,11 +129,14 @@ class ItineraryController(
         val userId = authPrincipalResolver.userId(authentication)
             ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val id = TripId.fromString(tripId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
-        val trip = itineraryV2Service.removeItem(
+        return when (val result = itineraryV2Service.removeItem(
             tripId = id,
             userId = userId,
             itemId = itemId,
-        ) ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
-        return ResponseEntity.ok(ItineraryResponseMapper.toV2Response(trip))
+        )) {
+            is AccessResult.Success -> ResponseEntity.ok(ItineraryResponseMapper.toV2Response(result.value))
+            AccessResult.NotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+            AccessResult.Forbidden -> ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+        }
     }
 }

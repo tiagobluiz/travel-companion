@@ -1,5 +1,6 @@
 package com.travelcompanion.application.trip
 
+import com.travelcompanion.application.AccessResult
 import com.travelcompanion.domain.trip.Trip
 import com.travelcompanion.domain.trip.TripId
 import com.travelcompanion.domain.trip.TripRepository
@@ -23,9 +24,9 @@ class GetTripService(
      * @param userId The requesting user's ID, or null for anonymous callers
      * @return The trip, or null if not found or not readable by user
      */
-    fun execute(tripId: TripId, userId: UserId?): Trip? {
-        val trip = tripRepository.findById(tripId) ?: return null
-        if (!trip.canView(userId)) return null
-        return trip
+    fun execute(tripId: TripId, userId: UserId?): AccessResult<Trip> {
+        val trip = tripRepository.findById(tripId) ?: return AccessResult.NotFound
+        if (!trip.canView(userId)) return AccessResult.Forbidden
+        return AccessResult.Success(trip)
     }
 }

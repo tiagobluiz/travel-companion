@@ -1,5 +1,6 @@
 package com.travelcompanion.application.trip
 
+import com.travelcompanion.application.AccessResult
 import com.travelcompanion.domain.trip.InviteStatus
 import com.travelcompanion.domain.trip.Trip
 import com.travelcompanion.domain.trip.TripId
@@ -18,27 +19,34 @@ class ManageTripMembershipService(
     private val userRepository: UserRepository,
 ) {
 
-    fun addOwner(tripId: TripId, actorUserId: UserId, targetUserId: UserId): Trip? {
-        val trip = tripRepository.findById(tripId) ?: return null
+    fun addOwner(tripId: TripId, actorUserId: UserId, targetUserId: UserId): AccessResult<Trip> {
+        val trip = tripRepository.findById(tripId) ?: return AccessResult.NotFound
+        if (!trip.hasRole(actorUserId, TripRole.OWNER)) return AccessResult.Forbidden
         val updated = trip.addOwner(actorUserId, targetUserId)
-        return tripRepository.save(updated)
+        return AccessResult.Success(tripRepository.save(updated))
     }
 
-    fun removeMember(tripId: TripId, actorUserId: UserId, targetUserId: UserId): Trip? {
-        val trip = tripRepository.findById(tripId) ?: return null
+    fun removeMember(tripId: TripId, actorUserId: UserId, targetUserId: UserId): AccessResult<Trip> {
+        val trip = tripRepository.findById(tripId) ?: return AccessResult.NotFound
+        if (!trip.hasRole(actorUserId, TripRole.OWNER)) return AccessResult.Forbidden
         val updated = trip.removeMember(actorUserId, targetUserId)
-        return tripRepository.save(updated)
+        return AccessResult.Success(tripRepository.save(updated))
     }
 
-    fun leaveTrip(tripId: TripId, memberUserId: UserId, successorOwnerUserId: UserId? = null): Trip? {
-        val trip = tripRepository.findById(tripId) ?: return null
+    fun leaveTrip(
+        tripId: TripId,
+        memberUserId: UserId,
+        successorOwnerUserId: UserId? = null,
+    ): AccessResult<Trip> {
+        val trip = tripRepository.findById(tripId) ?: return AccessResult.NotFound
+        if (!trip.isMember(memberUserId)) return AccessResult.Forbidden
         val updated = trip.leaveTrip(memberUserId, successorOwnerUserId)
-        return tripRepository.save(updated)
+        return AccessResult.Success(tripRepository.save(updated))
     }
 
-    fun inviteMember(tripId: TripId, actorUserId: UserId, email: String, role: TripRole): Trip? {
-        val trip = tripRepository.findById(tripId) ?: return null
-        ensureOwner(trip, actorUserId, "Only owners can manage invites")
+    fun inviteMember(tripId: TripId, actorUserId: UserId, email: String, role: TripRole): AccessResult<Trip> {
+        val trip = tripRepository.findById(tripId) ?: return AccessResult.NotFound
+        if (!trip.hasRole(actorUserId, TripRole.OWNER)) return AccessResult.Forbidden
 
         val normalizedEmail = normalizeEmail(email)
         val existingUser = userRepository.findByEmail(normalizedEmail)
@@ -63,7 +71,9 @@ class ManageTripMembershipService(
                     invite
                 }
             }
-            return tripRepository.save(trip.copy(memberships = updatedMemberships, invites = updatedInvites))
+            return AccessResult.Success(
+                tripRepository.save(trip.copy(memberships = updatedMemberships, invites = updatedInvites))
+            )
         }
 
         val now = Instant.now()
@@ -86,18 +96,18 @@ class ManageTripMembershipService(
             )
         }
 
-        return tripRepository.save(trip.copy(invites = updatedInvites))
+        return AccessResult.Success(tripRepository.save(trip.copy(invites = updatedInvites)))
     }
 
-    fun respondToInvite(tripId: TripId, userId: UserId, accept: Boolean): Trip? {
-        val trip = tripRepository.findById(tripId) ?: return null
-        val user = userRepository.findById(userId) ?: return null
+    fun respondToInvite(tripId: TripId, userId: UserId, accept: Boolean): AccessResult<Trip> {
+        val trip = tripRepository.findById(tripId) ?: return AccessResult.NotFound
+        val user = userRepository.findById(userId) ?: return AccessResult.NotFound
         val normalizedEmail = normalizeEmail(user.email)
 
         val inviteIndex = trip.invites.indexOfFirst {
             it.email.equals(normalizedEmail, ignoreCase = true) && it.status == InviteStatus.PENDING
         }
-        if (inviteIndex < 0) return null
+        if (inviteIndex < 0) return AccessResult.Forbidden
 
         val invite = trip.invites[inviteIndex]
         val updatedInvites = trip.invites.toMutableList()
@@ -109,24 +119,24 @@ class ManageTripMembershipService(
             trip.memberships
         }
 
-        return tripRepository.save(trip.copy(invites = updatedInvites, memberships = updatedMemberships))
+        return AccessResult.Success(tripRepository.save(trip.copy(invites = updatedInvites, memberships = updatedMemberships)))
     }
 
-    fun removePendingOrDeclinedInvite(tripId: TripId, actorUserId: UserId, email: String): Trip? {
-        val trip = tripRepository.findById(tripId) ?: return null
-        ensureOwner(trip, actorUserId, "Only owners can remove pending/declined users")
+    fun removePendingOrDeclinedInvite(tripId: TripId, actorUserId: UserId, email: String): AccessResult<Trip> {
+        val trip = tripRepository.findById(tripId) ?: return AccessResult.NotFound
+        if (!trip.hasRole(actorUserId, TripRole.OWNER)) return AccessResult.Forbidden
 
         val normalizedEmail = normalizeEmail(email)
         val updatedInvites = trip.invites.filterNot {
             it.email.equals(normalizedEmail, ignoreCase = true) &&
                 (it.status == InviteStatus.PENDING || it.status == InviteStatus.DECLINED)
         }
-        return tripRepository.save(trip.copy(invites = updatedInvites))
+        return AccessResult.Success(tripRepository.save(trip.copy(invites = updatedInvites)))
     }
 
-    fun changeMemberRole(tripId: TripId, actorUserId: UserId, targetUserId: UserId, role: TripRole): Trip? {
-        val trip = tripRepository.findById(tripId) ?: return null
-        ensureOwner(trip, actorUserId, "Only owners can manage roles")
+    fun changeMemberRole(tripId: TripId, actorUserId: UserId, targetUserId: UserId, role: TripRole): AccessResult<Trip> {
+        val trip = tripRepository.findById(tripId) ?: return AccessResult.NotFound
+        if (!trip.hasRole(actorUserId, TripRole.OWNER)) return AccessResult.Forbidden
 
         val targetMembership = trip.memberships.firstOrNull { it.userId == targetUserId }
             ?: throw IllegalArgumentException("Target user is not a member")
@@ -145,28 +155,28 @@ class ManageTripMembershipService(
         val updatedMemberships = trip.memberships.map {
             if (it.userId == targetUserId) it.copy(role = role) else it
         }
-        return tripRepository.save(trip.copy(memberships = updatedMemberships))
+        return AccessResult.Success(tripRepository.save(trip.copy(memberships = updatedMemberships)))
     }
 
-    fun changeInviteRole(tripId: TripId, actorUserId: UserId, email: String, role: TripRole): Trip? {
-        val trip = tripRepository.findById(tripId) ?: return null
-        ensureOwner(trip, actorUserId, "Only owners can manage roles")
+    fun changeInviteRole(tripId: TripId, actorUserId: UserId, email: String, role: TripRole): AccessResult<Trip> {
+        val trip = tripRepository.findById(tripId) ?: return AccessResult.NotFound
+        if (!trip.hasRole(actorUserId, TripRole.OWNER)) return AccessResult.Forbidden
 
         val normalizedEmail = normalizeEmail(email)
         val inviteIndex = trip.invites.indexOfFirst {
             it.email.equals(normalizedEmail, ignoreCase = true) && it.status == InviteStatus.PENDING
         }
-        if (inviteIndex < 0) return null
+        if (inviteIndex < 0) return AccessResult.NotFound
 
         val updatedInvites = trip.invites.toMutableList()
         updatedInvites[inviteIndex] = updatedInvites[inviteIndex].copy(role = role)
-        return tripRepository.save(trip.copy(invites = updatedInvites))
+        return AccessResult.Success(tripRepository.save(trip.copy(invites = updatedInvites)))
     }
 
-    fun getCollaborators(tripId: TripId, requesterUserId: UserId): Trip? {
-        val trip = tripRepository.findById(tripId) ?: return null
-        ensureOwner(trip, requesterUserId, "Only owners can view collaborators")
-        return trip
+    fun getCollaborators(tripId: TripId, requesterUserId: UserId): AccessResult<Trip> {
+        val trip = tripRepository.findById(tripId) ?: return AccessResult.NotFound
+        if (!trip.hasRole(requesterUserId, TripRole.OWNER)) return AccessResult.Forbidden
+        return AccessResult.Success(trip)
     }
 
     fun existsTrip(tripId: TripId): Boolean =
@@ -187,9 +197,4 @@ class ManageTripMembershipService(
 
     private fun normalizeEmail(email: String): String = email.trim().lowercase()
 
-    private fun ensureOwner(trip: Trip, userId: UserId, message: String) {
-        if (!trip.hasRole(userId, TripRole.OWNER)) {
-            throw TripCollaborationAccessDeniedException(message)
-        }
-    }
 }

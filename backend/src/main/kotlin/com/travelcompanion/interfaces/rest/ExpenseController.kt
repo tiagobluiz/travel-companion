@@ -1,5 +1,6 @@
 package com.travelcompanion.interfaces.rest
 
+import com.travelcompanion.application.AccessResult
 import com.travelcompanion.application.expense.CreateExpenseService
 import com.travelcompanion.application.expense.DeleteExpenseService
 import com.travelcompanion.application.expense.GetExpensesService
@@ -54,8 +55,12 @@ class ExpenseController(
             currency = request.currency,
             description = request.description ?: "",
             date = request.date,
-        ) ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
-        return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(expense))
+        )
+        return when (expense) {
+            is AccessResult.Success -> ResponseEntity.status(HttpStatus.CREATED).body(toResponse(expense.value))
+            AccessResult.NotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+            AccessResult.Forbidden -> ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+        }
     }
 
     @GetMapping
@@ -65,9 +70,11 @@ class ExpenseController(
     ): ResponseEntity<Any> {
         val userId = requireUserId(authentication) ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val tripIdUuid = TripId.fromString(tripId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
-        val expenses = getExpensesService.execute(tripIdUuid, userId)
-            ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
-        return ResponseEntity.ok(expenses.map { toResponse(it) })
+        return when (val expenses = getExpensesService.execute(tripIdUuid, userId)) {
+            is AccessResult.Success -> ResponseEntity.ok(expenses.value.map { toResponse(it) })
+            AccessResult.NotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+            AccessResult.Forbidden -> ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+        }
     }
 
     @PutMapping("/{expenseId}")
@@ -82,15 +89,18 @@ class ExpenseController(
         val expenseIdUuid = ExpenseId.fromString(expenseId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         val existingExpense = expenseRepository.findById(expenseIdUuid) ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
         if (existingExpense.tripId != tripIdUuid) return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
-        val expense = updateExpenseService.execute(
+        return when (val expense = updateExpenseService.execute(
             expenseId = expenseIdUuid,
             userId = userId,
             amount = request.amount,
             currency = request.currency,
             description = request.description,
             date = request.date,
-        ) ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
-        return ResponseEntity.ok(toResponse(expense))
+        )) {
+            is AccessResult.Success -> ResponseEntity.ok(toResponse(expense.value))
+            AccessResult.NotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+            AccessResult.Forbidden -> ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+        }
     }
 
     @DeleteMapping("/{expenseId}")
@@ -104,9 +114,11 @@ class ExpenseController(
         val expenseIdUuid = ExpenseId.fromString(expenseId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         val existingExpense = expenseRepository.findById(expenseIdUuid) ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
         if (existingExpense.tripId != tripIdUuid) return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
-        val deleted = deleteExpenseService.execute(expenseIdUuid, userId)
-        return if (deleted) ResponseEntity.noContent().build()
-        else ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+        return when (deleteExpenseService.execute(expenseIdUuid, userId)) {
+            is AccessResult.Success -> ResponseEntity.noContent().build()
+            AccessResult.NotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+            AccessResult.Forbidden -> ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+        }
     }
 
     private fun requireUserId(authentication: Authentication): UserId? {

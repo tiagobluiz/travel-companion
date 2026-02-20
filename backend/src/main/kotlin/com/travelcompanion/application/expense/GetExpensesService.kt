@@ -1,5 +1,6 @@
 package com.travelcompanion.application.expense
 
+import com.travelcompanion.application.AccessResult
 import com.travelcompanion.domain.expense.Expense
 import com.travelcompanion.domain.expense.ExpenseRepository
 import com.travelcompanion.domain.trip.TripId
@@ -25,9 +26,9 @@ class GetExpensesService(
      * @param userId The requesting user (must own the trip)
      * @return List of expenses, or null if trip not found/not owned
      */
-    fun execute(tripId: TripId, userId: UserId): List<Expense>? {
-        val trip = tripRepository.findById(tripId) ?: return null
-        if (!trip.canView(userId)) return null
-        return expenseRepository.findByTripId(tripId)
+    fun execute(tripId: TripId, userId: UserId): AccessResult<List<Expense>> {
+        val trip = tripRepository.findById(tripId) ?: return AccessResult.NotFound
+        if (!trip.canView(userId)) return AccessResult.Forbidden
+        return AccessResult.Success(expenseRepository.findByTripId(tripId))
     }
 }

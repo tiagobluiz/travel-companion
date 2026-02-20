@@ -1,5 +1,6 @@
 package com.travelcompanion.application.expense
 
+import com.travelcompanion.application.AccessResult
 import com.travelcompanion.domain.expense.Expense
 import com.travelcompanion.domain.expense.ExpenseId
 import com.travelcompanion.domain.expense.ExpenseRepository
@@ -38,10 +39,10 @@ class UpdateExpenseService(
         currency: String?,
         description: String?,
         date: LocalDate?,
-    ): Expense? {
-        val existing = expenseRepository.findById(expenseId) ?: return null
-        val trip = tripRepository.findById(existing.tripId) ?: return null
-        if (!trip.canWrite(userId)) return null
+    ): AccessResult<Expense> {
+        val existing = expenseRepository.findById(expenseId) ?: return AccessResult.NotFound
+        val trip = tripRepository.findById(existing.tripId) ?: return AccessResult.NotFound
+        if (!trip.canWrite(userId)) return AccessResult.Forbidden
         if (date != null) {
             require(!date.isBefore(trip.startDate) && !date.isAfter(trip.endDate)) {
                 "Expense date must be within trip date range (${trip.startDate} - ${trip.endDate})"
@@ -54,6 +55,6 @@ class UpdateExpenseService(
             description = description?.trim() ?: existing.description,
             date = date ?: existing.date,
         )
-        return expenseRepository.save(updated)
+        return AccessResult.Success(expenseRepository.save(updated))
     }
 }
