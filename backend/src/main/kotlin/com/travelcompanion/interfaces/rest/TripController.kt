@@ -5,6 +5,7 @@ import com.travelcompanion.application.trip.DeleteTripService
 import com.travelcompanion.application.trip.GetTripService
 import com.travelcompanion.application.trip.GetTripsService
 import com.travelcompanion.application.trip.UpdateTripService
+import com.travelcompanion.application.AccessResult
 import com.travelcompanion.domain.trip.TripId
 import com.travelcompanion.interfaces.rest.dto.CreateTripRequest
 import com.travelcompanion.interfaces.rest.dto.UpdateTripRequest
@@ -72,9 +73,12 @@ class TripController(
     ): ResponseEntity<Any> {
         val userId = authPrincipalResolver.userId(authentication)
         val tripId = TripId.fromString(id) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
-        val trip = getTripService.execute(tripId, userId)
-            ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).build()
-        return ResponseEntity.ok(TripResponseMapper.toResponse(trip))
+        return when (val result = getTripService.execute(tripId, userId)) {
+            is AccessResult.Success -> ResponseEntity.ok(TripResponseMapper.toResponse(result.value))
+            AccessResult.NotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+            // Keep private-trip existence opaque to unauthorized callers.
+            AccessResult.Forbidden -> ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+        }
     }
 
     @PutMapping("/{id}")

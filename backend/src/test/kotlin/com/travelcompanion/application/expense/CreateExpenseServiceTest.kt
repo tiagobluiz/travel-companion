@@ -1,5 +1,6 @@
 package com.travelcompanion.application.expense
 
+import com.travelcompanion.application.AccessResult
 import com.travelcompanion.domain.expense.Expense
 import com.travelcompanion.domain.expense.ExpenseRepository
 import com.travelcompanion.domain.trip.Trip
@@ -9,7 +10,7 @@ import com.travelcompanion.domain.trip.TripRepository
 import com.travelcompanion.domain.trip.TripRole
 import com.travelcompanion.domain.user.UserId
 import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
@@ -43,7 +44,7 @@ class CreateExpenseServiceTest {
             date = LocalDate.of(2026, 1, 2),
         )
 
-        assertNotNull(result)
+        assertNotNull((result as AccessResult.Success).value)
         verify(expenseRepository).save(any())
     }
 
@@ -59,7 +60,7 @@ class CreateExpenseServiceTest {
             date = LocalDate.of(2026, 1, 2),
         )
 
-        assertNull(result)
+        assertEquals(AccessResult.Forbidden, result)
         verify(expenseRepository, never()).save(any())
     }
 

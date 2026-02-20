@@ -1,5 +1,6 @@
 package com.travelcompanion.application.trip
 
+import com.travelcompanion.application.AccessResult
 import com.travelcompanion.domain.trip.Trip
 import com.travelcompanion.domain.trip.TripId
 import com.travelcompanion.domain.trip.TripRepository
@@ -11,10 +12,10 @@ class ItineraryV2Service(
     private val tripRepository: TripRepository,
 ) {
 
-    fun get(tripId: TripId, userId: UserId): Trip? {
-        val trip = tripRepository.findById(tripId) ?: return null
-        if (!trip.canView(userId)) return null
-        return trip
+    fun get(tripId: TripId, userId: UserId): AccessResult<Trip> {
+        val trip = tripRepository.findById(tripId) ?: return AccessResult.NotFound
+        if (!trip.canView(userId)) return AccessResult.Forbidden
+        return AccessResult.Success(trip)
     }
 
     fun addItem(
@@ -25,16 +26,16 @@ class ItineraryV2Service(
         latitude: Double,
         longitude: Double,
         dayNumber: Int?,
-    ): Trip? {
-        val trip = tripRepository.findById(tripId) ?: return null
-        if (!trip.canWrite(userId)) return null
+    ): AccessResult<Trip> {
+        val trip = tripRepository.findById(tripId) ?: return AccessResult.NotFound
+        if (!trip.canWrite(userId)) return AccessResult.Forbidden
 
         val updated = if (dayNumber == null) {
             trip.addItineraryItemToPlacesToVisit(placeName, notes, latitude, longitude)
         } else {
             trip.addItineraryItemToDay(placeName, notes, latitude, longitude, dayNumber)
         }
-        return tripRepository.save(updated)
+        return AccessResult.Success(tripRepository.save(updated))
     }
 
     fun updateItem(
@@ -46,9 +47,9 @@ class ItineraryV2Service(
         latitude: Double,
         longitude: Double,
         dayNumber: Int?,
-    ): Trip? {
-        val trip = tripRepository.findById(tripId) ?: return null
-        if (!trip.canWrite(userId)) return null
+    ): AccessResult<Trip> {
+        val trip = tripRepository.findById(tripId) ?: return AccessResult.NotFound
+        if (!trip.canWrite(userId)) return AccessResult.Forbidden
 
         val updated = trip.updateItineraryItemById(
             itemId = itemId,
@@ -58,19 +59,19 @@ class ItineraryV2Service(
             longitude = longitude,
             dayNumber = dayNumber,
         )
-        return tripRepository.save(updated)
+        return AccessResult.Success(tripRepository.save(updated))
     }
 
     fun removeItem(
         tripId: TripId,
         userId: UserId,
         itemId: String,
-    ): Trip? {
-        val trip = tripRepository.findById(tripId) ?: return null
-        if (!trip.canWrite(userId)) return null
+    ): AccessResult<Trip> {
+        val trip = tripRepository.findById(tripId) ?: return AccessResult.NotFound
+        if (!trip.canWrite(userId)) return AccessResult.Forbidden
 
         val updated = trip.removeItineraryItemById(itemId)
-        return tripRepository.save(updated)
+        return AccessResult.Success(tripRepository.save(updated))
     }
 
     fun moveItem(
@@ -80,9 +81,9 @@ class ItineraryV2Service(
         targetDayNumber: Int?,
         beforeItemId: String?,
         afterItemId: String?,
-    ): Trip? {
-        val trip = tripRepository.findById(tripId) ?: return null
-        if (!trip.canWrite(userId)) return null
+    ): AccessResult<Trip> {
+        val trip = tripRepository.findById(tripId) ?: return AccessResult.NotFound
+        if (!trip.canWrite(userId)) return AccessResult.Forbidden
 
         val updated = trip.moveItineraryItem(
             itemId = itemId,
@@ -90,7 +91,7 @@ class ItineraryV2Service(
             beforeItemId = beforeItemId,
             afterItemId = afterItemId,
         )
-        return tripRepository.save(updated)
+        return AccessResult.Success(tripRepository.save(updated))
     }
 
 }

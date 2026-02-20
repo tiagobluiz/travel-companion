@@ -1,5 +1,6 @@
 package com.travelcompanion.application.trip
 
+import com.travelcompanion.application.AccessResult
 import com.travelcompanion.domain.trip.Trip
 import com.travelcompanion.domain.trip.TripId
 import com.travelcompanion.domain.trip.TripMembership
@@ -8,7 +9,6 @@ import com.travelcompanion.domain.trip.TripRole
 import com.travelcompanion.domain.trip.TripVisibility
 import com.travelcompanion.domain.user.UserId
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -30,7 +30,7 @@ class GetTripServiceTest {
 
         val result = service.execute(tripId, null)
 
-        assertEquals(trip, result)
+        assertEquals(AccessResult.Success(trip), result)
     }
 
     @Test
@@ -40,7 +40,7 @@ class GetTripServiceTest {
 
         val result = service.execute(tripId, null)
 
-        assertNull(result)
+        assertEquals(AccessResult.Forbidden, result)
     }
 
     @Test
@@ -50,7 +50,7 @@ class GetTripServiceTest {
 
         val result = service.execute(tripId, outsiderId)
 
-        assertNull(result)
+        assertEquals(AccessResult.Forbidden, result)
     }
 
     @Test
@@ -60,7 +60,7 @@ class GetTripServiceTest {
 
         val result = service.execute(tripId, ownerId)
 
-        assertEquals(trip, result)
+        assertEquals(AccessResult.Success(trip), result)
     }
 
     @Test
@@ -69,7 +69,7 @@ class GetTripServiceTest {
 
         val result = service.execute(tripId, ownerId)
 
-        assertNull(result)
+        assertEquals(AccessResult.NotFound, result)
     }
 
     private fun createTrip(visibility: TripVisibility) = Trip(

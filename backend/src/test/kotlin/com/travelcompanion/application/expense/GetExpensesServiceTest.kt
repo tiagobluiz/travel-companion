@@ -1,5 +1,6 @@
 package com.travelcompanion.application.expense
 
+import com.travelcompanion.application.AccessResult
 import com.travelcompanion.domain.expense.Expense
 import com.travelcompanion.domain.expense.ExpenseId
 import com.travelcompanion.domain.expense.ExpenseRepository
@@ -10,7 +11,6 @@ import com.travelcompanion.domain.trip.TripRepository
 import com.travelcompanion.domain.trip.TripRole
 import com.travelcompanion.domain.user.UserId
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -47,7 +47,7 @@ class GetExpensesServiceTest {
 
         val result = service.execute(tripId, viewerId)
 
-        assertEquals(1, result!!.size)
+        assertEquals(1, (result as AccessResult.Success).value.size)
     }
 
     @Test
@@ -56,7 +56,7 @@ class GetExpensesServiceTest {
 
         val result = service.execute(tripId, outsiderId)
 
-        assertNull(result)
+        assertEquals(AccessResult.Forbidden, result)
         verify(expenseRepository, never()).findByTripId(tripId)
     }
 

@@ -1,5 +1,6 @@
 package com.travelcompanion.application.expense
 
+import com.travelcompanion.application.AccessResult
 import com.travelcompanion.domain.expense.Expense
 import com.travelcompanion.domain.expense.ExpenseId
 import com.travelcompanion.domain.expense.ExpenseRepository
@@ -40,9 +41,9 @@ class CreateExpenseService(
         currency: String,
         description: String = "",
         date: LocalDate,
-    ): Expense? {
-        val trip = tripRepository.findById(tripId) ?: return null
-        if (!trip.canWrite(userId)) return null
+    ): AccessResult<Expense> {
+        val trip = tripRepository.findById(tripId) ?: return AccessResult.NotFound
+        if (!trip.canWrite(userId)) return AccessResult.Forbidden
         require(!date.isBefore(trip.startDate) && !date.isAfter(trip.endDate)) {
             "Expense date must be within trip date range (${trip.startDate} - ${trip.endDate})"
         }
@@ -57,6 +58,6 @@ class CreateExpenseService(
             date = date,
             createdAt = Instant.now(),
         )
-        return expenseRepository.save(expense)
+        return AccessResult.Success(expenseRepository.save(expense))
     }
 }

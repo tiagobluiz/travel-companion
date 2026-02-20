@@ -1,5 +1,6 @@
 package com.travelcompanion.application.expense
 
+import com.travelcompanion.application.AccessResult
 import com.travelcompanion.domain.expense.Expense
 import com.travelcompanion.domain.expense.ExpenseId
 import com.travelcompanion.domain.expense.ExpenseRepository
@@ -9,8 +10,7 @@ import com.travelcompanion.domain.trip.TripMembership
 import com.travelcompanion.domain.trip.TripRepository
 import com.travelcompanion.domain.trip.TripRole
 import com.travelcompanion.domain.user.UserId
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -38,7 +38,7 @@ class DeleteExpenseServiceTest {
 
         val deleted = service.execute(expenseId, editorId)
 
-        assertTrue(deleted)
+        assertEquals(AccessResult.Success(Unit), deleted)
         verify(expenseRepository).deleteById(expenseId)
     }
 
@@ -49,7 +49,7 @@ class DeleteExpenseServiceTest {
 
         val deleted = service.execute(expenseId, viewerId)
 
-        assertFalse(deleted)
+        assertEquals(AccessResult.Forbidden, deleted)
         verify(expenseRepository, never()).deleteById(expenseId)
     }
 

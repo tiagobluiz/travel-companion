@@ -1,5 +1,6 @@
 package com.travelcompanion.application.trip
 
+import com.travelcompanion.application.AccessResult
 import com.travelcompanion.domain.trip.InviteStatus
 import com.travelcompanion.domain.trip.Trip
 import com.travelcompanion.domain.trip.TripId
@@ -12,7 +13,6 @@ import com.travelcompanion.domain.user.UserId
 import com.travelcompanion.domain.user.UserRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -38,7 +38,7 @@ class ManageTripMembershipServiceTest {
 
         val result = service.addOwner(tripId, ownerId, UserId.generate())
 
-        assertNull(result)
+        assertEquals(AccessResult.NotFound, result)
     }
 
     @Test
@@ -50,7 +50,7 @@ class ManageTripMembershipServiceTest {
 
         val result = service.addOwner(tripId, ownerId, targetOwner)
 
-        assertNotNull(result)
+        assertNotNull((result as AccessResult.Success).value)
         verify(repository).save(any())
     }
 
@@ -72,8 +72,9 @@ class ManageTripMembershipServiceTest {
 
         val updated = service.inviteMember(tripId, ownerId, "Member@Example.com", TripRole.EDITOR)
 
-        assertEquals(InviteStatus.PENDING, updated!!.invites.single().status)
-        assertEquals(TripRole.EDITOR, updated.invites.single().role)
+        val value = (updated as AccessResult.Success).value
+        assertEquals(InviteStatus.PENDING, value.invites.single().status)
+        assertEquals(TripRole.EDITOR, value.invites.single().role)
     }
 
     @Test
@@ -86,7 +87,8 @@ class ManageTripMembershipServiceTest {
 
         val updated = service.inviteMember(tripId, ownerId, "MEMBER@example.com", TripRole.EDITOR)
 
-        assertEquals(1, updated!!.memberships.count { it.userId == memberId && it.role == TripRole.EDITOR })
+        val value = (updated as AccessResult.Success).value
+        assertEquals(1, value.memberships.count { it.userId == memberId && it.role == TripRole.EDITOR })
     }
 
     @Test
@@ -103,8 +105,9 @@ class ManageTripMembershipServiceTest {
 
         val updated = service.respondToInvite(tripId, memberId, accept = true)
 
-        assertEquals(InviteStatus.ACCEPTED, updated!!.invites.single().status)
-        assertEquals(TripRole.VIEWER, updated.memberships.first { it.userId == memberId }.role)
+        val value = (updated as AccessResult.Success).value
+        assertEquals(InviteStatus.ACCEPTED, value.invites.single().status)
+        assertEquals(TripRole.VIEWER, value.memberships.first { it.userId == memberId }.role)
     }
 
     @Test
@@ -119,7 +122,7 @@ class ManageTripMembershipServiceTest {
 
         val updated = service.removePendingOrDeclinedInvite(tripId, ownerId, "pending@example.com")
 
-        assertEquals(0, updated!!.invites.size)
+        assertEquals(0, (updated as AccessResult.Success).value.invites.size)
     }
 
     @Test
@@ -150,11 +153,11 @@ class ManageTripMembershipServiceTest {
 
         val updated = service.changeInviteRole(tripId, ownerId, "PENDING@example.com", TripRole.EDITOR)
 
-        assertEquals(TripRole.EDITOR, updated!!.invites.single().role)
+        assertEquals(TripRole.EDITOR, (updated as AccessResult.Success).value.invites.single().role)
     }
 
     @Test
-    fun `invite by non owner throws access denied`() {
+    fun `invite by non owner returns forbidden`() {
         val nonOwner = UserId.generate()
         val trip = createTrip(
             memberships = listOf(
@@ -164,9 +167,7 @@ class ManageTripMembershipServiceTest {
         )
         whenever(repository.findById(tripId)).thenReturn(trip)
 
-        assertThrows(TripCollaborationAccessDeniedException::class.java) {
-            service.inviteMember(tripId, nonOwner, "new@example.com", TripRole.VIEWER)
-        }
+        assertEquals(AccessResult.Forbidden, service.inviteMember(tripId, nonOwner, "new@example.com", TripRole.VIEWER))
     }
 
     @Test
