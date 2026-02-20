@@ -23,6 +23,7 @@ import { ExpensesSection } from './detail/ExpensesSection'
 import { ItinerarySection } from './detail/ItinerarySection'
 import { TripDetailHeader } from './detail/TripDetailHeader'
 import { TripDetailsSection } from './detail/TripDetailsSection'
+import type { ItemFormCreatePayload, ItemFormEditPayload } from './itinerary/ItemForm'
 
 export default function TripDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -165,13 +166,7 @@ export default function TripDetailPage() {
     })
   }
 
-  function handleAddItinerary(payload: {
-    placeName: string
-    notes?: string
-    latitude: number
-    longitude: number
-    dayNumber?: number
-  }) {
+function handleAddItinerary(payload: ItemFormCreatePayload) {
     setItineraryError('')
     addItineraryMutation.mutate(
       payload,
@@ -186,7 +181,7 @@ export default function TripDetailPage() {
     )
   }
 
-  async function handleEditItinerary(item: ItineraryItemV2, payload: { notes?: string; dayNumber?: number }) {
+  async function handleEditItinerary(item: ItineraryItemV2, payload: ItemFormEditPayload) {
     setItineraryError('')
     try {
       await updateItineraryMutation.mutateAsync({
