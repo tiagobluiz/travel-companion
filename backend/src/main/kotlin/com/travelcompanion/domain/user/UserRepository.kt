@@ -24,6 +24,14 @@ interface UserRepository {
     fun findById(id: UserId): User?
 
     /**
+     * Finds all users by their IDs.
+     *
+     * @param ids User IDs to fetch
+     * @return Map keyed by user ID for fast access
+     */
+    fun findByIds(ids: Set<UserId>): Map<UserId, User>
+
+    /**
      * Finds a user by their email address.
      *
      * @param email The email (case-insensitive)

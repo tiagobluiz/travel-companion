@@ -9,6 +9,7 @@ const mockDeleteTrip = vi.fn()
 const mockUpdateTrip = vi.fn()
 const mockFetchItineraryV2 = vi.fn()
 const mockAddItineraryItem = vi.fn()
+const mockUpdateItineraryItem = vi.fn()
 const mockMoveItineraryItem = vi.fn()
 const mockDeleteItineraryItem = vi.fn()
 const mockFetchExpenses = vi.fn()
@@ -35,6 +36,7 @@ vi.mock('../../../api/trips', () => ({
 vi.mock('../../../api/itinerary', () => ({
   fetchItineraryV2: (...args: unknown[]) => mockFetchItineraryV2(...args),
   addItineraryItem: (...args: unknown[]) => mockAddItineraryItem(...args),
+  updateItineraryItem: (...args: unknown[]) => mockUpdateItineraryItem(...args),
   moveItineraryItem: (...args: unknown[]) => mockMoveItineraryItem(...args),
   deleteItineraryItem: (...args: unknown[]) => mockDeleteItineraryItem(...args),
 }))
@@ -156,6 +158,7 @@ describe('TripDetailPage', () => {
     mockMoveItineraryItem.mockResolvedValue(itineraryWithItems)
     mockDeleteItineraryItem.mockResolvedValue(itineraryWithItems)
     mockAddItineraryItem.mockResolvedValue(itineraryWithItems)
+    mockUpdateItineraryItem.mockResolvedValue(itineraryWithItems)
     mockFetchCollaborators.mockResolvedValue(collaboratorsData)
     mockUpdateTrip.mockResolvedValue(baseTrip)
     mockInviteMember.mockResolvedValue(collaboratorsData)
@@ -196,12 +199,30 @@ describe('TripDetailPage', () => {
     }
 
     renderPage()
-    await screen.findByText('Read-only itinerary view. Editors/owners (and pending invitees) can plan items.')
+    await screen.findByText('Read-only itinerary view. Only editors and owners can plan items.')
 
     expect(screen.queryByText('+ Add place')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Move up' })).not.toBeInTheDocument()
     expect(screen.getByText('Sign in to manage collaborators and invites.')).toBeInTheDocument()
     expect(mockFetchCollaborators).not.toHaveBeenCalled()
+  })
+
+  it('pending invitee cannot edit itinerary actions (permission matrix)', async () => {
+    authState = {
+      token: 'token-1',
+      user: { displayName: 'Pending', email: 'pending@example.com', id: 'user-pending' },
+      logout: vi.fn(),
+    }
+    mockFetchCollaborators.mockResolvedValue({
+      memberships: [{ userId: 'user-owner', role: 'OWNER' as const }],
+      invites: [{ email: 'pending@example.com', role: 'EDITOR' as const, status: 'PENDING' as const }],
+    })
+
+    renderPage()
+    await screen.findByText('Read-only itinerary view. Only editors and owners can plan items.')
+
+    expect(screen.queryByText('+ Add place')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Move up' })).not.toBeInTheDocument()
   })
 
   it('owner can edit trip details including privacy (permission matrix)', async () => {
@@ -297,6 +318,82 @@ describe('TripDetailPage', () => {
     expect(mockAddItineraryItem).not.toHaveBeenCalled()
   })
 
+  it('adds item to places to visit when destination is places (happy path)', async () => {
+    renderPage()
+    await screen.findByText('+ Add place')
+
+    fireEvent.click(screen.getByText('+ Add place'))
+    fireEvent.change(screen.getByPlaceholderText('Place or activity'), {
+      target: { value: 'Arc de Triomphe' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('Latitude'), { target: { value: '48.87' } })
+    fireEvent.change(screen.getByPlaceholderText('Longitude'), { target: { value: '2.29' } })
+    fireEvent.change(screen.getByLabelText('Destination'), { target: { value: 'PLACES' } })
+    const itineraryForm = screen.getByPlaceholderText('Place or activity').closest('form')
+    expect(itineraryForm).not.toBeNull()
+    fireEvent.submit(itineraryForm!)
+
+    await waitFor(() => {
+      expect(mockAddItineraryItem).toHaveBeenCalledWith('trip-1', {
+        placeName: 'Arc de Triomphe',
+        notes: undefined,
+        latitude: 48.87,
+        longitude: 2.29,
+        dayNumber: undefined,
+      })
+    })
+  })
+
+  it('updates itinerary item notes and destination day from edit form (happy path)', async () => {
+    renderPage()
+    await screen.findByText('Louvre')
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit' })[0]!)
+    fireEvent.change(screen.getByPlaceholderText('Notes'), { target: { value: 'Updated note' } })
+    fireEvent.change(screen.getByLabelText('Destination'), { target: { value: 'PLACES' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => {
+      expect(mockUpdateItineraryItem).toHaveBeenCalledWith('trip-1', 'day1-a', {
+        placeName: 'Louvre',
+        notes: 'Updated note',
+        latitude: 1,
+        longitude: 1,
+        dayNumber: null,
+      })
+    })
+  })
+
+  it('allows clearing notes from edit form', async () => {
+    renderPage()
+    await screen.findByText('Louvre')
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit' })[0]!)
+    fireEvent.change(screen.getByPlaceholderText('Notes'), { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => {
+      expect(mockUpdateItineraryItem).toHaveBeenCalledWith('trip-1', 'day1-a', {
+        placeName: 'Louvre',
+        notes: '',
+        latitude: 1,
+        longitude: 1,
+        dayNumber: 1,
+      })
+    })
+  })
+
+  it('shows update error from itinerary item edit mutation (error state)', async () => {
+    mockUpdateItineraryItem.mockRejectedValueOnce(new Error('Edit failed'))
+    renderPage()
+    await screen.findByText('Louvre')
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit' })[0]!)
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(await screen.findByText('Edit failed')).toBeInTheDocument()
+  })
+
   it('shows mutation error on move failure (error state)', async () => {
     mockMoveItineraryItem.mockRejectedValueOnce(new Error('Move failed'))
 
@@ -305,6 +402,41 @@ describe('TripDetailPage', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Move down' })[0]!)
 
     expect(await screen.findByText('Move failed')).toBeInTheDocument()
+  })
+
+  it('shows permission error on 403 move failure (error path)', async () => {
+    mockMoveItineraryItem.mockRejectedValueOnce(new Error('403 Forbidden'))
+
+    renderPage()
+    await screen.findByText('Louvre')
+    fireEvent.click(screen.getAllByRole('button', { name: 'Move down' })[0]!)
+
+    expect(await screen.findByText('You do not have permission to move itinerary items for this trip.')).toBeInTheDocument()
+  })
+
+  it('shows permission error and hides form on 401 add failure (error path)', async () => {
+    mockAddItineraryItem.mockRejectedValueOnce(new Error('401 Unauthorized'))
+
+    renderPage()
+    await screen.findByText('+ Add place')
+
+    fireEvent.click(screen.getByText('+ Add place'))
+    fireEvent.change(screen.getByPlaceholderText('Place or activity'), {
+      target: { value: 'Notre Dame' },
+    })
+    const dateInput = document.querySelector('input[type="date"][min="2026-01-01"][max="2026-01-03"]')
+    expect(dateInput).not.toBeNull()
+    fireEvent.change(dateInput!, {
+      target: { value: '2026-01-02' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('Latitude'), { target: { value: '1' } })
+    fireEvent.change(screen.getByPlaceholderText('Longitude'), { target: { value: '1' } })
+    const itineraryForm = screen.getByPlaceholderText('Place or activity').closest('form')
+    expect(itineraryForm).not.toBeNull()
+    fireEvent.submit(itineraryForm!)
+
+    expect(await screen.findByText('You do not have permission to add itinerary items for this trip.')).toBeInTheDocument()
+    expect(screen.queryByPlaceholderText('Place or activity')).not.toBeInTheDocument()
   })
 
   it('shows loading state while queries are pending (loading state)', () => {
@@ -344,6 +476,16 @@ describe('TripDetailPage', () => {
     await waitFor(() => {
       expect(mockDeleteItineraryItem).toHaveBeenCalledWith('trip-1', 'day1-a')
     })
+  })
+
+  it('shows permission error on 403 remove failure (error path)', async () => {
+    mockDeleteItineraryItem.mockRejectedValueOnce(new Error('403 Forbidden'))
+
+    renderPage()
+    await screen.findByText('Louvre')
+    fireEvent.click(screen.getAllByRole('button', { name: 'Remove' })[0]!)
+
+    expect(await screen.findByText('You do not have permission to remove itinerary items for this trip.')).toBeInTheDocument()
   })
 
   it('shows collaborator role and pending/declined badges (happy path)', async () => {

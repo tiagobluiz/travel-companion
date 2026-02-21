@@ -14,7 +14,7 @@ import java.util.UUID
 /**
  * Integration tests for auth endpoints.
  *
- * Uses Testcontainers via jdbc:tc URL in application-test.yml. Requires Docker.
+ * Uses Testcontainers via jdbc:tc URL in application-integ.yml. Requires Docker.
  */
 @SpringBootTest
 @AutoConfigureMockMvc

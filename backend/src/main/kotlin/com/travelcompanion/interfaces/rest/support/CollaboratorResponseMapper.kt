@@ -8,10 +8,11 @@ import com.travelcompanion.interfaces.rest.dto.MembershipDto
 
 object CollaboratorResponseMapper {
 
-    fun toResponse(trip: Trip, userRepository: UserRepository): CollaboratorsResponse =
-        CollaboratorsResponse(
+    fun toResponse(trip: Trip, userRepository: UserRepository): CollaboratorsResponse {
+        val usersById = userRepository.findByIds(trip.memberships.map { it.userId }.toSet())
+        return CollaboratorsResponse(
             memberships = trip.memberships.map {
-                val memberUser = userRepository.findById(it.userId)
+                val memberUser = usersById[it.userId]
                 MembershipDto(
                     userId = it.userId.toString(),
                     role = it.role.name,
@@ -20,5 +21,6 @@ object CollaboratorResponseMapper {
             },
             invites = trip.invites.map { InviteDto(it.email, it.role.name, it.status.name) },
         )
+    }
 }
 

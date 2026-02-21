@@ -38,6 +38,13 @@ class JpaUserRepository(
     override fun findById(id: UserId): User? =
         springRepo.findById(id.value).orElse(null)?.let { toDomain(it) }
 
+    override fun findByIds(ids: Set<UserId>): Map<UserId, User> {
+        if (ids.isEmpty()) return emptyMap()
+        return springRepo.findAllById(ids.map { it.value })
+            .map { toDomain(it) }
+            .associateBy { it.id }
+    }
+
     override fun findByEmail(email: String): User? =
         springRepo.findByEmailIgnoreCase(email)?.let { toDomain(it) }
 
