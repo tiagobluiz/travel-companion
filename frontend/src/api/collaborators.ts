@@ -6,6 +6,7 @@ export type InviteStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'REVOKED'
 export interface Membership {
   userId: string
   role: TripRole
+  displayName?: string
 }
 
 export interface Invite {

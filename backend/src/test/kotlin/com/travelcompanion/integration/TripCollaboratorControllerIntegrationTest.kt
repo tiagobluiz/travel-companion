@@ -58,6 +58,7 @@ class TripCollaboratorControllerIntegrationTest {
             header("Authorization", "Bearer $ownerToken")
         }.andExpect {
             status { isOk() }
+            jsonPath("$.memberships[0].displayName") { value("Trip User") }
             jsonPath("$.invites[0].status") { value("PENDING") }
         }
     }

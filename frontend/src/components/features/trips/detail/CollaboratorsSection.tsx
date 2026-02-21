@@ -82,7 +82,7 @@ export function CollaboratorsSection({
                         key={member.userId}
                         className="flex items-center justify-between p-2 rounded-md bg-slate-50"
                       >
-                        <span className="text-sm text-slate-700">{member.userId}</span>
+                        <span className="text-sm text-slate-700">{member.displayName ?? member.userId}</span>
                         <span className="text-xs px-2 py-1 rounded bg-slate-200 text-slate-700">
                           {member.role}
                         </span>

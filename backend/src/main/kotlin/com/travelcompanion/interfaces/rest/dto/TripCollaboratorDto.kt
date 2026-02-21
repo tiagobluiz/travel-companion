@@ -27,6 +27,7 @@ data class CollaboratorsResponse(
 data class MembershipDto(
     val userId: String,
     val role: String,
+    val displayName: String? = null,
 )
 
 data class InviteDto(

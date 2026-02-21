@@ -22,12 +22,14 @@ export function useTripDetailData({ id, isAuthenticated }: UseTripDetailDataOpti
     queryKey: ['expenses', id],
     queryFn: () => fetchExpenses(id!),
     enabled: Boolean(id),
+    refetchOnMount: 'always',
   })
 
   const collaboratorsQuery = useQuery({
     queryKey: ['collaborators', id],
     queryFn: () => fetchCollaborators(id!),
     enabled: Boolean(id) && isAuthenticated,
+    refetchOnMount: 'always',
   })
 
   return {

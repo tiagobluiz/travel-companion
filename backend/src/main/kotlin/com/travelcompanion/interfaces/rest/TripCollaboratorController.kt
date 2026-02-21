@@ -4,6 +4,7 @@ import com.travelcompanion.application.AccessResult
 import com.travelcompanion.application.trip.ManageTripMembershipService
 import com.travelcompanion.domain.trip.TripId
 import com.travelcompanion.domain.user.UserId
+import com.travelcompanion.domain.user.UserRepository
 import com.travelcompanion.interfaces.rest.dto.ChangeRoleRequest
 import com.travelcompanion.interfaces.rest.dto.InviteMemberRequest
 import com.travelcompanion.interfaces.rest.dto.InviteResponseRequest
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController
 class TripCollaboratorController(
     private val manageTripMembershipService: ManageTripMembershipService,
     private val authPrincipalResolver: AuthPrincipalResolver,
+    private val userRepository: UserRepository,
 ) {
 
     @GetMapping("/collaborators")
@@ -39,7 +41,7 @@ class TripCollaboratorController(
             ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val id = TripId.fromString(tripId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         return when (val result = manageTripMembershipService.getCollaborators(id, requester)) {
-            is AccessResult.Success -> ResponseEntity.ok(CollaboratorResponseMapper.toResponse(result.value))
+            is AccessResult.Success -> ResponseEntity.ok(CollaboratorResponseMapper.toResponse(result.value, userRepository))
             AccessResult.NotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND).build()
             AccessResult.Forbidden -> ResponseEntity.status(HttpStatus.FORBIDDEN).build()
         }
@@ -55,7 +57,7 @@ class TripCollaboratorController(
             ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val id = TripId.fromString(tripId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         return when (val result = manageTripMembershipService.inviteMember(id, actor, request.email, request.role)) {
-            is AccessResult.Success -> ResponseEntity.ok(CollaboratorResponseMapper.toResponse(result.value))
+            is AccessResult.Success -> ResponseEntity.ok(CollaboratorResponseMapper.toResponse(result.value, userRepository))
             AccessResult.NotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND).build()
             AccessResult.Forbidden -> ResponseEntity.status(HttpStatus.FORBIDDEN).build()
         }
@@ -71,7 +73,7 @@ class TripCollaboratorController(
             ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val id = TripId.fromString(tripId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         return when (val result = manageTripMembershipService.respondToInvite(id, actor, request.accept)) {
-            is AccessResult.Success -> ResponseEntity.ok(CollaboratorResponseMapper.toResponse(result.value))
+            is AccessResult.Success -> ResponseEntity.ok(CollaboratorResponseMapper.toResponse(result.value, userRepository))
             AccessResult.NotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND).build()
             AccessResult.Forbidden -> ResponseEntity.status(HttpStatus.FORBIDDEN).build()
         }
@@ -87,7 +89,7 @@ class TripCollaboratorController(
             ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val id = TripId.fromString(tripId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         return when (val result = manageTripMembershipService.removePendingOrDeclinedInvite(id, actor, email)) {
-            is AccessResult.Success -> ResponseEntity.ok(CollaboratorResponseMapper.toResponse(result.value))
+            is AccessResult.Success -> ResponseEntity.ok(CollaboratorResponseMapper.toResponse(result.value, userRepository))
             AccessResult.NotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND).build()
             AccessResult.Forbidden -> ResponseEntity.status(HttpStatus.FORBIDDEN).build()
         }
@@ -105,7 +107,7 @@ class TripCollaboratorController(
         val id = TripId.fromString(tripId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         val targetUserId = UserId.fromString(memberId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         return when (val result = manageTripMembershipService.changeMemberRole(id, actor, targetUserId, request.role)) {
-            is AccessResult.Success -> ResponseEntity.ok(CollaboratorResponseMapper.toResponse(result.value))
+            is AccessResult.Success -> ResponseEntity.ok(CollaboratorResponseMapper.toResponse(result.value, userRepository))
             AccessResult.NotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND).build()
             AccessResult.Forbidden -> ResponseEntity.status(HttpStatus.FORBIDDEN).build()
         }
@@ -122,7 +124,7 @@ class TripCollaboratorController(
             ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val id = TripId.fromString(tripId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         return when (val result = manageTripMembershipService.changeInviteRole(id, actor, email, request.role)) {
-            is AccessResult.Success -> ResponseEntity.ok(CollaboratorResponseMapper.toResponse(result.value))
+            is AccessResult.Success -> ResponseEntity.ok(CollaboratorResponseMapper.toResponse(result.value, userRepository))
             AccessResult.NotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND).build()
             AccessResult.Forbidden -> ResponseEntity.status(HttpStatus.FORBIDDEN).build()
         }
@@ -139,7 +141,7 @@ class TripCollaboratorController(
         val id = TripId.fromString(tripId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         val target = UserId.fromString(memberId) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         return when (val result = manageTripMembershipService.removeMember(id, actor, target)) {
-            is AccessResult.Success -> ResponseEntity.ok(CollaboratorResponseMapper.toResponse(result.value))
+            is AccessResult.Success -> ResponseEntity.ok(CollaboratorResponseMapper.toResponse(result.value, userRepository))
             AccessResult.NotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND).build()
             AccessResult.Forbidden -> ResponseEntity.status(HttpStatus.FORBIDDEN).build()
         }
@@ -160,7 +162,7 @@ class TripCollaboratorController(
         }
 
         return when (val result = manageTripMembershipService.leaveTrip(id, actor, successor)) {
-            is AccessResult.Success -> ResponseEntity.ok(CollaboratorResponseMapper.toResponse(result.value))
+            is AccessResult.Success -> ResponseEntity.ok(CollaboratorResponseMapper.toResponse(result.value, userRepository))
             AccessResult.NotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND).build()
             AccessResult.Forbidden -> ResponseEntity.status(HttpStatus.FORBIDDEN).build()
         }
