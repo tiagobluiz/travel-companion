@@ -32,6 +32,16 @@ Each PR must include:
 3. `npm run test:run`
 4. `npm run build`
 
+## Frontend UX Governance (Mandatory)
+1. Product UX consistency is the top-priority rule across all FE deliveries.
+2. Reference images are guidance for structure/intent, not pixel-locked constraints.
+3. FE agents are encouraged to improve UX/UI with explicit rationale in PR notes.
+4. FE stack baseline for this workstream:
+   - Material UI (MUI)
+   - React Hook Form
+   - Zod for form validation
+5. State-of-the-art production libraries are allowed and encouraged when they improve quality, accessibility, and maintainability.
+
 ## Daily Sync Rules
 1. Rebase branch on `main` at least daily.
 2. If API contract changes, frontend PR must reference backend PR/commit.
@@ -193,6 +203,13 @@ Cycle order (repeat continuously):
 - For grouped issues, use one branch and one PR, linking all issues.
 - Scope boundary: edit `frontend/**` only.
 - If BE/API contract changes are needed, stop and request/linked contract issue before proceeding.
+- Before implementation, verify that each target page/flow has approved design guidance in docs/renders.
+- If any target page/flow has no design guideline, stop and prompt the user with a specific list of missing pages/flows before coding.
+- When design guidance exists, treat it as directional and improve where appropriate with UX-argued rationale.
+- Enforce FE stack baseline:
+  - use MUI components/theming as default UI foundation;
+  - use React Hook Form for forms;
+  - use Zod schemas for validation.
 
 5) Testing depth requirement (mandatory)
 - Every change must include thorough tests with a scenario matrix covering:
@@ -218,6 +235,7 @@ Cycle order (repeat continuously):
 Governance:
 - Merge is allowed automatically only when PR is approved + checks pass + no conflicts.
 - If requirements are ambiguous, ask concise clarifying questions and pause only for that blocker.
+- If design guidance is missing for any implemented page/flow, do not proceed until user provides/approves guidance.
 - Do not stop unless blocked by missing requirements or broken tooling that cannot be self-resolved.
 
 Output after each cycle:
