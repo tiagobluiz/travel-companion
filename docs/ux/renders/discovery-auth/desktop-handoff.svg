@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="900" viewBox="0 0 1400 900">
+  <rect width="1400" height="900" fill="#f8fafc"/>
+  <rect x="0" y="0" width="1400" height="72" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="40" y="44" font-family="Segoe UI, Arial" font-size="24" fill="#0f172a">Travel Companion</text>
+  <text x="1060" y="44" font-family="Segoe UI, Arial" font-size="16" fill="#334155">Discover</text>
+  <text x="1150" y="44" font-family="Segoe UI, Arial" font-size="16" fill="#334155">Sign in</text>
+  <text x="1230" y="44" font-family="Segoe UI, Arial" font-size="16" fill="#0284c7">Sign up</text>
+
+  <rect x="64" y="120" width="860" height="680" rx="16" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="100" y="178" font-family="Segoe UI, Arial" font-size="30" fill="#0f172a">Discover public trips</text>
+  <text x="100" y="212" font-family="Segoe UI, Arial" font-size="16" fill="#475569">Search and filter real itineraries before creating your account.</text>
+  <rect x="100" y="242" width="540" height="46" rx="10" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="120" y="271" font-family="Segoe UI, Arial" font-size="14" fill="#64748b">Search by city, country, or title</text>
+  <rect x="654" y="242" width="120" height="46" rx="10" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="690" y="271" font-family="Segoe UI, Arial" font-size="14" fill="#334155">Sort</text>
+  <rect x="788" y="242" width="96" height="46" rx="10" fill="#0284c7"/>
+  <text x="815" y="271" font-family="Segoe UI, Arial" font-size="14" fill="#ffffff">Apply</text>
+
+  <rect x="100" y="320" width="240" height="180" rx="12" fill="#ffffff" stroke="#cbd5e1"/>
+  <rect x="360" y="320" width="240" height="180" rx="12" fill="#ffffff" stroke="#cbd5e1"/>
+  <rect x="620" y="320" width="240" height="180" rx="12" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="118" y="354" font-family="Segoe UI, Arial" font-size="14" fill="#334155">Lisbon in 4 Days</text>
+  <text x="378" y="354" font-family="Segoe UI, Arial" font-size="14" fill="#334155">Kyoto Spring Plan</text>
+  <text x="638" y="354" font-family="Segoe UI, Arial" font-size="14" fill="#334155">Buenos Aires Budget</text>
+  <text x="118" y="380" font-family="Segoe UI, Arial" font-size="12" fill="#64748b">Public • Updated 2d ago</text>
+  <text x="378" y="380" font-family="Segoe UI, Arial" font-size="12" fill="#64748b">Public • Updated 1w ago</text>
+  <text x="638" y="380" font-family="Segoe UI, Arial" font-size="12" fill="#64748b">Public • Updated today</text>
+  <rect x="118" y="460" width="110" height="30" rx="8" fill="#0ea5e9"/>
+  <text x="140" y="480" font-family="Segoe UI, Arial" font-size="12" fill="#ffffff">Open trip</text>
+
+  <rect x="960" y="120" width="376" height="680" rx="16" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="992" y="170" font-family="Segoe UI, Arial" font-size="20" fill="#0f172a">Auth Gate Modal</text>
+  <text x="992" y="198" font-family="Segoe UI, Arial" font-size="13" fill="#475569">Triggered on "Copy this trip"</text>
+  <rect x="992" y="230" width="312" height="46" rx="10" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="1086" y="259" font-family="Segoe UI, Arial" font-size="14" fill="#334155">Continue with Google</text>
+  <rect x="992" y="288" width="312" height="46" rx="10" fill="#0284c7"/>
+  <text x="1098" y="317" font-family="Segoe UI, Arial" font-size="14" fill="#ffffff">Sign up with Email</text>
+  <text x="992" y="360" font-family="Segoe UI, Arial" font-size="13" fill="#64748b">Returning user?</text>
+  <text x="1080" y="360" font-family="Segoe UI, Arial" font-size="13" fill="#0284c7">Sign in</text>
+</svg>
+

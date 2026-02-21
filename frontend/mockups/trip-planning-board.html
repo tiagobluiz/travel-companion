@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trip Planning Board Mockup</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="shell-header">
+    <strong>Kyoto Spring Plan</strong>
+    <nav class="tabs" role="tablist" aria-label="Trip detail tabs">
+      <button class="tab active" role="tab" aria-selected="true">Itinerary</button>
+      <button class="tab" role="tab" aria-selected="false">Collaborators</button>
+      <button class="tab" role="tab" aria-selected="false">Expenses</button>
+      <button class="tab" role="tab" aria-selected="false">Settings</button>
+    </nav>
+  </header>
+
+  <main class="page grid-2">
+    <section class="card">
+      <h1>Itinerary Board</h1>
+      <p>Mobile behavior: drag when available, fallback move actions always available.</p>
+
+      <div class="itinerary-block">
+        <strong>Day 1 • Mar 12</strong>
+        <article class="item">
+          <strong>Kiyomizu-dera</strong>
+          <p>Drag handle + move menu</p>
+          <div style="display:flex; gap:8px;">
+            <button class="btn">Move</button>
+            <button class="btn">Edit</button>
+            <button class="btn">Delete</button>
+          </div>
+        </article>
+      </div>
+
+      <div class="itinerary-block">
+        <strong>Day 2 • Mar 13</strong>
+        <article class="item">
+          <strong>Arashiyama</strong>
+          <p>Morning walk and bamboo grove</p>
+        </article>
+      </div>
+
+      <div class="itinerary-block backlog">
+        <strong>Places To Visit</strong>
+        <article class="item">
+          <strong>Fushimi Inari</strong>
+        </article>
+      </div>
+    </section>
+
+    <aside class="card">
+      <h2>Desktop Split-View Map</h2>
+      <p>Map appears alongside itinerary on desktop/tablet.</p>
+      <div style="height:520px; border:1px solid #cbd5e1; border-radius:10px; background:#e2e8f0;"></div>
+    </aside>
+  </main>
+
+  <nav class="mobile-bottom-nav">
+    <a href="#" aria-current="page">Home</a>
+    <a href="#">Discover</a>
+    <a href="#">Notifications</a>
+    <a href="#">Profile</a>
+  </nav>
+</body>
+</html>
+

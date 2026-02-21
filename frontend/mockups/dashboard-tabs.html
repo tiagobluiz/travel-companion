@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Tabs Mockup</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="shell-header">
+    <strong>Travel Companion</strong>
+    <nav class="tabs" role="tablist" aria-label="Primary navigation">
+      <button class="tab active" role="tab" aria-selected="true">Home</button>
+      <button class="tab" role="tab" aria-selected="false">Discover</button>
+      <button class="tab" role="tab" aria-selected="false">Notifications</button>
+      <button class="tab" role="tab" aria-selected="false">Profile</button>
+    </nav>
+  </header>
+  <main class="page card">
+    <h1>Dashboard</h1>
+    <nav class="tabs" role="tablist" aria-label="Dashboard tabs" style="margin: 8px 0 16px;">
+      <button class="tab active" role="tab" aria-selected="true">My Trips</button>
+      <button class="tab" role="tab" aria-selected="false">Shared With Me</button>
+      <button class="tab" role="tab" aria-selected="false">Public Feed</button>
+    </nav>
+    <p>Default sort: recently edited</p>
+    <div class="trip-cards">
+      <article class="trip-item">
+        <h3>Paris Food Weekend</h3>
+        <p>Mar 12 - Mar 15</p>
+        <p>Role: OWNER • Private</p>
+      </article>
+      <article class="trip-item">
+        <h3>Kyoto Spring Plan</h3>
+        <p>Apr 03 - Apr 12</p>
+        <p>Role: EDITOR • Public</p>
+      </article>
+      <article class="trip-item">
+        <h3>Lisbon Family Trip</h3>
+        <p>May 02 - May 07</p>
+        <p>Role: VIEWER • Private</p>
+      </article>
+    </div>
+  </main>
+
+  <nav class="mobile-bottom-nav">
+    <a href="#" aria-current="page">Home</a>
+    <a href="#">Discover</a>
+    <a href="#">Notifications</a>
+    <a href="#">Profile</a>
+  </nav>
+</body>
+</html>
+

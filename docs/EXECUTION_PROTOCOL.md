@@ -32,6 +32,36 @@ Each PR must include:
 3. `npm run test:run`
 4. `npm run build`
 
+## Frontend UX Governance (Mandatory)
+1. Product UX consistency is the top-priority rule across all FE deliveries.
+2. Reference images are guidance for structure/intent, not pixel-locked constraints.
+3. FE agents are encouraged to improve UX/UI with explicit rationale in PR notes.
+4. FE stack baseline for this workstream:
+   - Material UI (MUI)
+   - React Hook Form
+   - Zod for form validation
+5. State-of-the-art production libraries are allowed and encouraged when they improve quality, accessibility, and maintainability.
+
+## UX Source of Truth (Frontend)
+Frontend queue must always reference these files before implementing any UI flow/page:
+1. `docs/ux/product-principles.md`
+2. `docs/ux/information-architecture.md`
+3. `docs/ux/critical-flows.md`
+4. `docs/ux/permission-and-visibility-matrix.md`
+5. `docs/ux/accessibility-aa-checklist.md`
+6. `docs/ux/mobile-responsiveness-rules.md`
+7. `docs/ux/content-and-i18n-guidelines.md`
+8. `docs/ux/implementation-handoff.md`
+9. `docs/design-system/tokens.md`
+10. `docs/design-system/components.md`
+11. `docs/design-system/motion.md`
+12. `docs/design-system/layout-and-grid.md`
+13. `docs/ux/renders/README.md`
+14. `docs/ux/renders/generated-images-index.md`
+
+Hard rule:
+If a target page/flow is not covered by approved guidance in these sources, stop and prompt the user with an explicit list of missing guidance.
+
 ## Daily Sync Rules
 1. Rebase branch on `main` at least daily.
 2. If API contract changes, frontend PR must reference backend PR/commit.
@@ -193,6 +223,14 @@ Cycle order (repeat continuously):
 - For grouped issues, use one branch and one PR, linking all issues.
 - Scope boundary: edit `frontend/**` only.
 - If BE/API contract changes are needed, stop and request/linked contract issue before proceeding.
+- First, load and reference the UX Source of Truth file list from this protocol.
+- Before implementation, verify that each target page/flow has approved design guidance in docs/renders.
+- If any target page/flow has no design guideline, stop and prompt the user with a specific list of missing pages/flows before coding.
+- When design guidance exists, treat it as directional and improve where appropriate with UX-argued rationale.
+- Enforce FE stack baseline:
+  - use MUI components/theming as default UI foundation;
+  - use React Hook Form for forms;
+  - use Zod schemas for validation.
 
 5) Testing depth requirement (mandatory)
 - Every change must include thorough tests with a scenario matrix covering:
@@ -218,6 +256,7 @@ Cycle order (repeat continuously):
 Governance:
 - Merge is allowed automatically only when PR is approved + checks pass + no conflicts.
 - If requirements are ambiguous, ask concise clarifying questions and pause only for that blocker.
+- If design guidance is missing for any implemented page/flow, do not proceed until user provides/approves guidance.
 - Do not stop unless blocked by missing requirements or broken tooling that cannot be self-resolved.
 
 Output after each cycle:
