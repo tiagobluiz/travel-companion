@@ -62,6 +62,14 @@ Frontend queue must always reference these files before implementing any UI flow
 Hard rule:
 If a target page/flow is not covered by approved guidance in these sources, stop and prompt the user with an explicit list of missing guidance.
 
+## Frontend Stack Policy (Layered, Non-Conflicting)
+This protocol separates FE stack by layer to avoid false conflicts:
+1. Core platform (mandatory): TypeScript + React + Vite.
+2. Data/state baseline: TanStack Query + Zustand.
+3. UI/form baseline for this workstream: Material UI (MUI) + React Hook Form + Zod.
+4. Styling rule: MUI-first for component theming; utility CSS (including Tailwind) is allowed where it improves delivery and does not break UX consistency.
+5. Adding MUI/RHF/Zod does not replace TypeScript/React/Vite.
+
 ## Daily Sync Rules
 1. Rebase branch on `main` at least daily.
 2. If API contract changes, frontend PR must reference backend PR/commit.
@@ -255,6 +263,7 @@ Cycle order (repeat continuously):
 
 Governance:
 - Merge is allowed automatically only when PR is approved + checks pass + no conflicts.
+- Apply FE stack by layers, not as mutually exclusive alternatives.
 - If requirements are ambiguous, ask concise clarifying questions and pause only for that blocker.
 - If design guidance is missing for any implemented page/flow, do not proceed until user provides/approves guidance.
 - Do not stop unless blocked by missing requirements or broken tooling that cannot be self-resolved.
