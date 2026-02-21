@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Discovery/Auth Shell Mockup</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="shell-header">
+    <strong>Travel Companion</strong>
+    <nav class="tabs">
+      <div class="tab active">Discover</div>
+      <div class="tab">Sign in</div>
+      <div class="tab">Sign up</div>
+    </nav>
+  </header>
+
+  <main class="page grid-2">
+    <section class="card">
+      <h1>Discover public trips</h1>
+      <p class="muted">Search and explore before creating an account.</p>
+      <div style="display:flex; gap:8px; margin:12px 0;">
+        <input class="field" placeholder="Search by city, country, title" />
+        <button class="btn">Sort</button>
+        <button class="btn primary">Apply</button>
+      </div>
+      <div class="trip-cards">
+        <article class="trip-item">
+          <h3>Lisbon in 4 Days</h3>
+          <p>Public • Updated 2d ago</p>
+          <button class="btn primary">Open trip</button>
+        </article>
+        <article class="trip-item">
+          <h3>Kyoto Spring Plan</h3>
+          <p>Public • Updated 1w ago</p>
+          <button class="btn">Open trip</button>
+        </article>
+        <article class="trip-item">
+          <h3>Buenos Aires Budget</h3>
+          <p>Public • Updated today</p>
+          <button class="btn">Open trip</button>
+        </article>
+      </div>
+    </section>
+
+    <aside class="card">
+      <h2>Auth Gate Modal Reference</h2>
+      <p>Use this when anonymous users trigger gated actions like "Copy this trip".</p>
+      <button class="btn" style="width:100%; margin-bottom:8px;">Continue with Google</button>
+      <button class="btn primary" style="width:100%;">Sign up with Email</button>
+    </aside>
+  </main>
+
+  <nav class="mobile-bottom-nav">
+    <span>Home</span>
+    <span>Discover</span>
+    <span>Bell</span>
+    <span>Profile</span>
+  </nav>
+</body>
+</html>
+
