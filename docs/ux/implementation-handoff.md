@@ -29,9 +29,22 @@
 4. Responsive behavior complete.
 5. Render references attached.
 6. Acceptance criteria measurable.
+7. FE stack requirements acknowledged in issue scope.
+
+## Design Interpretation Rule
+Reference images are layout and intent guides, not pixel-locked constraints.
+1. Engineers are encouraged to improve visual quality and interaction patterns.
+2. Improvements must be justified with UX arguments (clarity, accessibility, conversion, reduced friction, consistency).
+3. Any meaningful deviation from a reference image must be documented in PR notes with rationale.
+
+## FE Stack Requirements
+Use modern production-grade FE tooling by default:
+1. Material UI (MUI) for component foundation and theming.
+2. React Hook Form for form state and submission handling.
+3. Zod for schema-based validation and typed form contracts.
+4. Additional state-of-the-art libraries are allowed and encouraged when they provide clear UX/maintainability gains.
 
 ## Required Validation for FE PRs
 1. `npm run lint`
 2. `npm run test:run`
 3. `npm run build`
-
