@@ -43,7 +43,8 @@ export function useTripMutations({ tripId, onTripDeleted }: UseTripMutationsOpti
     mutationFn: (data: { name: string; startDate: string; endDate: string; visibility?: TripVisibility }) =>
       updateTrip(requireTripId(), data),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['trip', tripId] })
+      await invalidateTripAndItinerary()
+      await queryClient.invalidateQueries({ queryKey: ['trips'] })
     },
   })
 

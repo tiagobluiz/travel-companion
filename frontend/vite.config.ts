@@ -32,6 +32,13 @@ export default defineConfig({
       '/trips': {
         target: 'http://localhost:8080',
         changeOrigin: true,
+        bypass: (req) => {
+          const accept = req.headers.accept ?? ''
+          if (accept.includes('text/html')) {
+            return req.url
+          }
+          return undefined
+        },
       },
     },
   },

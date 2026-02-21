@@ -133,8 +133,8 @@ const itineraryWithItems = {
 
 const collaboratorsData = {
   memberships: [
-    { userId: 'user-owner', role: 'OWNER' as const },
-    { userId: 'user-editor', role: 'EDITOR' as const },
+    { userId: 'user-owner', role: 'OWNER' as const, displayName: 'Owner User' },
+    { userId: 'user-editor', role: 'EDITOR' as const, displayName: 'Editor User' },
   ],
   invites: [
     { email: 'owner@example.com', role: 'EDITOR' as const, status: 'PENDING' as const },
@@ -350,6 +350,8 @@ describe('TripDetailPage', () => {
     renderPage()
 
     expect(await screen.findByText('Collaborators')).toBeInTheDocument()
+    expect(screen.getByText('Owner User')).toBeInTheDocument()
+    expect(screen.getByText('Editor User')).toBeInTheDocument()
     expect(screen.getByText('OWNER')).toBeInTheDocument()
     expect(screen.getAllByText('EDITOR').length).toBeGreaterThan(0)
     expect(screen.getByText('PENDING')).toBeInTheDocument()

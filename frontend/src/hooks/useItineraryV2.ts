@@ -11,12 +11,14 @@ export function useItineraryV2({ tripId }: UseItineraryV2Options) {
     queryKey: ['trip', tripId],
     queryFn: () => fetchTrip(tripId!),
     enabled: Boolean(tripId),
+    refetchOnMount: 'always',
   })
 
   const itineraryQuery = useQuery({
     queryKey: ['itinerary-v2', tripId],
     queryFn: () => fetchItineraryV2(tripId!),
     enabled: Boolean(tripId),
+    refetchOnMount: 'always',
   })
 
   return {

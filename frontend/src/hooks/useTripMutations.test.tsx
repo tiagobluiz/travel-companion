@@ -66,7 +66,7 @@ describe('useTripMutations', () => {
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['itinerary-v2', 'trip-1'] })
   })
 
-  it('invalidates trip query after update mutation', async () => {
+  it('invalidates trip, itinerary, and trips queries after update mutation', async () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
     })
@@ -91,6 +91,8 @@ describe('useTripMutations', () => {
       endDate: '2026-01-02',
     })
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['trip', 'trip-1'] })
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['itinerary-v2', 'trip-1'] })
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['trips'] })
   })
 
   it('invalidates trips and calls callback after delete', async () => {
