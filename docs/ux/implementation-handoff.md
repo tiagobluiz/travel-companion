@@ -37,6 +37,13 @@ Reference images are layout and intent guides, not pixel-locked constraints.
 2. Improvements must be justified with UX arguments (clarity, accessibility, conversion, reduced friction, consistency).
 3. Any meaningful deviation from a reference image must be documented in PR notes with rationale.
 
+## Consistency Enforcement Rule (Top Priority)
+The entire product UX must remain consistent to the smallest detail. This rule takes precedence over individual screen preferences.
+1. New UI must use shared tokens, component patterns, and interaction rules.
+2. Local optimizations that break system consistency are not allowed.
+3. PRs must include a short "consistency check" note describing how the change aligns with product-wide UX language.
+4. If a new pattern is introduced, it must be generalized and documented before reuse.
+
 ## FE Stack Requirements
 Use modern production-grade FE tooling by default:
 1. Material UI (MUI) for component foundation and theming.

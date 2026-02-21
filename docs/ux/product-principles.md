@@ -10,6 +10,14 @@ Travel Companion is a planning-first social travel product. The experience shoul
 4. Role clarity: A user should always understand what they can view or edit.
 5. Recoverable interactions: Drag, move, edit, and delete actions must be clear and reversible by user action.
 
+## Non-Negotiable Rule
+Product UX consistency is mandatory at every level. This is the governing rule for all design and FE work.
+1. Visual consistency: typography, spacing, radius, elevation, icon style, color semantics.
+2. Interaction consistency: control behavior, feedback patterns, loading/empty/error states, navigation behavior.
+3. Content consistency: naming, tone, labels, microcopy, and status language.
+4. Accessibility consistency: focus, keyboard behavior, contrast, and touch target expectations.
+5. Cross-platform consistency: desktop/tablet/mobile behaviors must feel like one coherent product.
+
 ## Product Tone
 Use practical and aspirational tone together:
 - Practical: clear action labels, straightforward errors.
@@ -31,4 +39,3 @@ No FE issue is implementation-ready unless:
 4. Responsive behavior is defined.
 5. Render references are attached.
 6. Acceptance criteria are measurable.
-
