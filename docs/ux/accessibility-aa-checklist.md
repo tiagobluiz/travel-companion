@@ -18,7 +18,7 @@
 3. Submission busy state has accessible loading text.
 
 ## Itinerary Interaction
-1. Drag interaction has keyboard equivalent move controls.
+1. Drag interaction has keyboard-equivalent move controls.
 2. Reorder outcomes are announced with accessible status messages.
 3. Move destination context (day/backlog) is explicit in labels.
 
@@ -31,4 +31,3 @@
 1. Run axe or equivalent checks on P0 routes.
 2. Manual keyboard traversal for all P0 actions.
 3. Mobile screen reader smoke test on at least one iOS and one Android browser.
-

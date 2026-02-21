@@ -29,10 +29,9 @@
 ## UI Requirements
 1. Hide unavailable actions when role cannot execute them.
 2. Keep view-only content visible where policy allows.
-3. Show reason text for disabled/hid actions on role-sensitive surfaces.
+3. Show reason text for disabled/hidden actions on role-sensitive surfaces.
 
 ## Error Handling Requirements
 1. 401: prompt auth.
 2. 403: show role/permission message.
 3. 404 on private resources for unauthorized visibility should not leak details.
-

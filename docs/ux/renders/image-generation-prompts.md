@@ -4,7 +4,7 @@ Use these prompts in ChatGPT image generation.
 Goal: premium restrained, modern web app UI, Wanderlog competitor direction, web-first with mobile excellence.
 
 ## Global Style Prefix (prepend to every prompt)
-High-fidelity product UI mockup for a modern travel planning web app. Premium restrained aesthetic, not flashy. Material 3 inspired patterns, icon-led UI, rich visual hierarchy, clear spacing rhythm, polished cards/chips/tabs, subtle depth, no purple-dominant palette. Primary color blue/cyan family, neutral slate backgrounds, soft gradients. Use realistic labels/content (no lorem ipsum). Use modern icons similar to Material Symbols. Accessibility-aware contrast (WCAG AA intent). Do not produce code, only UI render.
+High-fidelity product UI mockup for a modern travel planning web app. Premium restrained aesthetic, not flashy. Material 3-inspired patterns, icon-led UI, rich visual hierarchy, clear spacing rhythm, polished cards/chips/tabs, subtle depth, no purple-dominant palette. Primary color blue/cyan family, neutral slate backgrounds, soft gradients. Use realistic labels/content (no lorem ipsum). Use modern icons similar to Material Symbols. Accessibility-aware contrast (WCAG AA intent). Do not produce code, only UI render.
 
 ## Prompt 1: Discovery/Auth Desktop
 Create a desktop web app screen (1440x900) for "Discover public trips" in a travel planning product.  
@@ -117,4 +117,3 @@ For each flow generate:
 1. Desktop primary
 2. Mobile primary
 3. One key error/empty state variant
-

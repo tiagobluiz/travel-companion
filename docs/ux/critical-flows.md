@@ -16,7 +16,7 @@ Sequence:
 Edge cases:
 1. Public trip becomes private between list and detail.
 2. Anonymous user opens stale deep link.
-3. Auth succeeds but copy fails due backend validation.
+3. Auth succeeds but copy fails due to backend validation.
 
 ## 2) Signup to First Trip
 Goal: Reach first value in under 2 minutes.
@@ -76,4 +76,3 @@ Each flow must define:
 4. Success event.
 5. Failure states.
 6. Recovery actions.
-
