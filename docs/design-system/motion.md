@@ -28,3 +28,14 @@ When `prefers-reduced-motion` is active:
 1. Remove non-essential transforms.
 2. Keep only instant or low-duration opacity transitions.
 
+```css
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+```
+

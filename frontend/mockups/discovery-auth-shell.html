@@ -9,10 +9,10 @@
 <body>
   <header class="shell-header">
     <strong>Travel Companion</strong>
-    <nav class="tabs">
-      <div class="tab active">Discover</div>
-      <div class="tab">Sign in</div>
-      <div class="tab">Sign up</div>
+    <nav class="tabs" role="tablist" aria-label="Auth navigation">
+      <button class="tab active" role="tab" aria-selected="true">Discover</button>
+      <button class="tab" role="tab" aria-selected="false">Sign in</button>
+      <button class="tab" role="tab" aria-selected="false">Sign up</button>
     </nav>
   </header>
 
@@ -21,7 +21,8 @@
       <h1>Discover public trips</h1>
       <p class="muted">Search and explore before creating an account.</p>
       <div style="display:flex; gap:8px; margin:12px 0;">
-        <input class="field" placeholder="Search by city, country, title" />
+        <label class="visually-hidden" for="discover-search">Search trips</label>
+        <input id="discover-search" class="field" placeholder="Search by city, country, title" />
         <button class="btn">Sort</button>
         <button class="btn primary">Apply</button>
       </div>
@@ -53,10 +54,10 @@
   </main>
 
   <nav class="mobile-bottom-nav">
-    <span>Home</span>
-    <span>Discover</span>
-    <span>Bell</span>
-    <span>Profile</span>
+    <a href="#">Home</a>
+    <a href="#" aria-current="page">Discover</a>
+    <a href="#">Notifications</a>
+    <a href="#">Profile</a>
   </nav>
 </body>
 </html>

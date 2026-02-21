@@ -18,8 +18,9 @@
 
 ## Conflict Controls
 1. Single lane owns each primary file domain.
-2. Shared interfaces are frozen in contract issues first.
-3. Rebase lane branches on target daily.
+2. Shared interfaces are finalized in "contract issues" first.
+Example: a GitHub issue that defines and locks API schema/TypeScript contracts before implementation.
+3. Rebase lane branches on target regularly (recommended daily during active development).
 4. Avoid parallel edits to same component roots.
 
 ## Ticket Readiness Checklist
@@ -43,13 +44,17 @@ The entire product UX must remain consistent to the smallest detail. This rule t
 2. Local optimizations that break system consistency are not allowed.
 3. PRs must include a short "consistency check" note describing how the change aligns with product-wide UX language.
 4. If a new pattern is introduced, it must be generalized and documented before reuse.
+5. Accessibility and platform requirements override consistency when they conflict.
+6. Any exception must include PR justification + accessibility impact note and be documented for reuse rules.
 
 ## FE Stack Requirements
 Use modern production-grade FE tooling by default:
-1. Material UI (MUI) for component foundation and theming.
-2. React Hook Form for form state and submission handling.
-3. Zod for schema-based validation and typed form contracts.
-4. Additional state-of-the-art libraries are allowed and encouraged when they provide clear UX/maintainability gains.
+1. Material UI (MUI) v5+ for component foundation and theming.
+2. React Hook Form v7+ for form state and submission handling.
+3. Zod v3+ for schema-based validation and typed form contracts.
+4. Additional libraries require FE/design lead approval and a compatibility checklist:
+theming/tokens fit, accessibility impact, bundle-size impact, and license review.
+5. Record approvals and compatibility notes in PR notes and update relevant design-system docs when reused.
 
 ## Required Validation for FE PRs
 1. `npm run lint`

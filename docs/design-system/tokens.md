@@ -5,67 +5,67 @@ Define reusable visual constants so implementation is consistent and scalable.
 
 ## Core Tokens
 
-## Color
+### Color
 - `--color-primary-50` to `--color-primary-900`
 - `--color-slate-50` to `--color-slate-900`
 - `--color-success-*`
 - `--color-warning-*`
 - `--color-danger-*`
 
-## Typography
+### Typography
 - Font families:
   - `--font-sans-base`: "Plus Jakarta Sans", "Segoe UI", sans-serif
   - `--font-sans-display`: "Manrope", "Segoe UI", sans-serif
 - Sizes:
-  - `--text-xs` 12
-  - `--text-sm` 14
-  - `--text-md` 16
-  - `--text-lg` 18
-  - `--text-xl` 24
-  - `--text-2xl` 32
+  - `--text-xs` 12px
+  - `--text-sm` 14px
+  - `--text-md` 16px
+  - `--text-lg` 18px
+  - `--text-xl` 24px
+  - `--text-2xl` 32px
 
-## Spacing
+### Spacing
 - 4-point scale:
-  - `--space-1` 4
-  - `--space-2` 8
-  - `--space-3` 12
-  - `--space-4` 16
-  - `--space-5` 20
-  - `--space-6` 24
-  - `--space-8` 32
+  - `--space-1` 4px
+  - `--space-2` 8px
+  - `--space-3` 12px
+  - `--space-4` 16px
+  - `--space-5` 20px
+  - `--space-6` 24px
+  - `--space-8` 32px
 
-## Radius
-- `--radius-sm` 8
-- `--radius-md` 12
-- `--radius-lg` 16
-- `--radius-xl` 24
+### Radius
+- `--radius-sm` 8px
+- `--radius-md` 12px
+- `--radius-lg` 16px
+- `--radius-xl` 24px
 
-## Elevation
+### Elevation
 - `--elevation-1`: subtle card shadow
 - `--elevation-2`: raised container
 - `--elevation-3`: modal/sheet
 
 ## Semantic Tokens
 
-## Text
+### Text
 - `--text-primary`
 - `--text-secondary`
 - `--text-muted`
 - `--text-inverse`
 
-## Surface
+### Surface
 - `--surface-base`
 - `--surface-subtle`
 - `--surface-raised`
 - `--surface-overlay`
 
-## Border
+### Border
 - `--border-default`
 - `--border-strong`
 - `--border-focus`
 - `--border-danger`
 
-## Status
+### Status
 - `--status-success-bg` / `--status-success-fg`
 - `--status-warning-bg` / `--status-warning-fg`
 - `--status-danger-bg` / `--status-danger-fg`

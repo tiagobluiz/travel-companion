@@ -9,20 +9,20 @@
 <body>
   <header class="shell-header">
     <strong>Travel Companion</strong>
-    <nav class="tabs">
-      <div class="tab active">Home</div>
-      <div class="tab">Discover</div>
-      <div class="tab">Notifications</div>
-      <div class="tab">Profile</div>
+    <nav class="tabs" role="tablist" aria-label="Primary navigation">
+      <button class="tab active" role="tab" aria-selected="true">Home</button>
+      <button class="tab" role="tab" aria-selected="false">Discover</button>
+      <button class="tab" role="tab" aria-selected="false">Notifications</button>
+      <button class="tab" role="tab" aria-selected="false">Profile</button>
     </nav>
   </header>
   <main class="page card">
     <h1>Dashboard</h1>
-    <div class="tabs" style="margin: 8px 0 16px;">
-      <div class="tab active">My Trips</div>
-      <div class="tab">Shared With Me</div>
-      <div class="tab">Public Feed</div>
-    </div>
+    <nav class="tabs" role="tablist" aria-label="Dashboard tabs" style="margin: 8px 0 16px;">
+      <button class="tab active" role="tab" aria-selected="true">My Trips</button>
+      <button class="tab" role="tab" aria-selected="false">Shared With Me</button>
+      <button class="tab" role="tab" aria-selected="false">Public Feed</button>
+    </nav>
     <p>Default sort: recently edited</p>
     <div class="trip-cards">
       <article class="trip-item">
@@ -44,10 +44,10 @@
   </main>
 
   <nav class="mobile-bottom-nav">
-    <span>Home</span>
-    <span>Discover</span>
-    <span>Bell</span>
-    <span>Profile</span>
+    <a href="#" aria-current="page">Home</a>
+    <a href="#">Discover</a>
+    <a href="#">Notifications</a>
+    <a href="#">Profile</a>
   </nav>
 </body>
 </html>

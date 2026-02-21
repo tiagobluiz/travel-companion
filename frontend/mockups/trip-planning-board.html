@@ -9,11 +9,11 @@
 <body>
   <header class="shell-header">
     <strong>Kyoto Spring Plan</strong>
-    <nav class="tabs">
-      <div class="tab active">Itinerary</div>
-      <div class="tab">Collaborators</div>
-      <div class="tab">Expenses</div>
-      <div class="tab">Settings</div>
+    <nav class="tabs" role="tablist" aria-label="Trip detail tabs">
+      <button class="tab active" role="tab" aria-selected="true">Itinerary</button>
+      <button class="tab" role="tab" aria-selected="false">Collaborators</button>
+      <button class="tab" role="tab" aria-selected="false">Expenses</button>
+      <button class="tab" role="tab" aria-selected="false">Settings</button>
     </nav>
   </header>
 
@@ -59,10 +59,10 @@
   </main>
 
   <nav class="mobile-bottom-nav">
-    <span>Home</span>
-    <span>Discover</span>
-    <span>Bell</span>
-    <span>Profile</span>
+    <a href="#" aria-current="page">Home</a>
+    <a href="#">Discover</a>
+    <a href="#">Notifications</a>
+    <a href="#">Profile</a>
   </nav>
 </body>
 </html>
