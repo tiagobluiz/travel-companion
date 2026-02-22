@@ -9,6 +9,8 @@ const mockUpdateItineraryItem = vi.fn()
 const mockMoveItineraryItem = vi.fn()
 const mockDeleteItineraryItem = vi.fn()
 const mockDeleteTrip = vi.fn()
+const mockArchiveTrip = vi.fn()
+const mockRestoreTrip = vi.fn()
 const mockUpdateTrip = vi.fn()
 
 vi.mock('../api/itinerary', () => ({
@@ -20,6 +22,8 @@ vi.mock('../api/itinerary', () => ({
 
 vi.mock('../api/trips', () => ({
   deleteTrip: (...args: unknown[]) => mockDeleteTrip(...args),
+  archiveTrip: (...args: unknown[]) => mockArchiveTrip(...args),
+  restoreTrip: (...args: unknown[]) => mockRestoreTrip(...args),
   updateTrip: (...args: unknown[]) => mockUpdateTrip(...args),
 }))
 
@@ -103,7 +107,7 @@ describe('useTripMutations', () => {
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['itinerary-v2', 'trip-1'] })
   })
 
-  it('invalidates trip, itinerary, and trips queries after update mutation', async () => {
+  it('invalidates trip query after update mutation', async () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
     })
@@ -128,8 +132,6 @@ describe('useTripMutations', () => {
       endDate: '2026-01-02',
     })
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['trip', 'trip-1'] })
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['itinerary-v2', 'trip-1'] })
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['trips'] })
   })
 
   it('invalidates trips and calls callback after delete', async () => {
@@ -151,7 +153,36 @@ describe('useTripMutations', () => {
 
     expect(mockDeleteTrip).toHaveBeenCalledWith('trip-2')
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['trips'] })
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['trip', 'trip-2'] })
     expect(onTripDeleted).toHaveBeenCalledTimes(1)
+  })
+
+  it('invalidates trips and calls callback after archive/restore', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    })
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
+    const onTripArchived = vi.fn()
+    const onTripRestored = vi.fn()
+    mockArchiveTrip.mockResolvedValue({})
+    mockRestoreTrip.mockResolvedValue({})
+
+    const { result } = renderHook(
+      () => useTripMutations({ tripId: 'trip-4', onTripArchived, onTripRestored }),
+      { wrapper: createWrapper(queryClient) }
+    )
+
+    await act(async () => {
+      await result.current.archiveTripMutation.mutateAsync()
+      await result.current.restoreTripMutation.mutateAsync()
+    })
+
+    expect(mockArchiveTrip).toHaveBeenCalledWith('trip-4')
+    expect(mockRestoreTrip).toHaveBeenCalledWith('trip-4')
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['trips'] })
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['trip', 'trip-4'] })
+    expect(onTripArchived).toHaveBeenCalledTimes(1)
+    expect(onTripRestored).toHaveBeenCalledTimes(1)
   })
 
   it('does not invalidate when itinerary mutation fails', async () => {

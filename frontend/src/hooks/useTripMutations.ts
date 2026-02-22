@@ -7,14 +7,21 @@ import {
   type ItineraryItemV2Request,
   type MoveItineraryItemV2Request,
 } from '../api/itinerary'
-import { deleteTrip, updateTrip, type TripVisibility } from '../api/trips'
+import { archiveTrip, deleteTrip, restoreTrip, updateTrip, type TripVisibility } from '../api/trips'
 
 interface UseTripMutationsOptions {
   tripId?: string
   onTripDeleted?: () => void
+  onTripArchived?: () => void
+  onTripRestored?: () => void
 }
 
-export function useTripMutations({ tripId, onTripDeleted }: UseTripMutationsOptions) {
+export function useTripMutations({
+  tripId,
+  onTripDeleted,
+  onTripArchived,
+  onTripRestored,
+}: UseTripMutationsOptions) {
   const queryClient = useQueryClient()
 
   function requireTripId() {
@@ -36,7 +43,26 @@ export function useTripMutations({ tripId, onTripDeleted }: UseTripMutationsOpti
     mutationFn: () => deleteTrip(requireTripId()),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['trips'] })
+      await queryClient.invalidateQueries({ queryKey: ['trip', tripId] })
       onTripDeleted?.()
+    },
+  })
+
+  const archiveTripMutation = useMutation({
+    mutationFn: () => archiveTrip(requireTripId()),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['trips'] })
+      await queryClient.invalidateQueries({ queryKey: ['trip', tripId] })
+      onTripArchived?.()
+    },
+  })
+
+  const restoreTripMutation = useMutation({
+    mutationFn: () => restoreTrip(requireTripId()),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['trips'] })
+      await queryClient.invalidateQueries({ queryKey: ['trip', tripId] })
+      onTripRestored?.()
     },
   })
 
@@ -44,8 +70,7 @@ export function useTripMutations({ tripId, onTripDeleted }: UseTripMutationsOpti
     mutationFn: (data: { name: string; startDate: string; endDate: string; visibility?: TripVisibility }) =>
       updateTrip(requireTripId(), data),
     onSuccess: async () => {
-      await invalidateTripAndItinerary()
-      await queryClient.invalidateQueries({ queryKey: ['trips'] })
+      await queryClient.invalidateQueries({ queryKey: ['trip', tripId] })
     },
   })
 
@@ -73,6 +98,8 @@ export function useTripMutations({ tripId, onTripDeleted }: UseTripMutationsOpti
 
   return {
     deleteTripMutation,
+    archiveTripMutation,
+    restoreTripMutation,
     updateTripMutation,
     addItineraryMutation,
     updateItineraryMutation,

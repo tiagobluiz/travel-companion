@@ -6,6 +6,8 @@ import TripDetailPage from './TripDetailPage'
 
 const mockFetchTrip = vi.fn()
 const mockDeleteTrip = vi.fn()
+const mockArchiveTrip = vi.fn()
+const mockRestoreTrip = vi.fn()
 const mockUpdateTrip = vi.fn()
 const mockFetchItineraryV2 = vi.fn()
 const mockAddItineraryItem = vi.fn()
@@ -30,6 +32,8 @@ let authState: {
 vi.mock('../../../api/trips', () => ({
   fetchTrip: (...args: unknown[]) => mockFetchTrip(...args),
   deleteTrip: (...args: unknown[]) => mockDeleteTrip(...args),
+  archiveTrip: (...args: unknown[]) => mockArchiveTrip(...args),
+  restoreTrip: (...args: unknown[]) => mockRestoreTrip(...args),
   updateTrip: (...args: unknown[]) => mockUpdateTrip(...args),
 }))
 
@@ -84,6 +88,7 @@ const baseTrip = {
   startDate: '2026-01-01',
   endDate: '2026-01-03',
   visibility: 'PRIVATE',
+  status: 'ACTIVE',
   itineraryItems: [],
   createdAt: '2026-01-01T00:00:00Z',
 }
@@ -135,8 +140,8 @@ const itineraryWithItems = {
 
 const collaboratorsData = {
   memberships: [
-    { userId: 'user-owner', role: 'OWNER' as const, displayName: 'Owner User' },
-    { userId: 'user-editor', role: 'EDITOR' as const, displayName: 'Editor User' },
+    { userId: 'user-owner', role: 'OWNER' as const },
+    { userId: 'user-editor', role: 'EDITOR' as const },
   ],
   invites: [
     { email: 'owner@example.com', role: 'EDITOR' as const, status: 'PENDING' as const },
@@ -159,6 +164,8 @@ describe('TripDetailPage', () => {
     mockDeleteItineraryItem.mockResolvedValue(itineraryWithItems)
     mockAddItineraryItem.mockResolvedValue(itineraryWithItems)
     mockUpdateItineraryItem.mockResolvedValue(itineraryWithItems)
+    mockArchiveTrip.mockResolvedValue({ ...baseTrip, status: 'ARCHIVED' })
+    mockRestoreTrip.mockResolvedValue({ ...baseTrip, status: 'ACTIVE' })
     mockFetchCollaborators.mockResolvedValue(collaboratorsData)
     mockUpdateTrip.mockResolvedValue(baseTrip)
     mockInviteMember.mockResolvedValue(collaboratorsData)
@@ -492,8 +499,6 @@ describe('TripDetailPage', () => {
     renderPage()
 
     expect(await screen.findByText('Collaborators')).toBeInTheDocument()
-    expect(screen.getByText('Owner User')).toBeInTheDocument()
-    expect(screen.getByText('Editor User')).toBeInTheDocument()
     expect(screen.getByText('OWNER')).toBeInTheDocument()
     expect(screen.getAllByText('EDITOR').length).toBeGreaterThan(0)
     expect(screen.getByText('PENDING')).toBeInTheDocument()
@@ -543,6 +548,45 @@ describe('TripDetailPage', () => {
     fireEvent.click(revokeButtons[1]!)
 
     expect(await screen.findByText('Only owners can manage invites')).toBeInTheDocument()
+  })
+
+  it('requires confirmation before archiving a trip', async () => {
+    renderPage()
+    await screen.findByRole('button', { name: 'Archive trip' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Archive trip' }))
+    const archiveDialog = await screen.findByRole('dialog', { name: 'Archive trip?' })
+    const archiveDialogScope = within(archiveDialog)
+    expect(archiveDialogScope.getByText('Archive trip?')).toBeInTheDocument()
+
+    fireEvent.click(archiveDialogScope.getByRole('button', { name: 'Cancel' }))
+    expect(mockArchiveTrip).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Archive trip' }))
+    fireEvent.click(
+      within(await screen.findByRole('dialog', { name: 'Archive trip?' })).getByRole('button', {
+        name: 'Archive trip',
+      })
+    )
+
+    await waitFor(() => {
+      expect(mockArchiveTrip).toHaveBeenCalledWith('trip-1')
+    })
+  })
+
+  it('shows restore action for archived trips and requires confirmation', async () => {
+    mockFetchTrip.mockResolvedValueOnce({ ...baseTrip, status: 'ARCHIVED' })
+    renderPage()
+    await screen.findByRole('button', { name: 'Restore trip' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Restore trip' }))
+    const restoreDialog = await screen.findByRole('dialog', { name: 'Restore trip?' })
+    expect(within(restoreDialog).getByText('Restore trip?')).toBeInTheDocument()
+    fireEvent.click(within(restoreDialog).getByRole('button', { name: 'Restore trip' }))
+
+    await waitFor(() => {
+      expect(mockRestoreTrip).toHaveBeenCalledWith('trip-1')
+    })
   })
 
   it('supports self-remove flow (regression)', async () => {

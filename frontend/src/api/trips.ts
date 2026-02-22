@@ -6,11 +6,14 @@ export interface Trip {
   startDate: string
   endDate: string
   visibility: TripVisibility
+  status: TripStatus
   itineraryItems: ItineraryItem[]
   createdAt: string
 }
 
 export type TripVisibility = 'PUBLIC' | 'PRIVATE'
+export type TripStatus = 'ACTIVE' | 'ARCHIVED'
+export type TripListStatusFilter = TripStatus | 'ALL'
 
 export interface ItineraryItem {
   placeName: string
@@ -27,8 +30,8 @@ export interface CreateTripRequest {
   visibility?: TripVisibility
 }
 
-export async function fetchTrips() {
-  return api.get<Trip[]>('/trips')
+export async function fetchTrips(status: TripListStatusFilter = 'ACTIVE') {
+  return api.get<Trip[]>(`/trips?status=${status}`)
 }
 
 export async function fetchTrip(id: string) {
@@ -47,4 +50,12 @@ export async function updateTrip(id: string, data: UpdateTripRequest) {
 
 export async function deleteTrip(id: string) {
   return api.delete(`/trips/${id}`)
+}
+
+export async function archiveTrip(id: string) {
+  return api.post<Trip>(`/trips/${id}/archive`, {})
+}
+
+export async function restoreTrip(id: string) {
+  return api.post<Trip>(`/trips/${id}/restore`, {})
 }
