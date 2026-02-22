@@ -41,7 +41,7 @@ class TripJpaEntity(
     @Column(name = "visibility", nullable = false)
     var visibility: String,
 
-    @Column(name = "status", nullable = false)
+    @Column(name = "status", nullable = false, length = 32)
     var status: String = TripStatus.ACTIVE.name,
 
     @Column(name = "itinerary_items", nullable = false, columnDefinition = "jsonb")

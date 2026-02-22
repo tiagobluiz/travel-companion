@@ -218,10 +218,31 @@ class TripControllerIntegrationTest {
             jsonPath("$.status") { value("ARCHIVED") }
         }
 
+        mockMvc.post("/trips/$tripId/archive") {
+            header("Authorization", "Bearer $ownerToken")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.status") { value("ARCHIVED") }
+        }
+
         mockMvc.post("/trips/$tripId/restore") {
             header("Authorization", "Bearer ${editor.first}")
         }.andExpect {
             status { isNotFound() }
+        }
+
+        mockMvc.post("/trips/$tripId/restore") {
+            header("Authorization", "Bearer $ownerToken")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.status") { value("ACTIVE") }
+        }
+
+        mockMvc.post("/trips/$tripId/restore") {
+            header("Authorization", "Bearer $ownerToken")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.status") { value("ACTIVE") }
         }
     }
 

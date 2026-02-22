@@ -17,8 +17,10 @@ class GetTripsService(
 
     /**
      * Returns all trips where the user has access (owner/editor/viewer membership).
+     * Results are additionally filtered by `statusFilter` (default ACTIVE); `ALL` returns every status.
      *
      * @param userId The requesting user's ID
+     * @param statusFilter Status filter applied to accessible trips
      * @return List of trips (may be empty)
      */
     fun execute(

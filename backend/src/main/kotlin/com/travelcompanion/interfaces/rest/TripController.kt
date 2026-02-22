@@ -1,14 +1,14 @@
 package com.travelcompanion.interfaces.rest
 
+import com.travelcompanion.application.AccessResult
+import com.travelcompanion.application.trip.ArchiveTripService
 import com.travelcompanion.application.trip.CreateTripService
 import com.travelcompanion.application.trip.DeleteTripService
 import com.travelcompanion.application.trip.GetTripService
 import com.travelcompanion.application.trip.GetTripsService
-import com.travelcompanion.application.trip.ArchiveTripService
 import com.travelcompanion.application.trip.RestoreTripService
 import com.travelcompanion.application.trip.TripListStatusFilter
 import com.travelcompanion.application.trip.UpdateTripService
-import com.travelcompanion.application.AccessResult
 import com.travelcompanion.domain.trip.TripId
 import com.travelcompanion.interfaces.rest.dto.CreateTripRequest
 import com.travelcompanion.interfaces.rest.dto.UpdateTripRequest
@@ -25,8 +25,8 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
 
 /**
  * REST controller for trip CRUD operations.
