@@ -1,20 +1,24 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '../../../stores/authStore'
-import { fetchTrips, createTrip, type CreateTripRequest } from '../../../api/trips'
+import { fetchTrips, createTrip, type CreateTripRequest, type TripStatus } from '../../../api/trips'
 import { useState } from 'react'
 
 export default function DashboardPage() {
   const { user, logout } = useAuthStore()
   const queryClient = useQueryClient()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [showCreate, setShowCreate] = useState(false)
   const [name, setName] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
 
+  const tabParam = searchParams.get('tab')
+  const selectedTab: TripStatus = tabParam === 'archived' ? 'ARCHIVED' : 'ACTIVE'
+
   const { data: trips = [], isLoading } = useQuery({
-    queryKey: ['trips'],
-    queryFn: fetchTrips,
+    queryKey: ['trips', selectedTab],
+    queryFn: () => fetchTrips(selectedTab),
   })
 
   const createMutation = useMutation({
@@ -53,7 +57,31 @@ export default function DashboardPage() {
 
       <main className="max-w-4xl mx-auto px-4 py-8">
         <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-900">Your trips</h2>
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Your trips</h2>
+            <div className="mt-3 inline-flex rounded-lg border border-slate-200 bg-white p-1">
+              <button
+                onClick={() => setSearchParams({ tab: 'active' })}
+                className={`px-3 py-1 text-sm rounded-md ${
+                  selectedTab === 'ACTIVE'
+                    ? 'bg-primary-600 text-white'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                Active
+              </button>
+              <button
+                onClick={() => setSearchParams({ tab: 'archived' })}
+                className={`px-3 py-1 text-sm rounded-md ${
+                  selectedTab === 'ARCHIVED'
+                    ? 'bg-primary-600 text-white'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                Archived
+              </button>
+            </div>
+          </div>
           <button
             onClick={() => setShowCreate(true)}
             className="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700"
@@ -114,16 +142,22 @@ export default function DashboardPage() {
           <p className="text-slate-600">Loading trips...</p>
         ) : trips.length === 0 ? (
           <div className="rounded-lg border-2 border-dashed border-slate-200 p-12 text-center">
-            <p className="text-slate-600 mb-4">No trips yet</p>
-            <p className="text-sm text-slate-500 mb-4">
-              Create your first trip to start planning.
+            <p className="text-slate-600 mb-4">
+              {selectedTab === 'ACTIVE' ? 'No active trips yet' : 'No archived trips'}
             </p>
-            <button
-              onClick={() => setShowCreate(true)}
-              className="text-primary-600 font-medium hover:underline"
-            >
-              Create a trip
-            </button>
+            {selectedTab === 'ACTIVE' ? (
+              <>
+                <p className="text-sm text-slate-500 mb-4">
+                  Create your first trip to start planning.
+                </p>
+                <button
+                  onClick={() => setShowCreate(true)}
+                  className="text-primary-600 font-medium hover:underline"
+                >
+                  Create a trip
+                </button>
+              </>
+            ) : null}
           </div>
         ) : (
           <ul className="space-y-2">

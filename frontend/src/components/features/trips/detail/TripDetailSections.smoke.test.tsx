@@ -13,6 +13,7 @@ const trip = {
   startDate: '2026-01-01',
   endDate: '2026-01-03',
   visibility: 'PRIVATE' as const,
+  status: 'ACTIVE' as const,
   itineraryItems: [],
   createdAt: '2026-01-01T00:00:00Z',
 }

@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../../stores/authStore'
-import { type TripVisibility } from '../../../api/trips'
+import { type TripStatus, type TripVisibility } from '../../../api/trips'
 import {
   type ItineraryItemV2,
   type MoveItineraryItemV2Request,
@@ -66,6 +66,8 @@ export default function TripDetailPage() {
   const [tripEndDate, setTripEndDate] = useState('')
   const [tripVisibility, setTripVisibility] = useState<TripVisibility>('PRIVATE')
   const [tripDetailsError, setTripDetailsError] = useState('')
+  const [tripActionError, setTripActionError] = useState('')
+  const [confirmAction, setConfirmAction] = useState<'archive' | 'restore' | 'delete' | null>(null)
 
   const {
     trip,
@@ -82,6 +84,8 @@ export default function TripDetailPage() {
 
   const {
     deleteTripMutation,
+    archiveTripMutation,
+    restoreTripMutation,
     updateTripMutation,
     addItineraryMutation,
     updateItineraryMutation,
@@ -90,7 +94,10 @@ export default function TripDetailPage() {
   } = useTripMutations({
     tripId: id,
     onTripDeleted: () => {
-      navigate('/')
+      navigate('/?tab=active')
+    },
+    onTripArchived: () => {
+      navigate('/?tab=active')
     },
   })
 
@@ -304,6 +311,57 @@ export default function TripDetailPage() {
     )
   }
 
+  function confirmActionDescription(action: 'archive' | 'restore' | 'delete', status: TripStatus) {
+    if (action === 'archive') {
+      return {
+        title: 'Archive trip?',
+        body: 'Archived trips are hidden from active planning and can be restored later.',
+        buttonLabel: 'Archive trip',
+      }
+    }
+    if (action === 'restore') {
+      return {
+        title: 'Restore trip?',
+        body: `This trip will return to your active trips list (current status: ${status}).`,
+        buttonLabel: 'Restore trip',
+      }
+    }
+    return {
+      title: 'Delete trip permanently?',
+      body: 'This action cannot be undone.',
+      buttonLabel: 'Delete trip',
+    }
+  }
+
+  function handleConfirmTripAction() {
+    if (!confirmAction) return
+    setTripActionError('')
+    if (confirmAction === 'archive') {
+      archiveTripMutation.mutate(undefined, {
+        onSuccess: () => setConfirmAction(null),
+        onError: (error: Error) => {
+          setTripActionError(error.message || 'Failed to archive trip.')
+        },
+      })
+      return
+    }
+    if (confirmAction === 'restore') {
+      restoreTripMutation.mutate(undefined, {
+        onSuccess: () => setConfirmAction(null),
+        onError: (error: Error) => {
+          setTripActionError(error.message || 'Failed to restore trip.')
+        },
+      })
+      return
+    }
+    deleteTripMutation.mutate(undefined, {
+      onSuccess: () => setConfirmAction(null),
+      onError: (error: Error) => {
+        setTripActionError(error.message || 'Failed to delete trip.')
+      },
+    })
+  }
+
   useEffect(() => {
     if (!trip) return
     setTripName(trip.name)
@@ -453,9 +511,29 @@ export default function TripDetailPage() {
 
         {isOwner && (
           <div className="mt-10 pt-6 border-t border-slate-200">
+            {tripActionError && (
+              <div className="mb-3 p-2 rounded-md bg-red-50 text-red-700 text-sm">{tripActionError}</div>
+            )}
+            {trip.status === 'ACTIVE' ? (
+              <button
+                onClick={() => setConfirmAction('archive')}
+                disabled={archiveTripMutation.isPending || deleteTripMutation.isPending}
+                className="mr-3 text-amber-700 text-sm hover:underline disabled:opacity-50"
+              >
+                Archive trip
+              </button>
+            ) : (
+              <button
+                onClick={() => setConfirmAction('restore')}
+                disabled={restoreTripMutation.isPending || deleteTripMutation.isPending}
+                className="mr-3 text-emerald-700 text-sm hover:underline disabled:opacity-50"
+              >
+                Restore trip
+              </button>
+            )}
             <button
-              onClick={() => deleteTripMutation.mutate()}
-              disabled={deleteTripMutation.isPending}
+              onClick={() => setConfirmAction('delete')}
+              disabled={deleteTripMutation.isPending || archiveTripMutation.isPending || restoreTripMutation.isPending}
               className="text-red-600 text-sm hover:underline disabled:opacity-50"
             >
               Delete trip
@@ -463,6 +541,49 @@ export default function TripDetailPage() {
           </div>
         )}
       </main>
+
+      {confirmAction && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center px-4 z-20">
+          <div className="w-full max-w-md bg-white rounded-lg border border-slate-200 p-5">
+            <h3 className="text-base font-semibold text-slate-900">
+              {confirmActionDescription(confirmAction, trip.status).title}
+            </h3>
+            <p className="mt-2 text-sm text-slate-600">
+              {confirmActionDescription(confirmAction, trip.status).body}
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={() => setConfirmAction(null)}
+                disabled={
+                  deleteTripMutation.isPending ||
+                  archiveTripMutation.isPending ||
+                  restoreTripMutation.isPending
+                }
+                className="px-3 py-2 text-sm rounded border border-slate-300 text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmTripAction}
+                disabled={
+                  deleteTripMutation.isPending ||
+                  archiveTripMutation.isPending ||
+                  restoreTripMutation.isPending
+                }
+                className={`px-3 py-2 text-sm rounded text-white disabled:opacity-50 ${
+                  confirmAction === 'delete'
+                    ? 'bg-red-600 hover:bg-red-700'
+                    : confirmAction === 'archive'
+                      ? 'bg-amber-600 hover:bg-amber-700'
+                      : 'bg-emerald-600 hover:bg-emerald-700'
+                }`}
+              >
+                {confirmActionDescription(confirmAction, trip.status).buttonLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
