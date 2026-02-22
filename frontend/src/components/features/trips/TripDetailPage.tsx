@@ -516,7 +516,10 @@ export default function TripDetailPage() {
             )}
             {trip.status === 'ACTIVE' ? (
               <button
-                onClick={() => setConfirmAction('archive')}
+                onClick={() => {
+                  setTripActionError('')
+                  setConfirmAction('archive')
+                }}
                 disabled={archiveTripMutation.isPending || deleteTripMutation.isPending}
                 className="mr-3 text-amber-700 text-sm hover:underline disabled:opacity-50"
               >
@@ -524,7 +527,10 @@ export default function TripDetailPage() {
               </button>
             ) : (
               <button
-                onClick={() => setConfirmAction('restore')}
+                onClick={() => {
+                  setTripActionError('')
+                  setConfirmAction('restore')
+                }}
                 disabled={restoreTripMutation.isPending || deleteTripMutation.isPending}
                 className="mr-3 text-emerald-700 text-sm hover:underline disabled:opacity-50"
               >
@@ -532,7 +538,10 @@ export default function TripDetailPage() {
               </button>
             )}
             <button
-              onClick={() => setConfirmAction('delete')}
+              onClick={() => {
+                setTripActionError('')
+                setConfirmAction('delete')
+              }}
               disabled={deleteTripMutation.isPending || archiveTripMutation.isPending || restoreTripMutation.isPending}
               className="text-red-600 text-sm hover:underline disabled:opacity-50"
             >
@@ -543,12 +552,18 @@ export default function TripDetailPage() {
       </main>
 
       {confirmAction && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center px-4 z-20">
+        <div
+          className="fixed inset-0 bg-black/40 flex items-center justify-center px-4 z-20"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="trip-action-title"
+          aria-describedby="trip-action-description"
+        >
           <div className="w-full max-w-md bg-white rounded-lg border border-slate-200 p-5">
-            <h3 className="text-base font-semibold text-slate-900">
+            <h3 id="trip-action-title" className="text-base font-semibold text-slate-900">
               {confirmActionDescription(confirmAction, trip.status).title}
             </h3>
-            <p className="mt-2 text-sm text-slate-600">
+            <p id="trip-action-description" className="mt-2 text-sm text-slate-600">
               {confirmActionDescription(confirmAction, trip.status).body}
             </p>
             <div className="mt-4 flex justify-end gap-2">

@@ -61,7 +61,13 @@ export default function DashboardPage() {
             <h2 className="text-lg font-semibold text-slate-900">Your trips</h2>
             <div className="mt-3 inline-flex rounded-lg border border-slate-200 bg-white p-1">
               <button
-                onClick={() => setSearchParams({ tab: 'active' })}
+                onClick={() =>
+                  setSearchParams((prev) => {
+                    const next = new URLSearchParams(prev)
+                    next.set('tab', 'active')
+                    return next
+                  })
+                }
                 className={`px-3 py-1 text-sm rounded-md ${
                   selectedTab === 'ACTIVE'
                     ? 'bg-primary-600 text-white'
@@ -71,7 +77,13 @@ export default function DashboardPage() {
                 Active
               </button>
               <button
-                onClick={() => setSearchParams({ tab: 'archived' })}
+                onClick={() =>
+                  setSearchParams((prev) => {
+                    const next = new URLSearchParams(prev)
+                    next.set('tab', 'archived')
+                    return next
+                  })
+                }
                 className={`px-3 py-1 text-sm rounded-md ${
                   selectedTab === 'ARCHIVED'
                     ? 'bg-primary-600 text-white'
