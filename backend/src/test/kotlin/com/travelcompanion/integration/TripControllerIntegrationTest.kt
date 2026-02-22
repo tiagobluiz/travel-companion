@@ -249,7 +249,15 @@ class TripControllerIntegrationTest {
     @Test
     fun `owner can delete active and archived trip and editor cannot delete`() {
         val ownerToken = registerAndGetToken()
-        val tripId = createTrip(ownerToken, "Delete Lifecycle Trip", "2026-11-01", "2026-11-03")
+        val activeTripId = createTrip(ownerToken, "Delete Active Trip", "2026-11-01", "2026-11-03")
+
+        mockMvc.delete("/trips/$activeTripId") {
+            header("Authorization", "Bearer $ownerToken")
+        }.andExpect {
+            status { isNoContent() }
+        }
+
+        val tripId = createTrip(ownerToken, "Delete Archived Trip", "2026-11-01", "2026-11-03")
         val editor = registerAndGetAuth()
         addMembership(tripId, editor.second, TripRole.EDITOR)
 
