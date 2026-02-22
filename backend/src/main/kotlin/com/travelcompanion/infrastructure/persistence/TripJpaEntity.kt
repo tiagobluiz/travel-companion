@@ -1,6 +1,7 @@
 package com.travelcompanion.infrastructure.persistence
 
 import com.travelcompanion.domain.trip.ItineraryItem
+import com.travelcompanion.domain.trip.TripStatus
 import jakarta.persistence.Column
 import jakarta.persistence.Convert
 import jakarta.persistence.Entity
@@ -39,6 +40,9 @@ class TripJpaEntity(
 
     @Column(name = "visibility", nullable = false)
     var visibility: String,
+
+    @Column(name = "status", nullable = false)
+    var status: String = TripStatus.ACTIVE.name,
 
     @Column(name = "itinerary_items", nullable = false, columnDefinition = "jsonb")
     @JdbcTypeCode(SqlTypes.JSON)

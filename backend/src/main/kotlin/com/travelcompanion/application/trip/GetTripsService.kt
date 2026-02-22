@@ -21,6 +21,9 @@ class GetTripsService(
      * @param userId The requesting user's ID
      * @return List of trips (may be empty)
      */
-    fun execute(userId: UserId): List<Trip> =
-        tripRepository.findByUserId(userId)
+    fun execute(
+        userId: UserId,
+        statusFilter: TripListStatusFilter = TripListStatusFilter.ACTIVE,
+    ): List<Trip> =
+        tripRepository.findByUserId(userId).filter(statusFilter::matches)
 }
