@@ -589,6 +589,60 @@ describe('TripDetailPage', () => {
     })
   })
 
+  it('requires confirmation before deleting an active trip', async () => {
+    renderPage()
+    await screen.findByRole('button', { name: 'Delete trip' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete trip' }))
+    const deleteDialog = await screen.findByRole('dialog', { name: 'Delete trip permanently?' })
+    const deleteDialogScope = within(deleteDialog)
+    expect(deleteDialogScope.getByText('This action cannot be undone.')).toBeInTheDocument()
+
+    fireEvent.click(deleteDialogScope.getByRole('button', { name: 'Cancel' }))
+    expect(mockDeleteTrip).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete trip' }))
+    fireEvent.click(
+      within(await screen.findByRole('dialog', { name: 'Delete trip permanently?' })).getByRole('button', {
+        name: 'Delete trip',
+      })
+    )
+
+    await waitFor(() => {
+      expect(mockDeleteTrip).toHaveBeenCalledWith('trip-1')
+    })
+  })
+
+  it('allows deleting an archived trip with confirmation', async () => {
+    mockFetchTrip.mockResolvedValueOnce({ ...baseTrip, status: 'ARCHIVED' })
+    renderPage()
+    await screen.findByRole('button', { name: 'Delete trip' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete trip' }))
+    const deleteDialog = await screen.findByRole('dialog', { name: 'Delete trip permanently?' })
+    expect(within(deleteDialog).getByText('This action cannot be undone.')).toBeInTheDocument()
+    fireEvent.click(within(deleteDialog).getByRole('button', { name: 'Delete trip' }))
+
+    await waitFor(() => {
+      expect(mockDeleteTrip).toHaveBeenCalledWith('trip-1')
+    })
+  })
+
+  it('non-owners do not see archive restore or delete actions', async () => {
+    authState = {
+      token: 'token-1',
+      user: { displayName: 'Editor', email: 'editor@example.com', id: 'user-editor' },
+      logout: vi.fn(),
+    }
+
+    renderPage()
+    await screen.findByText('Trip details')
+
+    expect(screen.queryByRole('button', { name: 'Archive trip' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Restore trip' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Delete trip' })).not.toBeInTheDocument()
+  })
+
   it('supports self-remove flow (regression)', async () => {
     renderPage()
     await screen.findByRole('button', { name: 'Leave trip' })

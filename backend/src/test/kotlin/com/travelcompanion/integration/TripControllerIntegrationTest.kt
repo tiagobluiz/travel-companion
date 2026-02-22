@@ -247,6 +247,45 @@ class TripControllerIntegrationTest {
     }
 
     @Test
+    fun `owner can delete active and archived trip and editor cannot delete`() {
+        val ownerToken = registerAndGetToken()
+        val tripId = createTrip(ownerToken, "Delete Lifecycle Trip", "2026-11-01", "2026-11-03")
+        val editor = registerAndGetAuth()
+        addMembership(tripId, editor.second, TripRole.EDITOR)
+
+        mockMvc.delete("/trips/$tripId") {
+            header("Authorization", "Bearer ${editor.first}")
+        }.andExpect {
+            status { isNotFound() }
+        }
+
+        mockMvc.post("/trips/$tripId/archive") {
+            header("Authorization", "Bearer $ownerToken")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.status") { value("ARCHIVED") }
+        }
+
+        mockMvc.delete("/trips/$tripId") {
+            header("Authorization", "Bearer ${editor.first}")
+        }.andExpect {
+            status { isNotFound() }
+        }
+
+        mockMvc.delete("/trips/$tripId") {
+            header("Authorization", "Bearer $ownerToken")
+        }.andExpect {
+            status { isNoContent() }
+        }
+
+        mockMvc.get("/trips/$tripId") {
+            header("Authorization", "Bearer $ownerToken")
+        }.andExpect {
+            status { isNotFound() }
+        }
+    }
+
+    @Test
     fun `trip list rejects invalid status filter`() {
         val token = registerAndGetToken()
 
