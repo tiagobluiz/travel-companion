@@ -24,7 +24,33 @@ data class Trip(
     val invites: List<TripInvite> = emptyList(),
     val itineraryItems: List<ItineraryItem> = emptyList(),
     val createdAt: Instant,
+    val status: TripStatus = TripStatus.ACTIVE,
 ) {
+    constructor(
+        id: TripId,
+        userId: UserId,
+        name: String,
+        startDate: LocalDate,
+        endDate: LocalDate,
+        visibility: TripVisibility,
+        memberships: List<TripMembership>,
+        invites: List<TripInvite>,
+        itineraryItems: List<ItineraryItem>,
+        createdAt: Instant,
+    ) : this(
+        id = id,
+        userId = userId,
+        name = name,
+        startDate = startDate,
+        endDate = endDate,
+        visibility = visibility,
+        memberships = memberships,
+        invites = invites,
+        itineraryItems = itineraryItems,
+        createdAt = createdAt,
+        status = TripStatus.ACTIVE,
+    )
+
     init {
         require(name.isNotBlank()) { "Trip name cannot be blank" }
         require(!endDate.isBefore(startDate)) { "End date cannot be before start date" }

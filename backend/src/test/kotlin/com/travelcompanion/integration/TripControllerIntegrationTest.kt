@@ -42,6 +42,7 @@ class TripControllerIntegrationTest {
             jsonPath("$.startDate") { value("2026-08-08") }
             jsonPath("$.endDate") { value("2026-08-16") }
             jsonPath("$.visibility") { value("PRIVATE") }
+            jsonPath("$.status") { value("ACTIVE") }
         }
 
         mockMvc.put("/trips/$tripId") {
@@ -59,6 +60,7 @@ class TripControllerIntegrationTest {
         }.andExpect {
             status { isOk() }
             jsonPath("$[0].id") { value(tripId) }
+            jsonPath("$[0].status") { value("ACTIVE") }
         }
 
         mockMvc.delete("/trips/$tripId") {
@@ -92,6 +94,7 @@ class TripControllerIntegrationTest {
             status { isOk() }
             jsonPath("$.id") { value(tripId) }
             jsonPath("$.visibility") { value("PUBLIC") }
+            jsonPath("$.status") { value("ACTIVE") }
         }
     }
 
@@ -137,6 +140,121 @@ class TripControllerIntegrationTest {
         }.andExpect {
             status { isOk() }
             jsonPath("$.id") { value(tripId) }
+        }
+    }
+
+    @Test
+    fun `owner can archive and restore trip and list filter defaults to active`() {
+        val ownerToken = registerAndGetToken()
+        val tripId = createTrip(ownerToken, "Lifecycle Trip", "2026-10-10", "2026-10-15")
+
+        mockMvc.post("/trips/$tripId/archive") {
+            header("Authorization", "Bearer $ownerToken")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.id") { value(tripId) }
+            jsonPath("$.status") { value("ARCHIVED") }
+        }
+
+        mockMvc.get("/trips") {
+            header("Authorization", "Bearer $ownerToken")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$") { isArray() }
+            jsonPath("$.length()") { value(0) }
+        }
+
+        mockMvc.get("/trips") {
+            header("Authorization", "Bearer $ownerToken")
+            param("status", "ARCHIVED")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$[0].id") { value(tripId) }
+            jsonPath("$[0].status") { value("ARCHIVED") }
+        }
+
+        mockMvc.get("/trips") {
+            header("Authorization", "Bearer $ownerToken")
+            param("status", "ALL")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$[0].id") { value(tripId) }
+            jsonPath("$[0].status") { value("ARCHIVED") }
+        }
+
+        mockMvc.post("/trips/$tripId/restore") {
+            header("Authorization", "Bearer $ownerToken")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.status") { value("ACTIVE") }
+        }
+
+        mockMvc.get("/trips") {
+            header("Authorization", "Bearer $ownerToken")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$[0].id") { value(tripId) }
+            jsonPath("$[0].status") { value("ACTIVE") }
+        }
+    }
+
+    @Test
+    fun `archive and restore are owner only`() {
+        val ownerToken = registerAndGetToken()
+        val tripId = createTrip(ownerToken, "Protected Trip", "2026-10-20", "2026-10-22")
+        val editor = registerAndGetAuth()
+        addMembership(tripId, editor.second, TripRole.EDITOR)
+
+        mockMvc.post("/trips/$tripId/archive") {
+            header("Authorization", "Bearer ${editor.first}")
+        }.andExpect {
+            status { isNotFound() }
+        }
+
+        mockMvc.post("/trips/$tripId/archive") {
+            header("Authorization", "Bearer $ownerToken")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.status") { value("ARCHIVED") }
+        }
+
+        mockMvc.post("/trips/$tripId/archive") {
+            header("Authorization", "Bearer $ownerToken")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.status") { value("ARCHIVED") }
+        }
+
+        mockMvc.post("/trips/$tripId/restore") {
+            header("Authorization", "Bearer ${editor.first}")
+        }.andExpect {
+            status { isNotFound() }
+        }
+
+        mockMvc.post("/trips/$tripId/restore") {
+            header("Authorization", "Bearer $ownerToken")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.status") { value("ACTIVE") }
+        }
+
+        mockMvc.post("/trips/$tripId/restore") {
+            header("Authorization", "Bearer $ownerToken")
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.status") { value("ACTIVE") }
+        }
+    }
+
+    @Test
+    fun `trip list rejects invalid status filter`() {
+        val token = registerAndGetToken()
+
+        mockMvc.get("/trips") {
+            header("Authorization", "Bearer $token")
+            param("status", "BROKEN")
+        }.andExpect {
+            status { isBadRequest() }
         }
     }
 

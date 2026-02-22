@@ -42,6 +42,7 @@ data class TripResponse(
     val startDate: String,
     val endDate: String,
     val visibility: String,
+    val status: String,
     val itineraryItems: List<ItineraryItemResponse>,
     val createdAt: String,
 )

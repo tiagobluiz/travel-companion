@@ -7,6 +7,7 @@ import com.travelcompanion.domain.trip.TripInvite
 import com.travelcompanion.domain.trip.TripMembership
 import com.travelcompanion.domain.trip.TripRepository
 import com.travelcompanion.domain.trip.TripRole
+import com.travelcompanion.domain.trip.TripStatus
 import com.travelcompanion.domain.trip.TripVisibility
 import com.travelcompanion.domain.user.UserId
 import com.travelcompanion.infrastructure.audit.AuditEventWriter
@@ -112,6 +113,7 @@ class JpaTripRepository(
             startDate = trip.startDate,
             endDate = trip.endDate,
             visibility = trip.visibility.name,
+            status = trip.status.name,
             itineraryItems = trip.itineraryItems.toMutableList(),
             createdAt = trip.createdAt,
         )
@@ -274,6 +276,8 @@ class JpaTripRepository(
             invites = invites,
             itineraryItems = entity.itineraryItems.toList(),
             createdAt = entity.createdAt,
+            status = runCatching { TripStatus.valueOf(entity.status) }
+                .getOrDefault(TripStatus.ACTIVE),
         )
     }
 

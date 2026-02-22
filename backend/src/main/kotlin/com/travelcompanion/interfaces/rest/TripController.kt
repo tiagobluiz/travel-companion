@@ -1,11 +1,14 @@
 package com.travelcompanion.interfaces.rest
 
+import com.travelcompanion.application.AccessResult
+import com.travelcompanion.application.trip.ArchiveTripService
 import com.travelcompanion.application.trip.CreateTripService
 import com.travelcompanion.application.trip.DeleteTripService
 import com.travelcompanion.application.trip.GetTripService
 import com.travelcompanion.application.trip.GetTripsService
+import com.travelcompanion.application.trip.RestoreTripService
+import com.travelcompanion.application.trip.TripListStatusFilter
 import com.travelcompanion.application.trip.UpdateTripService
-import com.travelcompanion.application.AccessResult
 import com.travelcompanion.domain.trip.TripId
 import com.travelcompanion.interfaces.rest.dto.CreateTripRequest
 import com.travelcompanion.interfaces.rest.dto.UpdateTripRequest
@@ -22,6 +25,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -38,6 +42,8 @@ class TripController(
     private val getTripService: GetTripService,
     private val updateTripService: UpdateTripService,
     private val deleteTripService: DeleteTripService,
+    private val archiveTripService: ArchiveTripService,
+    private val restoreTripService: RestoreTripService,
     private val authPrincipalResolver: AuthPrincipalResolver,
 ) {
 
@@ -59,10 +65,17 @@ class TripController(
     }
 
     @GetMapping
-    fun list(authentication: Authentication): ResponseEntity<Any> {
+    fun list(
+        authentication: Authentication,
+        @RequestParam(required = false) status: String?,
+    ): ResponseEntity<Any> {
         val userId = authPrincipalResolver.userId(authentication)
             ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
-        val trips = getTripsService.execute(userId)
+        val statusFilter = status?.let {
+            runCatching { TripListStatusFilter.valueOf(it.uppercase()) }.getOrNull()
+                ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
+        } ?: TripListStatusFilter.ACTIVE
+        val trips = getTripsService.execute(userId, statusFilter)
         return ResponseEntity.ok(trips.map { TripResponseMapper.toResponse(it) })
     }
 
@@ -112,5 +125,35 @@ class TripController(
         val deleted = deleteTripService.execute(tripId, userId)
         return if (deleted) ResponseEntity.noContent().build()
         else ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+    }
+
+    @PostMapping("/{id}/archive")
+    fun archive(
+        authentication: Authentication,
+        @PathVariable id: String,
+    ): ResponseEntity<Any> {
+        val userId = authPrincipalResolver.userId(authentication)
+            ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        val tripId = TripId.fromString(id) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
+        return when (val result = archiveTripService.execute(tripId, userId)) {
+            is AccessResult.Success -> ResponseEntity.ok(TripResponseMapper.toResponse(result.value))
+            AccessResult.NotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+            AccessResult.Forbidden -> ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+        }
+    }
+
+    @PostMapping("/{id}/restore")
+    fun restore(
+        authentication: Authentication,
+        @PathVariable id: String,
+    ): ResponseEntity<Any> {
+        val userId = authPrincipalResolver.userId(authentication)
+            ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        val tripId = TripId.fromString(id) ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
+        return when (val result = restoreTripService.execute(tripId, userId)) {
+            is AccessResult.Success -> ResponseEntity.ok(TripResponseMapper.toResponse(result.value))
+            AccessResult.NotFound -> ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+            AccessResult.Forbidden -> ResponseEntity.status(HttpStatus.NOT_FOUND).build()
+        }
     }
 }

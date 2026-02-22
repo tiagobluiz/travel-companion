@@ -12,6 +12,7 @@ object TripResponseMapper {
         startDate = trip.startDate.toString(),
         endDate = trip.endDate.toString(),
         visibility = trip.visibility.name,
+        status = trip.status.name,
         itineraryItems = trip.itineraryItems.map {
             ItineraryItemResponse(
                 placeName = it.placeName,
