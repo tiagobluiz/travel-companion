@@ -74,7 +74,7 @@ describe('DashboardPage', () => {
     expect(await screen.findByText('Active Trip')).toBeInTheDocument()
     expect(mockFetchTrips).toHaveBeenCalledWith('ACTIVE')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Archived' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Archived' }))
 
     await waitFor(() => {
       expect(mockFetchTrips).toHaveBeenCalledWith('ARCHIVED')

@@ -555,13 +555,19 @@ describe('TripDetailPage', () => {
     await screen.findByRole('button', { name: 'Archive trip' })
 
     fireEvent.click(screen.getByRole('button', { name: 'Archive trip' }))
-    expect(screen.getByText('Archive trip?')).toBeInTheDocument()
+    const archiveDialog = await screen.findByRole('dialog', { name: 'Archive trip?' })
+    const archiveDialogScope = within(archiveDialog)
+    expect(archiveDialogScope.getByText('Archive trip?')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    fireEvent.click(archiveDialogScope.getByRole('button', { name: 'Cancel' }))
     expect(mockArchiveTrip).not.toHaveBeenCalled()
 
     fireEvent.click(screen.getByRole('button', { name: 'Archive trip' }))
-    fireEvent.click(screen.getAllByRole('button', { name: 'Archive trip' })[1]!)
+    fireEvent.click(
+      within(await screen.findByRole('dialog', { name: 'Archive trip?' })).getByRole('button', {
+        name: 'Archive trip',
+      })
+    )
 
     await waitFor(() => {
       expect(mockArchiveTrip).toHaveBeenCalledWith('trip-1')
@@ -574,8 +580,9 @@ describe('TripDetailPage', () => {
     await screen.findByRole('button', { name: 'Restore trip' })
 
     fireEvent.click(screen.getByRole('button', { name: 'Restore trip' }))
-    expect(screen.getByText('Restore trip?')).toBeInTheDocument()
-    fireEvent.click(screen.getAllByRole('button', { name: 'Restore trip' })[1]!)
+    const restoreDialog = await screen.findByRole('dialog', { name: 'Restore trip?' })
+    expect(within(restoreDialog).getByText('Restore trip?')).toBeInTheDocument()
+    fireEvent.click(within(restoreDialog).getByRole('button', { name: 'Restore trip' }))
 
     await waitFor(() => {
       expect(mockRestoreTrip).toHaveBeenCalledWith('trip-1')

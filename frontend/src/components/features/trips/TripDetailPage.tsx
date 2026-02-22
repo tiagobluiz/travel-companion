@@ -566,6 +566,14 @@ export default function TripDetailPage() {
             <p id="trip-action-description" className="mt-2 text-sm text-slate-600">
               {confirmActionDescription(confirmAction, trip.status).body}
             </p>
+            {tripActionError && (
+              <div
+                role="alert"
+                className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700"
+              >
+                {tripActionError}
+              </div>
+            )}
             <div className="mt-4 flex justify-end gap-2">
               <button
                 onClick={() => setConfirmAction(null)}

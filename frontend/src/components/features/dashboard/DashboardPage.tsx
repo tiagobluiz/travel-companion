@@ -15,6 +15,9 @@ export default function DashboardPage() {
 
   const tabParam = searchParams.get('tab')
   const selectedTab: TripStatus = tabParam === 'archived' ? 'ARCHIVED' : 'ACTIVE'
+  const activeTabId = 'trip-status-tab-active'
+  const archivedTabId = 'trip-status-tab-archived'
+  const tabPanelId = 'trip-status-panel'
 
   const { data: trips = [], isLoading } = useQuery({
     queryKey: ['trips', selectedTab],
@@ -59,8 +62,13 @@ export default function DashboardPage() {
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold text-slate-900">Your trips</h2>
-            <div className="mt-3 inline-flex rounded-lg border border-slate-200 bg-white p-1">
+            <div
+              role="tablist"
+              aria-label="Trip status filter"
+              className="mt-3 inline-flex rounded-lg border border-slate-200 bg-white p-1"
+            >
               <button
+                id={activeTabId}
                 onClick={() =>
                   setSearchParams((prev) => {
                     const next = new URLSearchParams(prev)
@@ -68,6 +76,10 @@ export default function DashboardPage() {
                     return next
                   })
                 }
+                role="tab"
+                aria-selected={selectedTab === 'ACTIVE'}
+                aria-controls={tabPanelId}
+                tabIndex={selectedTab === 'ACTIVE' ? 0 : -1}
                 className={`px-3 py-1 text-sm rounded-md ${
                   selectedTab === 'ACTIVE'
                     ? 'bg-primary-600 text-white'
@@ -77,6 +89,7 @@ export default function DashboardPage() {
                 Active
               </button>
               <button
+                id={archivedTabId}
                 onClick={() =>
                   setSearchParams((prev) => {
                     const next = new URLSearchParams(prev)
@@ -84,6 +97,10 @@ export default function DashboardPage() {
                     return next
                   })
                 }
+                role="tab"
+                aria-selected={selectedTab === 'ARCHIVED'}
+                aria-controls={tabPanelId}
+                tabIndex={selectedTab === 'ARCHIVED' ? 0 : -1}
                 className={`px-3 py-1 text-sm rounded-md ${
                   selectedTab === 'ARCHIVED'
                     ? 'bg-primary-600 text-white'
@@ -150,6 +167,11 @@ export default function DashboardPage() {
           </form>
         )}
 
+        <div
+          id={tabPanelId}
+          role="tabpanel"
+          aria-labelledby={selectedTab === 'ACTIVE' ? activeTabId : archivedTabId}
+        >
         {isLoading ? (
           <p className="text-slate-600">Loading trips...</p>
         ) : trips.length === 0 ? (
@@ -188,6 +210,7 @@ export default function DashboardPage() {
             ))}
           </ul>
         )}
+        </div>
       </main>
     </div>
   )
