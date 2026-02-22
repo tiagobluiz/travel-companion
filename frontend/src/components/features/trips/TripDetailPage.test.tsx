@@ -214,6 +214,22 @@ describe('TripDetailPage', () => {
     expect(mockFetchCollaborators).not.toHaveBeenCalled()
   })
 
+  it('shows auth gate CTA for anonymous users on public trips', async () => {
+    authState = {
+      token: null,
+      user: null,
+      logout: vi.fn(),
+    }
+    mockFetchTrip.mockResolvedValueOnce({ ...baseTrip, visibility: 'PUBLIC' })
+
+    renderPage()
+
+    expect(await screen.findByText('Public trip preview')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Copy this trip' }))
+
+    expect(await screen.findByRole('dialog', { name: 'Sign in to copy or edit this trip' })).toBeInTheDocument()
+  })
+
   it('pending invitee cannot edit itinerary actions (permission matrix)', async () => {
     authState = {
       token: 'token-1',

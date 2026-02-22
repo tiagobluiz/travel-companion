@@ -1,28 +1,32 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { BrowserRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import LoginPage from './LoginPage'
 
-function renderLogin() {
+function RedirectTargetProbe() {
+  const location = useLocation()
+  return <div>{`${location.pathname}${location.search}`}</div>
+}
+
+function renderLogin(initialEntry = '/login') {
   return render(
-    <BrowserRouter>
-      <LoginPage />
-    </BrowserRouter>
+    <MemoryRouter initialEntries={[initialEntry]}>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/" element={<RedirectTargetProbe />} />
+      </Routes>
+    </MemoryRouter>
   )
 }
 
 describe('LoginPage', () => {
-  it('renders login form', () => {
+  it('redirects to discovery shell sign-in tab', () => {
     renderLogin()
-    expect(screen.getByRole('heading', { name: /travel companion/i })).toBeInTheDocument()
-    expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument()
+    expect(screen.getByText('/?tab=signin')).toBeInTheDocument()
   })
 
-  it('has link to register', () => {
-    renderLogin()
-    const link = screen.getByRole('link', { name: /sign up/i })
-    expect(link).toHaveAttribute('href', '/register')
+  it('preserves returnTo query param when redirecting to shell', () => {
+    renderLogin('/login?returnTo=%2Ftrips%2Ftrip-1')
+    expect(screen.getByText('/?tab=signin&returnTo=%2Ftrips%2Ftrip-1')).toBeInTheDocument()
   })
 })
