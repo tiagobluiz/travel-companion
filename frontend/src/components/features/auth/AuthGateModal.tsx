@@ -4,6 +4,7 @@ import PersonAddAlt1RoundedIcon from '@mui/icons-material/PersonAddAlt1Rounded'
 import ContentCopyRoundedIcon from '@mui/icons-material/ContentCopyRounded'
 import { useTheme } from '@mui/material/styles'
 import { useNavigate } from 'react-router-dom'
+import { sanitizeReturnTo } from '../../../utils/sanitizeReturnTo'
 
 interface AuthGateModalProps {
   open: boolean
@@ -25,7 +26,7 @@ export default function AuthGateModal({
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'), { noSsr: true })
 
   function goToAuth(tab: 'signin' | 'signup') {
-    const encodedReturnTo = encodeURIComponent(returnTo)
+    const encodedReturnTo = encodeURIComponent(sanitizeReturnTo(returnTo))
     navigate(`/${tab === 'signin' ? 'login' : 'register'}?returnTo=${encodedReturnTo}`)
     onClose()
   }

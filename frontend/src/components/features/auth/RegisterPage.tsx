@@ -1,11 +1,12 @@
 import { Navigate, useLocation } from 'react-router-dom'
+import { sanitizeReturnTo } from '../../../utils/sanitizeReturnTo'
 
 export default function RegisterPage() {
   const location = useLocation()
   const params = new URLSearchParams(location.search)
-  const returnTo = params.get('returnTo')
+  const returnTo = sanitizeReturnTo(params.get('returnTo'))
   const target = new URLSearchParams()
   target.set('tab', 'signup')
-  if (returnTo) target.set('returnTo', returnTo)
+  target.set('returnTo', returnTo)
   return <Navigate to={`/?${target.toString()}`} replace />
 }

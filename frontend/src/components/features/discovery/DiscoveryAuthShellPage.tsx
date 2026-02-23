@@ -37,6 +37,7 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { login, register } from '../../../api/auth'
+import { sanitizeReturnTo } from '../../../utils/sanitizeReturnTo'
 
 type ShellTab = 'discover' | 'signin' | 'signup'
 type DiscoverySort = 'POPULAR' | 'LATEST' | 'DURATION_ASC'
@@ -214,7 +215,8 @@ export default function DiscoveryAuthShellPage() {
   const [isRegistering, setIsRegistering] = useState(false)
 
   const currentTab = parseTab(searchParams.get('tab'))
-  const returnTo = searchParams.get('returnTo') ?? '/'
+  const returnTo = searchParams.get('returnTo')
+  const safeReturnTo = sanitizeReturnTo(returnTo)
 
   const loginForm = useForm<LoginFormValues>({ resolver: zodResolver(loginSchema), defaultValues: { email: '', password: '' }, mode: 'onBlur' })
   const registerForm = useForm<RegisterFormValues>({ resolver: zodResolver(registerSchema), defaultValues: { displayName: '', email: '', password: '' }, mode: 'onBlur' })
@@ -254,7 +256,7 @@ export default function DiscoveryAuthShellPage() {
     setIsLoggingIn(true)
     try {
       await login(values.email, values.password)
-      navigate(returnTo)
+      navigate(safeReturnTo)
     } catch (error) {
       setLoginError(error instanceof Error ? error.message : 'Unable to sign in.')
     } finally {
@@ -267,7 +269,7 @@ export default function DiscoveryAuthShellPage() {
     setIsRegistering(true)
     try {
       await register(values.email, values.password, values.displayName)
-      navigate(returnTo)
+      navigate(safeReturnTo)
     } catch (error) {
       setRegisterError(error instanceof Error ? error.message : 'Unable to create account.')
     } finally {
@@ -364,7 +366,7 @@ export default function DiscoveryAuthShellPage() {
 
           {showFiltersHint && (
             <Alert severity="info" sx={{ borderRadius: 2.5 }}>
-              Advanced filters will be backed by the public discovery API (`#117`) and wired in FE issue `#118`.
+              Advanced filters are coming soon. This preview uses the current public dataset.
             </Alert>
           )}
 
