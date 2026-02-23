@@ -22,7 +22,7 @@ function renderLogin(initialEntry = '/login') {
 describe('LoginPage', () => {
   it('redirects to discovery shell sign-in tab', () => {
     renderLogin()
-    expect(screen.getByText('/?tab=signin')).toBeInTheDocument()
+    expect(screen.getByText('/?tab=signin&returnTo=%2F')).toBeInTheDocument()
   })
 
   it('preserves returnTo query param when redirecting to shell', () => {
