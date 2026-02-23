@@ -184,11 +184,20 @@ function parseTab(raw: string | null): ShellTab {
 }
 
 function matchesFilter(trip: DiscoveryPreviewTrip, filter: DiscoveryTagFilter) {
+  if (filter === 'ALL') return true
   const theme = trip.theme.toLowerCase()
   if (filter === 'EUROPE') return trip.region === 'EUROPE'
   if (filter === 'ASIA') return trip.region === 'ASIA'
   if (filter === 'FAMILY') return theme.includes('family') || trip.travelers >= 3
-  return theme.includes('adventure') || theme.includes('nature') || theme.includes('road') || theme.includes('islands')
+  if (filter === 'ADVENTURE') {
+    return (
+      theme.includes('adventure') ||
+      theme.includes('nature') ||
+      theme.includes('road') ||
+      theme.includes('islands')
+    )
+  }
+  return true
 }
 
 export default function DiscoveryAuthShellPage() {

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+@import 'https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap';
 
 @tailwind base;
 @tailwind components;
@@ -22,7 +22,7 @@ body {
     min-height: 44px;
   }
 
-  * {
+  *, *::before, *::after {
     box-sizing: border-box;
   }
 }
