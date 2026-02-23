@@ -1,6 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { Alert, Box, Button, Paper, Stack, Typography } from '@mui/material'
+import LockOpenRoundedIcon from '@mui/icons-material/LockOpenRounded'
+import ContentCopyRoundedIcon from '@mui/icons-material/ContentCopyRounded'
+import LoginRoundedIcon from '@mui/icons-material/LoginRounded'
 import { useAuthStore } from '../../../stores/authStore'
 import { type TripStatus, type TripVisibility } from '../../../api/trips'
 import {
@@ -24,6 +28,7 @@ import { ItinerarySection } from './detail/ItinerarySection'
 import { TripDetailHeader } from './detail/TripDetailHeader'
 import { TripDetailsSection } from './detail/TripDetailsSection'
 import type { ItemFormCreatePayload, ItemFormEditPayload } from './itinerary/ItemForm'
+import AuthGateModal from '../auth/AuthGateModal'
 
 function isUnauthorizedMutationError(error: unknown) {
   const message = getErrorMessage(error, '').toLowerCase()
@@ -42,6 +47,7 @@ function permissionDeniedMessage(actionLabel: string) {
 export default function TripDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const queryClient = useQueryClient()
   const token = useAuthStore((s) => s.token)
   const user = useAuthStore((s) => s.user)
@@ -68,6 +74,7 @@ export default function TripDetailPage() {
   const [tripDetailsError, setTripDetailsError] = useState('')
   const [tripActionError, setTripActionError] = useState('')
   const [confirmAction, setConfirmAction] = useState<'archive' | 'restore' | 'delete' | null>(null)
+  const [showAuthGate, setShowAuthGate] = useState(false)
 
   const {
     trip,
@@ -404,6 +411,7 @@ export default function TripDetailPage() {
   const canEditTripDetails = isOwner || isEditor
   const canEditPrivacy = isOwner
   const canEditPlanning = isOwner || isEditor
+  const isAnonymousPublicViewer = !isAuthenticated && trip.visibility === 'PUBLIC'
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -415,6 +423,61 @@ export default function TripDetailPage() {
       />
 
       <main className="max-w-4xl mx-auto px-4 py-8">
+        {isAnonymousPublicViewer && (
+          <Box sx={{ mb: 3 }}>
+            <Paper
+              elevation={0}
+              sx={{
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 4,
+                p: { xs: 2, sm: 2.5 },
+                background:
+                  'linear-gradient(145deg, rgba(255,255,255,0.98), rgba(239,246,255,0.92))',
+              }}
+            >
+              <Stack spacing={1.5}>
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={1}
+                  alignItems={{ sm: 'center' }}
+                  justifyContent="space-between"
+                >
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <LockOpenRoundedIcon color="primary" />
+                    <Typography variant="h6">Public trip preview</Typography>
+                  </Stack>
+                  <Alert icon={false} severity="info" sx={{ py: 0, alignItems: 'center' }}>
+                    Read-only mode
+                  </Alert>
+                </Stack>
+
+                <Typography color="text.secondary">
+                  You can explore this trip anonymously. Sign in to copy it into your workspace,
+                  edit details, or collaborate with others.
+                </Typography>
+
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25}>
+                  <Button
+                    variant="contained"
+                    startIcon={<ContentCopyRoundedIcon />}
+                    onClick={() => setShowAuthGate(true)}
+                  >
+                    Copy this trip
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    startIcon={<LoginRoundedIcon />}
+                    onClick={() => setShowAuthGate(true)}
+                  >
+                    Sign in to edit
+                  </Button>
+                </Stack>
+              </Stack>
+            </Paper>
+          </Box>
+        )}
+
         <TripDetailsSection
           trip={trip}
           tripDetailsError={tripDetailsError}
@@ -607,6 +670,13 @@ export default function TripDetailPage() {
           </div>
         </div>
       )}
+
+      <AuthGateModal
+        open={showAuthGate}
+        onClose={() => setShowAuthGate(false)}
+        returnTo={`${location.pathname}${location.search}`}
+        title="Sign in to copy or edit this trip"
+      />
     </div>
   )
 }

@@ -11,6 +11,10 @@ vi.mock('./components/features/auth/RegisterPage', () => ({
   default: () => <h1>Register Page</h1>,
 }))
 
+vi.mock('./components/features/discovery/DiscoveryAuthShellPage', () => ({
+  default: () => <h1>Discovery Shell Page</h1>,
+}))
+
 vi.mock('./components/features/dashboard/DashboardPage', () => ({
   default: () => <h1>Dashboard Page</h1>,
 }))
@@ -48,14 +52,12 @@ describe('App routing', () => {
     expect(screen.getByRole('heading', { name: 'Trip Detail Page' })).toBeInTheDocument()
   })
 
-  it('redirects anonymous users from protected dashboard route to login', async () => {
+  it('renders discovery shell for anonymous users on root route', () => {
     navigateTo('/')
 
     render(<App />)
 
-    await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Login Page' })).toBeInTheDocument()
-    })
+    expect(screen.getByRole('heading', { name: 'Discovery Shell Page' })).toBeInTheDocument()
   })
 
   it('keeps authenticated users on protected dashboard route', () => {
@@ -84,7 +86,7 @@ describe('App routing', () => {
     render(<App />)
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Login Page' })).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: 'Discovery Shell Page' })).toBeInTheDocument()
     })
   })
 })

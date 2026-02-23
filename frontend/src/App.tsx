@@ -1,23 +1,21 @@
+import type { ReactNode } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './stores/authStore'
 import LoginPage from './components/features/auth/LoginPage'
 import RegisterPage from './components/features/auth/RegisterPage'
 import DashboardPage from './components/features/dashboard/DashboardPage'
 import TripDetailPage from './components/features/trips/TripDetailPage'
+import DiscoveryAuthShellPage from './components/features/discovery/DiscoveryAuthShellPage'
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const token = useAuthStore((s) => s.token)
-  if (!token) return <Navigate to="/login" replace />
-  return <>{children}</>
-}
-
-function PublicRoute({ children }: { children: React.ReactNode }) {
+function PublicRoute({ children }: { children: ReactNode }) {
   const token = useAuthStore((s) => s.token)
   if (token) return <Navigate to="/" replace />
   return <>{children}</>
 }
 
 function App() {
+  const token = useAuthStore((s) => s.token)
+
   return (
     <BrowserRouter>
       <Routes>
@@ -39,11 +37,7 @@ function App() {
         />
         <Route
           path="/"
-          element={
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
-          }
+          element={token ? <DashboardPage /> : <DiscoveryAuthShellPage />}
         />
         <Route
           path="/trips/:id"
