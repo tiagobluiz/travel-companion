@@ -2,6 +2,18 @@ import { useAuthStore } from '../stores/authStore'
 
 const API_BASE = ''
 
+export class ApiError extends Error {
+  status: number
+  path: string
+
+  constructor(message: string, status: number, path: string) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+    this.path = path
+  }
+}
+
 async function request<T>(
   path: string,
   options: RequestInit = {}
@@ -19,7 +31,7 @@ async function request<T>(
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
     const parsed = err as { error?: string; message?: string }
-    throw new Error(parsed.error || parsed.message || res.statusText)
+    throw new ApiError(parsed.error || parsed.message || res.statusText, res.status, path)
   }
   if (res.status === 204 || res.headers.get('content-length') === '0') {
     return {} as T
