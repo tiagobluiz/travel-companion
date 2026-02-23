@@ -159,6 +159,7 @@ const DISCOVERY_TRIPS: DiscoveryPreviewTrip[] = [
 ]
 
 const FILTER_CHIPS: Array<{ value: DiscoveryTagFilter; label: string }> = [
+  { value: 'ALL', label: 'All' },
   { value: 'EUROPE', label: 'Europe' },
   { value: 'ASIA', label: 'Asia' },
   { value: 'FAMILY', label: 'Family' },
@@ -205,7 +206,7 @@ export default function DiscoveryAuthShellPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState<DiscoverySort>('POPULAR')
-  const [tagFilter, setTagFilter] = useState<DiscoveryTagFilter>('EUROPE')
+  const [tagFilter, setTagFilter] = useState<DiscoveryTagFilter>('ALL')
   const [showFiltersHint, setShowFiltersHint] = useState(false)
   const [loginError, setLoginError] = useState('')
   const [registerError, setRegisterError] = useState('')
@@ -371,7 +372,7 @@ export default function DiscoveryAuthShellPage() {
             <Paper variant="outlined" sx={{ p: 3, borderRadius: 3, textAlign: 'center', bgcolor: '#fff' }}>
               <Typography variant="h6">No trips match this filter</Typography>
               <Typography color="text.secondary" sx={{ mt: 0.5 }}>Try another query or switch chips.</Typography>
-              <Button sx={{ mt: 2 }} onClick={() => { setSearch(''); setTagFilter('EUROPE'); setSort('POPULAR') }} variant="outlined">Reset filters</Button>
+              <Button sx={{ mt: 2 }} onClick={() => { setSearch(''); setTagFilter('ALL'); setSort('POPULAR') }} variant="outlined">Reset filters</Button>
             </Paper>
           ) : (
             <Box
@@ -577,7 +578,7 @@ export default function DiscoveryAuthShellPage() {
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#e6edf7' }}>
-      <Box component="a" href="#discovery-main" sx={{ position: 'absolute', left: -9999, '&:focus': { left: 16, top: 16, zIndex: 2000, bgcolor: 'primary.main', color: '#fff', px: 2, py: 1, borderRadius: 2 } }}>
+      <Box component="a" href="#main-content" sx={{ position: 'absolute', left: -9999, '&:focus': { left: 16, top: 16, zIndex: 2000, bgcolor: 'primary.main', color: '#fff', px: 2, py: 1, borderRadius: 2 } }}>
         Skip to content
       </Box>
 
@@ -627,7 +628,7 @@ export default function DiscoveryAuthShellPage() {
         </Container>
       </Paper>
 
-      <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2, md: 3 } }}>
+      <Container id="main-content" maxWidth="lg" sx={{ px: { xs: 2, sm: 3 }, py: { xs: 2, md: 3 } }}>
         {currentTab === 'discover' && renderDiscoverPanel()}
         {currentTab === 'signin' && renderSignInPanel()}
         {currentTab === 'signup' && renderSignUpPanel()}

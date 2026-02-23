@@ -35,9 +35,6 @@ describe('DiscoveryAuthShellPage', () => {
 
     expect(screen.getByText(/Discover amazing public trips/i)).toBeInTheDocument()
     expect(screen.getByText('Paris Getaway')).toBeInTheDocument()
-    expect(screen.queryByText('Japan Highlights')).not.toBeInTheDocument()
-
-    await userEvent.click(screen.getByRole('button', { name: 'Asia' }))
     expect(screen.getByText('Japan Highlights')).toBeInTheDocument()
 
     await userEvent.type(screen.getByLabelText('Search destinations or themes'), 'Japan')
