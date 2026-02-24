@@ -41,7 +41,7 @@ const appTheme = responsiveFontSizes(createTheme({
     divider: 'rgba(15, 23, 42, 0.08)',
   },
   shape: {
-    borderRadius: 14,
+    borderRadius: 8,
   },
   typography: {
     fontFamily: '"Plus Jakarta Sans", "Segoe UI", sans-serif',
@@ -89,14 +89,14 @@ const appTheme = responsiveFontSizes(createTheme({
     MuiPaper: {
       styleOverrides: {
         rounded: {
-          borderRadius: 18,
+          borderRadius: 8,
         },
       },
     },
     MuiCard: {
       styleOverrides: {
         root: {
-          borderRadius: 18,
+          borderRadius: 8,
           border: '1px solid rgba(15, 23, 42, 0.06)',
           boxShadow: '0 10px 30px rgba(15, 23, 42, 0.06)',
         },
