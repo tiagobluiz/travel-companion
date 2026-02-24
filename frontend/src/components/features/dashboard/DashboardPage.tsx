@@ -112,9 +112,9 @@ function formatRelativeDate(isoString: string) {
   const created = new Date(isoString).getTime()
   const now = Date.now()
   const days = Math.max(0, Math.floor((now - created) / 86_400_000))
-  if (days === 0) return 'Updated today'
-  if (days === 1) return 'Updated yesterday'
-  return `Updated ${days} days ago`
+  if (days === 0) return 'Created today'
+  if (days === 1) return 'Created yesterday'
+  return `Created ${days} days ago`
 }
 
 function startOfDayTimestamp(dateString: string) {
@@ -644,7 +644,7 @@ export default function DashboardPage() {
                         '& .MuiSelect-select': { py: 0.5, pr: '24px !important' },
                       }}
                     >
-                      <MenuItem value="RECENT">Recently updated</MenuItem>
+                      <MenuItem value="RECENT">Recently created</MenuItem>
                       <MenuItem value="START_ASC">Start date (soonest)</MenuItem>
                       <MenuItem value="DURATION_DESC">Longest trip first</MenuItem>
                     </Select>
