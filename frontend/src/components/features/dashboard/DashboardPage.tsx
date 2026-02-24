@@ -385,6 +385,7 @@ export default function DashboardPage() {
         }
       : null,
   ].filter(Boolean) as Array<{ key: string; label: string; onRemove: () => void }>
+  const hasActiveFilters = activeFilterItems.length > 0
 
   function renderTripCard(trip: Trip, indexSeed: number) {
     const days = tripDurationDays(trip.startDate, trip.endDate)
@@ -737,14 +738,18 @@ export default function DashboardPage() {
                       <FlightTakeoffRoundedIcon />
                     </Box>
                     <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                      No trips yet
+                      {hasActiveFilters ? 'No trips match your filters' : 'No trips yet'}
                     </Typography>
                     <Typography color="text.secondary" sx={{ maxWidth: 480 }}>
-                      Create your first trip to start planning dates, places, and collaborators in one workspace.
+                      {hasActiveFilters
+                        ? 'Try clearing or adjusting filters to see your trips.'
+                        : 'Create your first trip to start planning dates, places, and collaborators in one workspace.'}
                     </Typography>
-                    <Button variant="contained" onClick={openCreateDialog} startIcon={<AddRoundedIcon />}>
-                      Create trip
-                    </Button>
+                    {hasActiveFilters ? null : (
+                      <Button variant="contained" onClick={openCreateDialog} startIcon={<AddRoundedIcon />}>
+                        Create trip
+                      </Button>
+                    )}
                   </Stack>
                 </Paper>
               ) : (
