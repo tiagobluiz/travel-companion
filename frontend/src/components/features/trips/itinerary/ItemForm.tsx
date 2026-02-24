@@ -1,4 +1,8 @@
-import { useState, type FormEvent } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Alert, Button, Stack, TextField } from '@mui/material'
+import { useEffect } from 'react'
+import { Controller, useForm } from 'react-hook-form'
+import { z } from 'zod'
 
 export type ItemFormMode = 'create' | 'edit'
 
@@ -31,6 +35,15 @@ interface ItemFormProps {
   onEdit?: (payload: ItemFormEditPayload) => void
 }
 
+interface ItemFormValues {
+  placeName: string
+  notes: string
+  latitude: string
+  longitude: string
+  destinationType: 'DAY' | 'PLACES'
+  date: string
+}
+
 function toDayNumber(date: string, startDate: string) {
   const [year, month, day] = date.split('-').map(Number)
   const [startYear, startMonth, startDay] = startDate.split('-').map(Number)
@@ -44,6 +57,54 @@ function toDateFromDayNumber(dayNumber: number, startDate: string) {
   const startUtc = Date.UTC(year, month - 1, day)
   const dayUtc = startUtc + (dayNumber - 1) * 86_400_000
   return new Date(dayUtc).toISOString().slice(0, 10)
+}
+
+function buildSchema(mode: ItemFormMode, tripStartDate: string, tripEndDate: string) {
+  return z
+    .object({
+      placeName: z.string(),
+      notes: z.string(),
+      latitude: z.string(),
+      longitude: z.string(),
+      destinationType: z.enum(['DAY', 'PLACES']),
+      date: z.string(),
+    })
+    .superRefine((values, ctx) => {
+      if (values.destinationType === 'DAY') {
+        if (!values.date) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['date'],
+            message: 'Date is required when destination is a day.',
+          })
+        } else if (values.date < tripStartDate || values.date > tripEndDate) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['date'],
+            message: `Date must be between ${tripStartDate} and ${tripEndDate}.`,
+          })
+        }
+      }
+
+      if (mode === 'edit') return
+
+      if (!values.placeName.trim() || !values.latitude || !values.longitude) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['placeName'],
+          message: 'Place name, latitude, and longitude are required.',
+        })
+        return
+      }
+
+      if (Number.isNaN(parseFloat(values.latitude)) || Number.isNaN(parseFloat(values.longitude))) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['latitude'],
+          message: 'Latitude and longitude must be valid numbers.',
+        })
+      }
+    })
 }
 
 export function ItemForm({
@@ -61,169 +122,145 @@ export function ItemForm({
   onCreate,
   onEdit,
 }: ItemFormProps) {
-  const [placeName, setPlaceName] = useState(initialPlaceName)
-  const [notes, setNotes] = useState(initialNotes)
-  const [latitude, setLatitude] = useState(
-    initialLatitude != null ? String(initialLatitude) : ''
-  )
-  const [longitude, setLongitude] = useState(
-    initialLongitude != null ? String(initialLongitude) : ''
-  )
-  const [destinationType, setDestinationType] = useState<'DAY' | 'PLACES'>(
-    mode === 'create' ? 'DAY' : initialDayNumber != null ? 'DAY' : 'PLACES'
-  )
-  const [date, setDate] = useState(
-    initialDayNumber != null ? toDateFromDayNumber(initialDayNumber, tripStartDate) : ''
-  )
-  const [validationError, setValidationError] = useState('')
+  const form = useForm<ItemFormValues>({
+    resolver: zodResolver(buildSchema(mode, tripStartDate, tripEndDate)),
+    defaultValues: {
+      placeName: initialPlaceName,
+      notes: initialNotes,
+      latitude: initialLatitude != null ? String(initialLatitude) : '',
+      longitude: initialLongitude != null ? String(initialLongitude) : '',
+      destinationType: mode === 'create' ? 'DAY' : initialDayNumber != null ? 'DAY' : 'PLACES',
+      date: initialDayNumber != null ? toDateFromDayNumber(initialDayNumber, tripStartDate) : '',
+    },
+    mode: 'onSubmit',
+  })
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    setValidationError('')
+  const destinationType = form.watch('destinationType')
 
-    let dayNumber: number | null | undefined
-    if (destinationType === 'DAY') {
-      if (!date) {
-        setValidationError('Date is required when destination is a day.')
-        return
-      }
-      if (date < tripStartDate || date > tripEndDate) {
-        setValidationError(`Date must be between ${tripStartDate} and ${tripEndDate}.`)
-        return
-      }
-      dayNumber = toDayNumber(date, tripStartDate)
+  useEffect(() => {
+    if (destinationType === 'PLACES') {
+      form.clearErrors('date')
     }
-    if (mode === 'edit' && destinationType === 'PLACES') {
+  }, [destinationType, form])
+
+  async function handleSubmit(values: ItemFormValues) {
+    let dayNumber: number | null | undefined
+    if (values.destinationType === 'DAY') {
+      dayNumber = toDayNumber(values.date, tripStartDate)
+    }
+    if (mode === 'edit' && values.destinationType === 'PLACES') {
       dayNumber = null
     }
 
     if (mode === 'edit') {
-      onEdit?.({ notes, dayNumber })
-      return
-    }
-
-    if (!placeName.trim() || !latitude || !longitude) {
-      setValidationError('Place name, latitude, and longitude are required.')
-      return
-    }
-
-    const lat = parseFloat(latitude)
-    const lng = parseFloat(longitude)
-    if (Number.isNaN(lat) || Number.isNaN(lng)) {
-      setValidationError('Latitude and longitude must be valid numbers.')
+      await onEdit?.({ notes: values.notes, dayNumber })
       return
     }
 
     onCreate?.({
-      placeName: placeName.trim(),
-      notes: notes || undefined,
-      latitude: lat,
-      longitude: lng,
+      placeName: values.placeName.trim(),
+      notes: values.notes || undefined,
+      latitude: parseFloat(values.latitude),
+      longitude: parseFloat(values.longitude),
       dayNumber: dayNumber ?? undefined,
     })
   }
 
+  const fieldError =
+    form.formState.errors.placeName?.message ||
+    form.formState.errors.latitude?.message ||
+    form.formState.errors.date?.message
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      {(errorMessage || validationError) && (
-        <div className="p-2 rounded-md bg-red-50 text-red-700 text-sm">
-          {validationError || errorMessage}
-        </div>
+    <Stack component="form" spacing={1.5} onSubmit={form.handleSubmit(handleSubmit)} noValidate>
+      {(errorMessage || fieldError) && (
+        <Alert severity="error" sx={{ borderRadius: 2 }}>
+          {fieldError || errorMessage}
+        </Alert>
       )}
 
-      {mode === 'create' && (
+      {mode === 'create' ? (
         <>
-          <input
-            aria-label="Place name"
-            type="text"
+          <TextField
+            label="Place name"
             placeholder="Place or activity"
-            value={placeName}
-            onChange={(e) => setPlaceName(e.target.value)}
-            required
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
+            fullWidth
+            {...form.register('placeName')}
+            error={Boolean(form.formState.errors.placeName)}
           />
-          <div className="grid grid-cols-2 gap-3">
-            <input
-              aria-label="Latitude"
-              type="number"
-              step="any"
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+            <TextField
+              label="Latitude"
               placeholder="Latitude"
-              value={latitude}
-              onChange={(e) => setLatitude(e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
-            />
-            <input
-              aria-label="Longitude"
               type="number"
-              step="any"
-              placeholder="Longitude"
-              value={longitude}
-              onChange={(e) => setLongitude(e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
+              inputProps={{ step: 'any' }}
+              fullWidth
+              {...form.register('latitude')}
+              error={Boolean(form.formState.errors.latitude)}
             />
-          </div>
+            <TextField
+              label="Longitude"
+              placeholder="Longitude"
+              type="number"
+              inputProps={{ step: 'any' }}
+              fullWidth
+              {...form.register('longitude')}
+              error={Boolean(form.formState.errors.longitude)}
+            />
+          </Stack>
         </>
-      )}
+      ) : null}
 
-      <div className="space-y-1">
-        <label htmlFor="itinerary-notes" className="block text-xs text-slate-500">
-          Notes
-        </label>
-        <input
-          id="itinerary-notes"
-          type="text"
-          placeholder="Notes"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
+      <TextField
+        id="itinerary-notes"
+        label="Notes"
+        placeholder="Notes"
+        fullWidth
+        {...form.register('notes')}
+      />
+
+      <Stack spacing={1.25}>
+        <Controller
+          control={form.control}
+          name="destinationType"
+          render={({ field }) => (
+            <TextField
+              id="itinerary-destination"
+              select
+              label="Destination"
+              fullWidth
+              value={field.value}
+              onChange={(event) => field.onChange(event.target.value)}
+              SelectProps={{ native: true }}
+            >
+              <option value="DAY">Trip day</option>
+              <option value="PLACES">Places To Visit</option>
+            </TextField>
+          )}
         />
-      </div>
 
-      <div className="space-y-2">
-        <label htmlFor="itinerary-destination" className="block text-xs text-slate-500">
-          Destination
-        </label>
-        <select
-          id="itinerary-destination"
-          value={destinationType}
-          onChange={(e) => setDestinationType(e.target.value as 'DAY' | 'PLACES')}
-          className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
-        >
-          <option value="DAY">Trip day</option>
-          <option value="PLACES">Places To Visit</option>
-        </select>
-        {destinationType === 'DAY' && (
-          <input
+        {destinationType === 'DAY' ? (
+          <TextField
             aria-label="Trip date"
+            label="Trip date"
             type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            min={tripStartDate}
-            max={tripEndDate}
-            required
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
+            fullWidth
+            InputLabelProps={{ shrink: true }}
+            inputProps={{ min: tripStartDate, max: tripEndDate }}
+            {...form.register('date')}
+            error={Boolean(form.formState.errors.date)}
           />
-        )}
-      </div>
+        ) : null}
+      </Stack>
 
-      <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={isPending}
-          className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
-        >
+      <Stack direction="row" spacing={1}>
+        <Button type="submit" variant="contained" disabled={isPending}>
           {mode === 'create' ? 'Add' : 'Save'}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg"
-        >
+        </Button>
+        <Button type="button" variant="text" onClick={onCancel} disabled={isPending}>
           Cancel
-        </button>
-      </div>
-    </form>
+        </Button>
+      </Stack>
+    </Stack>
   )
 }

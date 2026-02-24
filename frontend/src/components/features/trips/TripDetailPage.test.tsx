@@ -514,7 +514,7 @@ describe('TripDetailPage', () => {
   it('shows collaborator role and pending/declined badges (happy path)', async () => {
     renderPage()
 
-    expect(await screen.findByText('Collaborators')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Collaborators' })).toBeInTheDocument()
     expect(screen.getByText('OWNER')).toBeInTheDocument()
     expect(screen.getAllByText('EDITOR').length).toBeGreaterThan(0)
     expect(screen.getByText('PENDING')).toBeInTheDocument()

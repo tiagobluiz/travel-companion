@@ -1,3 +1,6 @@
+import AddRoundedIcon from '@mui/icons-material/AddRounded'
+import RouteRoundedIcon from '@mui/icons-material/RouteRounded'
+import { Alert, Box, Button, Paper, Stack, Typography } from '@mui/material'
 import type {
   ItineraryV2Response,
   MoveItineraryItemV2Request,
@@ -5,11 +8,7 @@ import type {
 } from '../../../../api/itinerary'
 import type { Trip } from '../../../../api/trips'
 import { ItineraryBoard } from '../itinerary/ItineraryBoard'
-import {
-  ItemForm,
-  type ItemFormCreatePayload,
-  type ItemFormEditPayload,
-} from '../itinerary/ItemForm'
+import { ItemForm, type ItemFormCreatePayload, type ItemFormEditPayload } from '../itinerary/ItemForm'
 
 interface ItinerarySectionProps {
   trip: Trip
@@ -49,56 +48,113 @@ export function ItinerarySection({
   onRemove,
 }: ItinerarySectionProps) {
   return (
-    <section className="mb-10">
-      <h2 className="text-lg font-semibold text-slate-900 mb-3">Itinerary</h2>
-      {itineraryError && (
-        <div className="mb-4 p-2 rounded-md bg-red-50 text-red-700 text-sm">{itineraryError}</div>
-      )}
+    <Box component="section" sx={{ mb: 4.5 }}>
+      <Paper
+        elevation={0}
+        sx={{
+          borderRadius: 3,
+          border: '1px solid rgba(15,23,42,0.06)',
+          bgcolor: 'rgba(255,255,255,0.92)',
+          p: { xs: 1.75, md: 2 },
+        }}
+      >
+        <Stack spacing={1.75}>
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={1.5}
+            alignItems={{ xs: 'flex-start', md: 'center' }}
+            justifyContent="space-between"
+          >
+            <Stack spacing={0.4}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Box
+                  sx={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 2,
+                    bgcolor: 'rgba(21,112,239,0.10)',
+                    color: 'primary.main',
+                    display: 'grid',
+                    placeItems: 'center',
+                  }}
+                >
+                  <RouteRoundedIcon sx={{ fontSize: 18 }} />
+                </Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#223046' }}>
+                  Itinerary
+                </Typography>
+              </Stack>
+              <Typography variant="body2" color="text.secondary">
+                Plan by day and keep unscheduled ideas in Places To Visit. Drag items or use move actions for mobile-safe reordering.
+              </Typography>
+            </Stack>
 
-      {canEditPlanning && showItineraryForm && (
-        <div className="mb-4 p-4 bg-white rounded-lg border border-slate-200 space-y-3">
-          <ItemForm
-            mode="create"
+            {canEditPlanning ? (
+              <Button
+                onClick={showItineraryForm ? onHideForm : onShowForm}
+                variant={showItineraryForm ? 'outlined' : 'contained'}
+                startIcon={<AddRoundedIcon />}
+              >
+                {showItineraryForm ? 'Close form' : '+ Add place'}
+              </Button>
+            ) : null}
+          </Stack>
+
+          {itineraryError ? (
+            <Alert severity="error" sx={{ borderRadius: 2.5 }}>
+              {itineraryError}
+            </Alert>
+          ) : null}
+
+          {!canEditPlanning ? (
+            <Alert severity="info" sx={{ borderRadius: 2.5 }}>
+              Read-only itinerary view. Only editors and owners can plan items.
+            </Alert>
+          ) : null}
+
+          {canEditPlanning && showItineraryForm ? (
+            <Paper
+              variant="outlined"
+              sx={{
+                p: { xs: 1.5, md: 1.75 },
+                borderRadius: 2.5,
+                borderColor: 'rgba(15,23,42,0.08)',
+                bgcolor: 'rgba(248,250,252,0.75)',
+              }}
+            >
+              <ItemForm
+                mode="create"
+                tripStartDate={trip.startDate}
+                tripEndDate={trip.endDate}
+                isPending={isAddPending}
+                errorMessage={itineraryError}
+                onCreate={onAddItinerary}
+                onCancel={onHideForm}
+              />
+            </Paper>
+          ) : null}
+
+          <ItineraryBoard
+            itinerary={itinerary}
+            isLoading={isItineraryLoading}
+            loadError={itineraryLoadError}
+            canEditPlanning={canEditPlanning}
+            isMovePending={isMovePending}
+            isEditPending={isEditPending}
             tripStartDate={trip.startDate}
             tripEndDate={trip.endDate}
-            isPending={isAddPending}
-            errorMessage={itineraryError}
-            onCreate={onAddItinerary}
-            onCancel={onHideForm}
+            onMove={onMove}
+            onEdit={(itemId, payload) => {
+              const item =
+                itinerary.days.flatMap((day) => day.items).find((dayItem) => dayItem.id === itemId) ??
+                itinerary.placesToVisit.items.find((placeItem) => placeItem.id === itemId)
+              if (!item) return Promise.resolve()
+              return onEditItinerary(item, payload)
+            }}
+            onRemove={onRemove}
           />
-        </div>
-      )}
-
-      {canEditPlanning && !showItineraryForm && (
-        <button onClick={onShowForm} className="mb-4 text-sm text-primary-600 hover:underline">
-          + Add place
-        </button>
-      )}
-      {!canEditPlanning && (
-        <p className="mb-4 text-sm text-slate-500">
-          Read-only itinerary view. Only editors and owners can plan items.
-        </p>
-      )}
-
-      <ItineraryBoard
-        itinerary={itinerary}
-        isLoading={isItineraryLoading}
-        loadError={itineraryLoadError}
-        canEditPlanning={canEditPlanning}
-        isMovePending={isMovePending}
-        isEditPending={isEditPending}
-        tripStartDate={trip.startDate}
-        tripEndDate={trip.endDate}
-        onMove={onMove}
-        onEdit={(itemId, payload) => {
-          const item =
-            itinerary.days.flatMap((day) => day.items).find((dayItem) => dayItem.id === itemId) ??
-            itinerary.placesToVisit.items.find((placeItem) => placeItem.id === itemId)
-          if (!item) return Promise.resolve()
-          return onEditItinerary(item, payload)
-        }}
-        onRemove={onRemove}
-      />
-    </section>
+        </Stack>
+      </Paper>
+    </Box>
   )
 }
