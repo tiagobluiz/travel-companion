@@ -19,6 +19,7 @@ import {
   respondInvite,
   type TripRole,
 } from '../../../api/collaborators'
+import { ApiError } from '../../../api/client'
 import { useTripDetailData } from '../../../hooks/useTripDetailData'
 import { useTripMutations } from '../../../hooks/useTripMutations'
 import { getErrorMessage } from '../../../utils/getErrorMessage'
@@ -29,6 +30,7 @@ import { TripDetailHeader } from './detail/TripDetailHeader'
 import { TripDetailsSection } from './detail/TripDetailsSection'
 import type { ItemFormCreatePayload, ItemFormEditPayload } from './itinerary/ItemForm'
 import AuthGateModal from '../auth/AuthGateModal'
+import { NotFoundPage } from '../../shared/NotFoundPage'
 
 function isUnauthorizedMutationError(error: unknown) {
   const message = getErrorMessage(error, '').toLowerCase()
@@ -381,8 +383,19 @@ export default function TripDetailPage() {
     const parsedAmount = parseFloat(expense.amount)
     return sum + (Number.isNaN(parsedAmount) ? 0 : parsedAmount)
   }, 0)
+  const isTripNotFound =
+    (tripLoadError instanceof ApiError && tripLoadError.status === 404) ||
+    (itineraryLoadError instanceof ApiError && itineraryLoadError.status === 404)
 
   if (!id) return null
+  if (isTripNotFound) {
+    return (
+      <NotFoundPage
+        title="Trip not found"
+        description="This trip may have been deleted, made private, or your session no longer has access to it."
+      />
+    )
+  }
   if (tripLoadError || itineraryLoadError) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">

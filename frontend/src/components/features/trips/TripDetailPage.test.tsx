@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import TripDetailPage from './TripDetailPage'
+import { ApiError } from '../../../api/client'
 
 const mockFetchTrip = vi.fn()
 const mockDeleteTrip = vi.fn()
@@ -476,6 +477,16 @@ describe('TripDetailPage', () => {
     renderPage()
 
     expect(await screen.findByText('Trip not found')).toBeInTheDocument()
+  })
+
+  it('renders reusable not found page on trip 404 (auth-loss/private visibility path)', async () => {
+    mockFetchTrip.mockRejectedValueOnce(new ApiError('Not Found', 404, '/trips/trip-1'))
+
+    renderPage()
+
+    expect(await screen.findByRole('heading', { name: 'Trip not found' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Go to Home' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Home' })).toBeInTheDocument()
   })
 
   it('renders empty day and places containers (empty state)', async () => {
