@@ -20,6 +20,8 @@ export function TripDetailHeader({
   isAuthenticated,
   onLogout,
 }: TripDetailHeaderProps) {
+  const normalizedDisplayName = userDisplayName.trim() || 'Guest'
+
   return (
     <Paper
       square
@@ -86,11 +88,11 @@ export function TripDetailHeader({
                     fontWeight: 700,
                   }}
                 >
-                  {(userDisplayName || 'G').slice(0, 1).toUpperCase()}
+                  {normalizedDisplayName.slice(0, 1).toUpperCase()}
                 </Avatar>
                 <Stack spacing={0} sx={{ display: { xs: 'none', sm: 'flex' } }}>
                   <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.1 }}>
-                    {userDisplayName}
+                    {normalizedDisplayName}
                   </Typography>
                   {isAuthenticated ? (
                     <Button

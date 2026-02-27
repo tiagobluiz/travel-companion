@@ -50,8 +50,11 @@ export function ExpensesSection({
   onDeleteExpense,
 }: ExpensesSectionProps) {
   const totalsByCurrency = expenses.reduce<Record<string, number>>((acc, expense) => {
+    const amountValue =
+      typeof expense.amount === 'number' ? expense.amount : Number.parseFloat(expense.amount)
+    if (!Number.isFinite(amountValue)) return acc
     const current = acc[expense.currency] ?? 0
-    acc[expense.currency] = current + expense.amount
+    acc[expense.currency] = current + amountValue
     return acc
   }, {})
 
