@@ -32,11 +32,11 @@ export function NotFoundPage({
         component="a"
         href="#not-found-content"
         sx={{
-          position: 'absolute',
+          position: 'fixed',
           left: -9999,
+          top: 16,
           '&:focus': {
             left: 16,
-            top: 16,
             zIndex: 2000,
             bgcolor: 'primary.main',
             color: '#fff',

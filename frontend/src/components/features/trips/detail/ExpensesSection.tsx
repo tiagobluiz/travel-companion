@@ -1,7 +1,7 @@
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import ReceiptLongRoundedIcon from '@mui/icons-material/ReceiptLongRounded'
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded'
-import { Alert, Box, Button, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, Paper, Stack, TextField, Typography } from '@mui/material'
 import type { FormEvent } from 'react'
 import type { Expense } from '../../../../api/expenses'
 import type { Trip } from '../../../../api/trips'
@@ -49,6 +49,19 @@ export function ExpensesSection({
   onAddExpense,
   onDeleteExpense,
 }: ExpensesSectionProps) {
+  const totalsByCurrency = expenses.reduce<Record<string, number>>((acc, expense) => {
+    const current = acc[expense.currency] ?? 0
+    acc[expense.currency] = current + expense.amount
+    return acc
+  }, {})
+
+  const totalLabel =
+    Object.keys(totalsByCurrency).length > 0
+      ? Object.entries(totalsByCurrency)
+          .map(([currencyCode, value]) => `${currencyCode} ${value.toFixed(2)}`)
+          .join(' • ')
+      : totalExpenses.toFixed(2)
+
   return (
     <Box component="section" sx={{ mb: 4.5 }}>
       <Paper
@@ -93,7 +106,7 @@ export function ExpensesSection({
 
             <Box sx={{ px: 1.1, py: 0.6, borderRadius: 1.75, bgcolor: 'rgba(15,23,42,0.05)', color: '#344054' }}>
               <Typography variant="caption" sx={{ fontWeight: 800 }}>
-                Total: {totalExpenses.toFixed(2)}
+                Total: {totalLabel}
               </Typography>
             </Box>
           </Stack>
@@ -119,7 +132,6 @@ export function ExpensesSection({
                     required
                     fullWidth
                     size="small"
-                    sx={{ '& .MuiInputBase-root': { height: 40 } }}
                   />
                   <TextField
                     select
@@ -127,11 +139,12 @@ export function ExpensesSection({
                     value={currency}
                     onChange={(e) => onCurrencyChange(e.target.value)}
                     size="small"
-                    sx={{ minWidth: { xs: '100%', sm: 130 }, '& .MuiInputBase-root': { height: 40 } }}
+                    SelectProps={{ native: true }}
+                    sx={{ minWidth: { xs: '100%', sm: 130 } }}
                   >
-                    <MenuItem value="USD">USD</MenuItem>
-                    <MenuItem value="EUR">EUR</MenuItem>
-                    <MenuItem value="GBP">GBP</MenuItem>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
                   </TextField>
                 </Stack>
                 <TextField

@@ -165,7 +165,7 @@ function ItineraryMapPreview({
                   </Typography>
                 </Box>
                 <Typography variant="body2" sx={{ fontWeight: 700, color: '#223046', flex: 1, minWidth: 0 }}>
-                  {`${index + 1}. ${stop.label}`}
+                  {stop.dayNumber == null ? `${stop.label} - Backlog` : `${stop.label} - Day ${stop.dayNumber}`}
                 </Typography>
                 <Typography variant="caption" sx={{ color: '#667085', fontWeight: 700 }}>
                   {stop.dayNumber == null ? 'Backlog' : `Day ${stop.dayNumber}`}

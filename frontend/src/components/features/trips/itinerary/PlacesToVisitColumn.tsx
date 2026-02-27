@@ -369,7 +369,17 @@ export function PlacesToVisitColumn({
                           >
                             Move down
                           </Box>
-                          <Box component="button" type="button" onClick={() => onRemove(item.id)} sx={srOnlySx}>
+                          <Box
+                            component="button"
+                            type="button"
+                            onClick={() => {
+                              if (isBusy) return
+                              onRemove(item.id)
+                            }}
+                            disabled={isBusy}
+                            aria-disabled={isBusy}
+                            sx={srOnlySx}
+                          >
                             Remove
                           </Box>
 

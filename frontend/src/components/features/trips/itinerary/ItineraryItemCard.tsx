@@ -28,6 +28,7 @@ export function ItineraryItemCard({
   children,
 }: ItineraryItemCardProps) {
   const [draftNotes, setDraftNotes] = useState(item.notes)
+  const [notesSaveError, setNotesSaveError] = useState(false)
   const lastSubmittedNotesRef = useRef<string | null>(null)
   const lastFailedNotesRef = useRef<string | null>(null)
 
@@ -40,6 +41,7 @@ export function ItineraryItemCard({
     if (lastSubmittedNotesRef.current === item.notes) {
       lastSubmittedNotesRef.current = null
       lastFailedNotesRef.current = null
+      setNotesSaveError(false)
     }
   }, [item.notes])
 
@@ -55,8 +57,10 @@ export function ItineraryItemCard({
       try {
         await onEdit({ notes: draftNotes, dayNumber: item.dayNumber })
         lastFailedNotesRef.current = null
+        setNotesSaveError(false)
       } catch {
         lastFailedNotesRef.current = draftNotes
+        setNotesSaveError(true)
         if (lastSubmittedNotesRef.current === draftNotes) {
           lastSubmittedNotesRef.current = null
         }
@@ -146,10 +150,11 @@ export function ItineraryItemCard({
             value={draftNotes}
             onChange={(event) => {
               lastFailedNotesRef.current = null
+              setNotesSaveError(false)
               setDraftNotes(event.target.value)
             }}
             disabled={isPending}
-            helperText={isPending ? 'Saving...' : ' '}
+            helperText={isPending ? 'Saving...' : notesSaveError ? 'Failed to save. Retrying on next edit.' : ' '}
           />
         </Box>
       ) : null}

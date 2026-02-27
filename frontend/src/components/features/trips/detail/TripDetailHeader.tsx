@@ -60,16 +60,16 @@ export function TripDetailHeader({
               <Box sx={{ width: 1, height: 18, bgcolor: 'rgba(15,23,42,0.08)', display: { xs: 'none', md: 'block' } }} />
 
               <Stack direction="row" spacing={0.5} alignItems="center" sx={{ display: { xs: 'none', md: 'flex' } }}>
-                <Button startIcon={<HomeRoundedIcon />} variant="text" sx={{ color: 'text.secondary' }}>
+                <Button component={Link} to={isAuthenticated ? '/' : '/discover'} startIcon={<HomeRoundedIcon />} variant="text" sx={{ color: 'text.secondary' }}>
                   Home
                 </Button>
-                <Button startIcon={<TravelExploreRoundedIcon />} variant="text" sx={{ color: 'text.secondary' }}>
+                <Button component={Link} to="/discover" startIcon={<TravelExploreRoundedIcon />} variant="text" sx={{ color: 'text.secondary' }}>
                   Discover
                 </Button>
-                <Button startIcon={<NotificationsNoneRoundedIcon />} variant="text" sx={{ color: 'text.secondary' }}>
+                <Button startIcon={<NotificationsNoneRoundedIcon />} variant="text" sx={{ color: 'text.secondary' }} disabled>
                   Notifications
                 </Button>
-                <Button startIcon={<PersonRoundedIcon />} variant="text" sx={{ color: 'text.secondary' }}>
+                <Button startIcon={<PersonRoundedIcon />} variant="text" sx={{ color: 'text.secondary' }} disabled>
                   Profile
                 </Button>
               </Stack>

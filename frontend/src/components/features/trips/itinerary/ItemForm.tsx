@@ -199,13 +199,13 @@ function buildSchema(mode: ItemFormMode, tripStartDate: string, tripEndDate: str
       if (values.destinationType === 'DAY') {
         if (!values.date) {
           ctx.addIssue({
-            code: z.ZodIssueCode.custom,
+            code: 'custom',
             path: ['date'],
             message: 'Date is required when destination is a day.',
           })
         } else if (values.date < tripStartDate || values.date > tripEndDate) {
           ctx.addIssue({
-            code: z.ZodIssueCode.custom,
+            code: 'custom',
             path: ['date'],
             message: `Date must be between ${tripStartDate} and ${tripEndDate}.`,
           })
@@ -217,7 +217,7 @@ function buildSchema(mode: ItemFormMode, tripStartDate: string, tripEndDate: str
       if (import.meta.env.MODE === 'test') {
         if (!values.placeName.trim()) {
           ctx.addIssue({
-            code: z.ZodIssueCode.custom,
+            code: 'custom',
             path: ['placeName'],
             message: 'Place name is required.',
           })
@@ -227,7 +227,7 @@ function buildSchema(mode: ItemFormMode, tripStartDate: string, tripEndDate: str
 
       if (!values.placeName.trim() || !values.latitude || !values.longitude) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: 'custom',
           path: ['placeName'],
           message: 'Select a place from the suggestions to continue.',
         })
@@ -236,7 +236,7 @@ function buildSchema(mode: ItemFormMode, tripStartDate: string, tripEndDate: str
 
       if (Number.isNaN(parseFloat(values.latitude)) || Number.isNaN(parseFloat(values.longitude))) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: 'custom',
           path: ['latitude'],
           message: 'Latitude and longitude must be valid numbers.',
         })

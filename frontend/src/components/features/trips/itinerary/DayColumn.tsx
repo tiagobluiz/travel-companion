@@ -363,9 +363,6 @@ export function DayColumn({
                             <DeleteOutlineRoundedIcon sx={{ fontSize: 18 }} />
                           </IconButton>
 
-                          <Box component="button" type="button" onClick={() => setMenuAnchorByItem((prev) => ({ ...prev, [item.id]: menuAnchorByItem[item.id] ?? null }))} sx={srOnlySx}>
-                            Open hidden menu helper
-                          </Box>
                           <Box
                             component="button"
                             type="button"
@@ -398,7 +395,17 @@ export function DayColumn({
                           >
                             Move down
                           </Box>
-                          <Box component="button" type="button" onClick={() => onRemove(item.id)} sx={srOnlySx}>
+                          <Box
+                            component="button"
+                            type="button"
+                            onClick={() => {
+                              if (isBusy) return
+                              onRemove(item.id)
+                            }}
+                            disabled={isBusy}
+                            aria-disabled={isBusy}
+                            sx={srOnlySx}
+                          >
                             Remove
                           </Box>
 

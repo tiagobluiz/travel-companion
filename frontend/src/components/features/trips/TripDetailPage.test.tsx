@@ -213,7 +213,7 @@ describe('TripDetailPage', () => {
     renderPage()
     await screen.findByText('Read-only itinerary view. Only editors and owners can plan items.')
 
-    expect(screen.queryByText('+ Add place')).not.toBeInTheDocument()
+    expect(screen.queryByText('Add place')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Move up' })).not.toBeInTheDocument()
     await openTripDetailTab('Collaborators')
     expect(await screen.findByText('Sign in to manage collaborators and invites.')).toBeInTheDocument()
@@ -250,7 +250,7 @@ describe('TripDetailPage', () => {
     renderPage()
     await screen.findByText('Read-only itinerary view. Only editors and owners can plan items.')
 
-    expect(screen.queryByText('+ Add place')).not.toBeInTheDocument()
+    expect(screen.queryByText('Add place')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Move up' })).not.toBeInTheDocument()
   })
 
@@ -329,9 +329,9 @@ describe('TripDetailPage', () => {
 
   it('validates itinerary date range before mutation (validation failure)', async () => {
     renderPage()
-    await screen.findByText('+ Add place')
+    await screen.findByText('Add place')
 
-    fireEvent.click(screen.getByText('+ Add place'))
+    fireEvent.click(screen.getByText('Add place'))
     fireEvent.change(screen.getByPlaceholderText('Place or activity'), {
       target: { value: 'Notre Dame' },
     })
@@ -350,9 +350,9 @@ describe('TripDetailPage', () => {
 
   it('adds item to places to visit when destination is places (happy path)', async () => {
     renderPage()
-    await screen.findByText('+ Add place')
+    await screen.findByText('Add place')
 
-    fireEvent.click(screen.getByText('+ Add place'))
+    fireEvent.click(screen.getByText('Add place'))
     fireEvent.change(screen.getByPlaceholderText('Place or activity'), {
       target: { value: 'Arc de Triomphe' },
     })
@@ -443,9 +443,9 @@ describe('TripDetailPage', () => {
     mockAddItineraryItem.mockRejectedValueOnce(new Error('401 Unauthorized'))
 
     renderPage()
-    await screen.findByText('+ Add place')
+    await screen.findByText('Add place')
 
-    fireEvent.click(screen.getByText('+ Add place'))
+    fireEvent.click(screen.getByText('Add place'))
     fireEvent.change(screen.getByPlaceholderText('Place or activity'), {
       target: { value: 'Notre Dame' },
     })

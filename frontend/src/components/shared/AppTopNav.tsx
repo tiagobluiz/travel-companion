@@ -73,7 +73,7 @@ export function AppTopNav() {
               <Typography variant="body2" sx={{ fontWeight: 700, lineHeight: 1.1 }}>
                 {displayName}
               </Typography>
-              {isAuthenticated ? (
+              {isValidAuthenticated ? (
                 <Button
                   onClick={() => {
                     logout()

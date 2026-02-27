@@ -1,6 +1,7 @@
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import RouteRoundedIcon from '@mui/icons-material/RouteRounded'
 import { Alert, Box, Button, Paper, Stack, Typography } from '@mui/material'
+import { useCallback } from 'react'
 import type {
   ItineraryV2Response,
   MoveItineraryItemV2Request,
@@ -56,6 +57,17 @@ export function ItinerarySection({
   onMove,
   onRemove,
 }: ItinerarySectionProps) {
+  const handleEdit = useCallback(
+    (itemId: string, payload: ItemFormEditPayload) => {
+      const item =
+        itinerary.days.flatMap((day) => day.items).find((dayItem) => dayItem.id === itemId) ??
+        itinerary.placesToVisit.items.find((placeItem) => placeItem.id === itemId)
+      if (!item) return Promise.resolve()
+      return onEditItinerary(item, payload)
+    },
+    [itinerary.days, itinerary.placesToVisit.items, onEditItinerary]
+  )
+
   return (
     <Box component="section" sx={{ mb: 4.5 }}>
       <Paper
@@ -104,12 +116,12 @@ export function ItinerarySection({
                 variant={showItineraryForm ? 'outlined' : 'contained'}
                 startIcon={<AddRoundedIcon />}
               >
-                {showItineraryForm ? 'Close form' : '+ Add place'}
+                {showItineraryForm ? 'Close form' : 'Add place'}
               </Button>
             ) : null}
           </Stack>
 
-          {itineraryError ? (
+          {itineraryError && !(canEditPlanning && showItineraryForm) ? (
             <Alert severity="error" sx={{ borderRadius: 2.5 }}>
               {itineraryError}
             </Alert>
@@ -159,13 +171,7 @@ export function ItinerarySection({
             onAdd={onAddItinerary}
             onMove={onMove}
             onRequestQuickAdd={canEditPlanning ? onRequestQuickAdd : undefined}
-            onEdit={(itemId, payload) => {
-              const item =
-                itinerary.days.flatMap((day) => day.items).find((dayItem) => dayItem.id === itemId) ??
-                itinerary.placesToVisit.items.find((placeItem) => placeItem.id === itemId)
-              if (!item) return Promise.resolve()
-              return onEditItinerary(item, payload)
-            }}
+            onEdit={handleEdit}
             onRemove={onRemove}
           />
         </Stack>
