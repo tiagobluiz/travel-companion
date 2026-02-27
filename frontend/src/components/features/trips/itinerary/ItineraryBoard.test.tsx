@@ -62,7 +62,7 @@ describe('ItineraryBoard', () => {
 
     expect(screen.getByText('Day 1 (2026-01-01)')).toBeInTheDocument()
     expect(screen.getByText('Day 2 (2026-01-02)')).toBeInTheDocument()
-    expect(screen.getByText('Places To Visit')).toBeInTheDocument()
+    expect(screen.getAllByText('Places To Visit').length).toBeGreaterThan(0)
     expect(screen.getByText('Louvre')).toBeInTheDocument()
     expect(screen.getByText('Montmartre')).toBeInTheDocument()
   })

@@ -6,6 +6,7 @@ import RegisterPage from './components/features/auth/RegisterPage'
 import DashboardPage from './components/features/dashboard/DashboardPage'
 import TripDetailPage from './components/features/trips/TripDetailPage'
 import DiscoveryAuthShellPage from './components/features/discovery/DiscoveryAuthShellPage'
+import { NotFoundPage } from './components/shared/NotFoundPage'
 
 function PublicRoute({ children }: { children: ReactNode }) {
   const token = useAuthStore((s) => s.token)
@@ -39,11 +40,12 @@ function App() {
           path="/"
           element={token ? <DashboardPage /> : <DiscoveryAuthShellPage />}
         />
+        <Route path="/discover" element={<DiscoveryAuthShellPage />} />
         <Route
           path="/trips/:id"
           element={<TripDetailPage />}
         />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   )

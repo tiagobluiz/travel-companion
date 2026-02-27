@@ -1,3 +1,5 @@
+import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded'
+import { Alert, Box, Button, Paper, Stack, TextField, Typography } from '@mui/material'
 import type { FormEvent } from 'react'
 import type { Trip, TripVisibility } from '../../../../api/trips'
 
@@ -35,70 +37,122 @@ export function TripDetailsSection({
   onSubmit,
 }: TripDetailsSectionProps) {
   return (
-    <section className="mb-8 p-4 bg-white rounded-lg border border-slate-200 space-y-3">
-      <h2 className="text-lg font-semibold text-slate-900">Trip details</h2>
-      {tripDetailsError && (
-        <div className="p-2 rounded-md bg-red-50 text-red-700 text-sm">{tripDetailsError}</div>
-      )}
-      {canEditTripDetails ? (
-        <form onSubmit={(e) => onSubmit(e, canEditPrivacy)} className="space-y-3">
-          <input
-            type="text"
-            placeholder="Trip name"
-            value={tripName}
-            onChange={(e) => onTripNameChange(e.target.value)}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
-            required
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <input
-              type="date"
-              value={tripStartDate}
-              onChange={(e) => onTripStartDateChange(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
-              required
-            />
-            <input
-              type="date"
-              value={tripEndDate}
-              onChange={(e) => onTripEndDateChange(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
-              required
-            />
-          </div>
-          <div className="space-y-1">
-            <label htmlFor="trip-visibility" className="block text-xs text-slate-500">
-              Privacy
-            </label>
-            <select
-              id="trip-visibility"
-              value={tripVisibility}
-              onChange={(e) => onTripVisibilityChange(e.target.value as TripVisibility)}
-              disabled={!canEditPrivacy}
-              className="px-3 py-2 border border-slate-300 rounded-lg bg-white disabled:opacity-60"
+    <Box component="section" sx={{ mb: 4.5 }}>
+      <Paper
+        elevation={0}
+        sx={{
+          borderRadius: 3,
+          border: '1px solid rgba(15,23,42,0.06)',
+          bgcolor: 'rgba(255,255,255,0.92)',
+          p: { xs: 1.75, md: 2 },
+        }}
+      >
+        <Stack spacing={1.75}>
+          <Stack spacing={0.4}>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Box
+                sx={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 2,
+                  bgcolor: 'rgba(21,112,239,0.10)',
+                  color: 'primary.main',
+                  display: 'grid',
+                  placeItems: 'center',
+                }}
+              >
+                <SettingsRoundedIcon sx={{ fontSize: 18 }} />
+              </Box>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#223046' }}>
+                Trip details
+              </Typography>
+            </Stack>
+            <Typography variant="body2" color="text.secondary">
+              Configure core trip information, dates, and visibility settings.
+            </Typography>
+          </Stack>
+
+          {tripDetailsError ? (
+            <Alert severity="error" sx={{ borderRadius: 2.5 }}>
+              {tripDetailsError}
+            </Alert>
+          ) : null}
+
+          {canEditTripDetails ? (
+            <Stack component="form" onSubmit={(e) => onSubmit(e, canEditPrivacy)} spacing={1.25}>
+              <TextField
+                label="Trip name"
+                value={tripName}
+                onChange={(e) => onTripNameChange(e.target.value)}
+                required
+                fullWidth
+              />
+
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25}>
+                <TextField
+                  type="date"
+                  label="Start date"
+                  value={tripStartDate}
+                  onChange={(e) => onTripStartDateChange(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  required
+                  fullWidth
+                />
+                <TextField
+                  type="date"
+                  label="End date"
+                  value={tripEndDate}
+                  onChange={(e) => onTripEndDateChange(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  required
+                  fullWidth
+                />
+              </Stack>
+
+              <TextField
+                select
+                id="trip-visibility"
+                label="Privacy"
+                value={tripVisibility}
+                onChange={(e) => onTripVisibilityChange(e.target.value as TripVisibility)}
+                disabled={!canEditPrivacy}
+                SelectProps={{ native: true }}
+                sx={{ maxWidth: 220 }}
+              >
+                <option value="PRIVATE">Private</option>
+                <option value="PUBLIC">Public</option>
+              </TextField>
+
+              {!canEditPrivacy ? (
+                <Typography variant="caption" color="text.secondary">
+                  Only owners can change privacy.
+                </Typography>
+              ) : null}
+
+              <Box>
+                <Button type="submit" variant="contained" disabled={isSaving}>
+                  Save details
+                </Button>
+              </Box>
+            </Stack>
+          ) : (
+            <Paper
+              variant="outlined"
+              sx={{ p: 1.5, borderRadius: 2.5, borderColor: 'rgba(15,23,42,0.08)', bgcolor: 'rgba(255,255,255,0.96)' }}
             >
-              <option value="PRIVATE">Private</option>
-              <option value="PUBLIC">Public</option>
-            </select>
-            {!canEditPrivacy && <p className="text-xs text-slate-500">Only owners can change privacy.</p>}
-          </div>
-          <button
-            type="submit"
-            disabled={isSaving}
-            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
-          >
-            Save details
-          </button>
-        </form>
-      ) : (
-        <div className="text-sm text-slate-600 space-y-1">
-          <p>{trip.name}</p>
-          <p>
-            {trip.startDate} - {trip.endDate}
-          </p>
-          <p>Privacy: {trip.visibility ?? 'PRIVATE'}</p>
-        </div>
-      )}
-    </section>
+              <Stack spacing={0.45}>
+                <Typography sx={{ fontWeight: 700, color: '#223046' }}>{trip.name}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {trip.startDate} - {trip.endDate}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Privacy: {trip.visibility ?? 'PRIVATE'}
+                </Typography>
+              </Stack>
+            </Paper>
+          )}
+        </Stack>
+      </Paper>
+    </Box>
   )
 }

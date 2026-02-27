@@ -32,7 +32,7 @@ describe('Trip detail extracted sections', () => {
       </MemoryRouter>
     )
 
-    expect(screen.getByRole('heading', { name: 'Paris' })).toBeInTheDocument()
+    expect(screen.getAllByRole('heading', { name: 'Paris' }).length).toBeGreaterThan(0)
     fireEvent.click(screen.getByRole('button', { name: 'Sign out' }))
     expect(onLogout).toHaveBeenCalledTimes(1)
   })
@@ -185,3 +185,4 @@ describe('Trip detail extracted sections', () => {
     expect(onShowForm).toHaveBeenCalledTimes(1)
   })
 })
+

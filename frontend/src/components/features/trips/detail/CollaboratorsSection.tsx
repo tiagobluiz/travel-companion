@@ -1,3 +1,7 @@
+import GroupRoundedIcon from '@mui/icons-material/GroupRounded'
+import MailOutlineRoundedIcon from '@mui/icons-material/MailOutlineRounded'
+import PersonRemoveRoundedIcon from '@mui/icons-material/PersonRemoveRounded'
+import { Alert, Box, Button, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material'
 import type { FormEvent } from 'react'
 import type { CollaboratorsResponse, TripRole } from '../../../../api/collaborators'
 import { getErrorMessage } from '../../../../utils/getErrorMessage'
@@ -49,160 +53,243 @@ export function CollaboratorsSection({
   onRevokeInvite,
   onLeaveTrip,
 }: CollaboratorsSectionProps) {
-  const collaboratorsLoadErrorText = getErrorMessage(
-    collaboratorsLoadError,
-    'Failed to load collaborators.'
-  )
+  const collaboratorsLoadErrorText = getErrorMessage(collaboratorsLoadError, 'Failed to load collaborators.')
 
   return (
-    <section className="mb-10">
-      <h2 className="text-lg font-semibold text-slate-900 mb-3">Collaborators</h2>
-      {isAuthenticated ? (
-        <>
-          {Boolean(collaboratorsLoadError) && (
-            <div className="mb-4 p-2 rounded-md bg-red-50 text-red-700 text-sm">
+    <Box component="section" sx={{ mb: 4.5 }}>
+      <Paper
+        elevation={0}
+        sx={{
+          borderRadius: 3,
+          border: '1px solid rgba(15,23,42,0.06)',
+          bgcolor: 'rgba(255,255,255,0.92)',
+          p: { xs: 1.75, md: 2 },
+        }}
+      >
+        <Stack spacing={1.75}>
+          <Stack spacing={0.4}>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Box
+                sx={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 2,
+                  bgcolor: 'rgba(21,112,239,0.10)',
+                  color: 'primary.main',
+                  display: 'grid',
+                  placeItems: 'center',
+                }}
+              >
+                <GroupRoundedIcon sx={{ fontSize: 18 }} />
+              </Box>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#223046' }}>
+                Collaborators
+              </Typography>
+            </Stack>
+            <Typography variant="body2" color="text.secondary">
+              Invite members, manage roles, and handle pending invites in one place.
+            </Typography>
+          </Stack>
+
+          {!isAuthenticated ? (
+            <Alert severity="info" sx={{ borderRadius: 2.5 }}>
+              Sign in to manage collaborators and invites.
+            </Alert>
+          ) : null}
+
+          {isAuthenticated && Boolean(collaboratorsLoadError) ? (
+            <Alert severity="error" sx={{ borderRadius: 2.5 }}>
               {collaboratorsLoadErrorText}
-            </div>
-          )}
-          {collaboratorError && (
-            <div className="mb-4 p-2 rounded-md bg-red-50 text-red-700 text-sm">{collaboratorError}</div>
-          )}
-          {isCollaboratorsLoading ? (
-            <p className="text-slate-500 text-sm">Loading collaborators...</p>
-          ) : (
-            <>
-              <div className="mb-4 p-4 bg-white rounded-lg border border-slate-200">
-                <h3 className="font-semibold text-slate-900 mb-3">Members</h3>
-                {!collaborators?.memberships.length ? (
-                  <p className="text-slate-500 text-sm">No collaborators yet.</p>
-                ) : (
-                  <ul className="space-y-2">
-                    {collaborators.memberships.map((member) => (
-                      <li
-                        key={member.userId}
-                        className="flex items-center justify-between p-2 rounded-md bg-slate-50"
-                      >
-                        <span className="text-sm text-slate-700">{member.displayName ?? member.userId}</span>
-                        <span className="text-xs px-2 py-1 rounded bg-slate-200 text-slate-700">
-                          {member.role}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
+            </Alert>
+          ) : null}
 
-              <div className="mb-4 p-4 bg-white rounded-lg border border-slate-200">
-                <h3 className="font-semibold text-slate-900 mb-3">Invites</h3>
-                {!collaborators?.invites.length ? (
-                  <p className="text-slate-500 text-sm">No invites yet.</p>
-                ) : (
-                  <ul className="space-y-2">
-                    {collaborators.invites.map((invite) => {
-                      const isMyInvite =
-                        userEmail?.toLowerCase() === invite.email.toLowerCase() && invite.status === 'PENDING'
-                      return (
-                        <li
-                          key={`${invite.email}-${invite.status}`}
-                          className="p-2 rounded-md bg-slate-50 flex flex-wrap items-center justify-between gap-2"
+          {isAuthenticated && collaboratorError ? (
+            <Alert severity="error" sx={{ borderRadius: 2.5 }}>
+              {collaboratorError}
+            </Alert>
+          ) : null}
+
+          {isAuthenticated && isCollaboratorsLoading ? (
+            <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2.5 }}>
+              <Typography color="text.secondary">Loading collaborators...</Typography>
+            </Paper>
+          ) : null}
+
+          {isAuthenticated && !isCollaboratorsLoading ? (
+            <Stack spacing={1.25}>
+              <Paper
+                variant="outlined"
+                sx={{ p: 1.5, borderRadius: 2.5, borderColor: 'rgba(15,23,42,0.08)', bgcolor: 'rgba(255,255,255,0.96)' }}
+              >
+                <Stack spacing={1}>
+                  <Typography sx={{ fontWeight: 800, color: '#223046' }}>Members</Typography>
+                  {!collaborators?.memberships.length ? (
+                    <Typography variant="body2" color="text.secondary">
+                      No collaborators yet.
+                    </Typography>
+                  ) : (
+                    <Stack spacing={0.75}>
+                      {collaborators.memberships.map((member) => (
+                        <Stack
+                          key={member.userId}
+                          direction="row"
+                          justifyContent="space-between"
+                          alignItems="center"
+                          sx={{ px: 1, py: 0.9, borderRadius: 2, bgcolor: 'rgba(248,250,252,0.9)', border: '1px solid rgba(15,23,42,0.06)' }}
                         >
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-slate-700">{invite.email}</span>
-                            <span className="text-xs px-2 py-1 rounded bg-slate-200 text-slate-700">
-                              {invite.role}
-                            </span>
-                            <span
-                              className={`text-xs px-2 py-1 rounded ${
-                                invite.status === 'DECLINED'
-                                  ? 'bg-rose-100 text-rose-700'
-                                  : 'bg-amber-100 text-amber-700'
-                              }`}
-                            >
-                              {invite.status}
-                            </span>
-                          </div>
-                          <div className="flex gap-2">
-                            {isMyInvite && (
-                              <>
-                                <button
-                                  onClick={onAcceptInvite}
-                                  disabled={isRespondPending}
-                                  className="text-xs px-2 py-1 rounded border border-emerald-300 text-emerald-700 disabled:opacity-50"
-                                >
-                                  Accept
-                                </button>
-                                <button
-                                  onClick={onDeclineInvite}
-                                  disabled={isRespondPending}
-                                  className="text-xs px-2 py-1 rounded border border-amber-300 text-amber-700 disabled:opacity-50"
-                                >
-                                  Decline
-                                </button>
-                              </>
-                            )}
-                            {isOwner && (invite.status === 'PENDING' || invite.status === 'DECLINED') && (
-                              <button
-                                onClick={() => onRevokeInvite(invite.email)}
-                                disabled={isRevokePending}
-                                className="text-xs px-2 py-1 rounded border border-red-300 text-red-700 disabled:opacity-50"
+                          <Typography variant="body2" sx={{ color: '#344054', fontWeight: 600 }}>
+                            {member.displayName ?? member.userId}
+                          </Typography>
+                          <Box sx={{ px: 1, py: 0.35, borderRadius: 1.5, bgcolor: 'rgba(15,23,42,0.06)' }}>
+                            <Typography variant="caption" sx={{ fontWeight: 800, color: '#344054' }}>
+                              {member.role}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      ))}
+                    </Stack>
+                  )}
+                </Stack>
+              </Paper>
+
+              <Paper
+                variant="outlined"
+                sx={{ p: 1.5, borderRadius: 2.5, borderColor: 'rgba(15,23,42,0.08)', bgcolor: 'rgba(255,255,255,0.96)' }}
+              >
+                <Stack spacing={1}>
+                  <Typography sx={{ fontWeight: 800, color: '#223046' }}>Invites</Typography>
+                  {!collaborators?.invites.length ? (
+                    <Typography variant="body2" color="text.secondary">
+                      No invites yet.
+                    </Typography>
+                  ) : (
+                    <Stack spacing={0.75}>
+                      {collaborators.invites.map((invite) => {
+                        const isMyInvite = userEmail?.toLowerCase() === invite.email.toLowerCase() && invite.status === 'PENDING'
+                        return (
+                          <Stack
+                            key={`${invite.email}-${invite.status}`}
+                            spacing={0.9}
+                            sx={{ px: 1, py: 0.9, borderRadius: 2, bgcolor: 'rgba(248,250,252,0.9)', border: '1px solid rgba(15,23,42,0.06)' }}
+                          >
+                            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={0.75} alignItems={{ sm: 'center' }}>
+                              <Typography variant="body2" sx={{ color: '#344054', fontWeight: 600 }}>
+                                {invite.email}
+                              </Typography>
+                              <Box sx={{ px: 1, py: 0.25, borderRadius: 1.5, bgcolor: 'rgba(15,23,42,0.06)', width: 'fit-content' }}>
+                                <Typography variant="caption" sx={{ fontWeight: 800, color: '#344054' }}>
+                                  {invite.role}
+                                </Typography>
+                              </Box>
+                              <Box
+                                sx={{
+                                  px: 1,
+                                  py: 0.25,
+                                  borderRadius: 1.5,
+                                  bgcolor: invite.status === 'DECLINED' ? 'rgba(240,68,56,0.10)' : 'rgba(245,158,11,0.14)',
+                                  color: invite.status === 'DECLINED' ? '#b42318' : '#92400e',
+                                  width: 'fit-content',
+                                }}
                               >
-                                Revoke
-                              </button>
-                            )}
-                          </div>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                )}
-              </div>
+                                <Typography variant="caption" sx={{ fontWeight: 800 }}>
+                                  {invite.status}
+                                </Typography>
+                              </Box>
+                            </Stack>
 
-              {isOwner && (
-                <form onSubmit={onInviteSubmit} className="mb-4 p-4 bg-white rounded-lg border border-slate-200 space-y-3">
-                  <h3 className="font-semibold text-slate-900">Invite collaborator</h3>
-                  <div className="flex gap-2">
-                    <input
-                      type="email"
-                      placeholder="Email"
-                      value={inviteEmail}
-                      onChange={(e) => onInviteEmailChange(e.target.value)}
-                      className="flex-1 px-3 py-2 border border-slate-300 rounded-lg bg-white"
-                    />
-                    <select
-                      value={inviteRole}
-                      onChange={(e) => onInviteRoleChange(e.target.value as TripRole)}
-                      className="px-3 py-2 border border-slate-300 rounded-lg bg-white"
-                    >
-                      <option value="VIEWER">Viewer</option>
-                      <option value="EDITOR">Editor</option>
-                      <option value="OWNER">Owner</option>
-                    </select>
-                    <button
-                      type="submit"
-                      disabled={isInvitePending}
-                      className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
-                    >
-                      Invite
-                    </button>
-                  </div>
-                </form>
-              )}
+                            <Stack direction="row" spacing={0.75}>
+                              {isMyInvite ? (
+                                <>
+                                  <Button size="small" variant="outlined" onClick={onAcceptInvite} disabled={isRespondPending}>
+                                    Accept
+                                  </Button>
+                                  <Button size="small" variant="outlined" onClick={onDeclineInvite} disabled={isRespondPending}>
+                                    Decline
+                                  </Button>
+                                </>
+                              ) : null}
+                              {isOwner && (invite.status === 'PENDING' || invite.status === 'DECLINED') ? (
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  color="error"
+                                  onClick={() => onRevokeInvite(invite.email)}
+                                  disabled={isRevokePending}
+                                >
+                                  Revoke
+                                </Button>
+                              ) : null}
+                            </Stack>
+                          </Stack>
+                        )
+                      })}
+                    </Stack>
+                  )}
+                </Stack>
+              </Paper>
 
-              {isMember && (
-                <button
-                  onClick={onLeaveTrip}
-                  disabled={isLeavePending}
-                  className="text-sm px-3 py-2 rounded border border-red-300 text-red-700 disabled:opacity-50"
+              {isOwner ? (
+                <Paper
+                  variant="outlined"
+                  sx={{ p: 1.5, borderRadius: 2.5, borderColor: 'rgba(15,23,42,0.08)', bgcolor: 'rgba(248,250,252,0.75)' }}
                 >
-                  Leave trip
-                </button>
-              )}
-            </>
-          )}
-        </>
-      ) : (
-        <p className="text-slate-500 text-sm">Sign in to manage collaborators and invites.</p>
-      )}
-    </section>
+                  <Stack component="form" onSubmit={onInviteSubmit} spacing={1.1}>
+                    <Stack direction="row" spacing={0.9} alignItems="center">
+                      <MailOutlineRoundedIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+                      <Typography sx={{ fontWeight: 800, color: '#223046' }}>Invite collaborator</Typography>
+                    </Stack>
+                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} alignItems={{ md: 'stretch' }}>
+                      <TextField
+                        type="email"
+                        label="Email"
+                        value={inviteEmail}
+                        onChange={(e) => onInviteEmailChange(e.target.value)}
+                        fullWidth
+                        size="small"
+                        sx={{ '& .MuiInputBase-root': { height: 40 } }}
+                      />
+                      <TextField
+                        select
+                        label="Role"
+                        value={inviteRole}
+                        onChange={(e) => onInviteRoleChange(e.target.value as TripRole)}
+                        sx={{ minWidth: { xs: '100%', md: 150 }, '& .MuiInputBase-root': { height: 40 } }}
+                        size="small"
+                      >
+                        <MenuItem value="VIEWER">Viewer</MenuItem>
+                        <MenuItem value="EDITOR">Editor</MenuItem>
+                        <MenuItem value="OWNER">Owner</MenuItem>
+                      </TextField>
+                      <Button
+                        type="submit"
+                        variant="contained"
+                        disabled={isInvitePending}
+                        sx={{ minWidth: 92, height: 40, alignSelf: { xs: 'stretch', md: 'auto' } }}
+                      >
+                        Invite
+                      </Button>
+                    </Stack>
+                  </Stack>
+                </Paper>
+              ) : null}
+
+              {isMember ? (
+                <Box>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    startIcon={<PersonRemoveRoundedIcon />}
+                    onClick={onLeaveTrip}
+                    disabled={isLeavePending}
+                  >
+                    Leave trip
+                  </Button>
+                </Box>
+              ) : null}
+            </Stack>
+          ) : null}
+        </Stack>
+      </Paper>
+    </Box>
   )
 }

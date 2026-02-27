@@ -80,13 +80,14 @@ describe('App routing', () => {
     })
   })
 
-  it('routes unknown paths to auth flow for anonymous users', async () => {
+  it('renders reusable not found page for unknown paths', async () => {
     navigateTo('/unknown-route')
 
     render(<App />)
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Discovery Shell Page' })).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: 'Page not found' })).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'Go to Home' })).toBeInTheDocument()
     })
   })
 })
