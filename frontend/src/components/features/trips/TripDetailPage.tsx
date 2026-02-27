@@ -1,10 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Alert, Box, Button, Paper, Stack, Typography } from '@mui/material'
+import { Alert, Box, Button, Paper, Stack, Tab, Tabs, Typography } from '@mui/material'
 import LockOpenRoundedIcon from '@mui/icons-material/LockOpenRounded'
 import ContentCopyRoundedIcon from '@mui/icons-material/ContentCopyRounded'
 import LoginRoundedIcon from '@mui/icons-material/LoginRounded'
+import TravelExploreRoundedIcon from '@mui/icons-material/TravelExploreRounded'
 import { useAuthStore } from '../../../stores/authStore'
 import { type TripStatus, type TripVisibility } from '../../../api/trips'
 import {
@@ -23,9 +24,11 @@ import { ApiError } from '../../../api/client'
 import { useTripDetailData } from '../../../hooks/useTripDetailData'
 import { useTripMutations } from '../../../hooks/useTripMutations'
 import { getErrorMessage } from '../../../utils/getErrorMessage'
+import { isJwtTokenExpired } from '../../../utils/authToken'
 import { CollaboratorsSection } from './detail/CollaboratorsSection'
 import { ExpensesSection } from './detail/ExpensesSection'
 import { ItinerarySection } from './detail/ItinerarySection'
+import type { ItineraryQuickAddTarget } from './detail/ItinerarySection'
 import { TripDetailHeader } from './detail/TripDetailHeader'
 import { TripDetailsSection } from './detail/TripDetailsSection'
 import type { ItemFormCreatePayload, ItemFormEditPayload } from './itinerary/ItemForm'
@@ -58,7 +61,13 @@ export default function TripDetailPage() {
   const isAuthenticated = Boolean(token)
 
   const [showItineraryForm, setShowItineraryForm] = useState(false)
+  const [itineraryFormPrefill, setItineraryFormPrefill] = useState<ItineraryQuickAddTarget>({
+    destinationType: 'DAY',
+  })
   const [itineraryError, setItineraryError] = useState('')
+  const [activeSection, setActiveSection] = useState<'itinerary' | 'collaborators' | 'expenses' | 'settings'>(
+    'itinerary'
+  )
 
   const [showExpenseForm, setShowExpenseForm] = useState(false)
   const [amount, setAmount] = useState('')
@@ -212,29 +221,25 @@ export default function TripDetailPage() {
     })
   }
 
-  function handleAddItinerary(payload: ItemFormCreatePayload) {
+  async function handleAddItinerary(payload: ItemFormCreatePayload) {
     if (!canEditPlanning) {
       setItineraryError(permissionDeniedMessage('add itinerary items'))
       setShowItineraryForm(false)
-      return
+      throw new Error(permissionDeniedMessage('add itinerary items'))
     }
     setItineraryError('')
-    addItineraryMutation.mutate(
-      payload,
-      {
-        onSuccess: () => {
-          setShowItineraryForm(false)
-        },
-        onError: (error: Error) => {
-          if (isUnauthorizedMutationError(error)) {
-            setShowItineraryForm(false)
-            setItineraryError(permissionDeniedMessage('add itinerary items'))
-            return
-          }
-          setItineraryError(error.message || 'Failed to add itinerary item.')
-        },
+    try {
+      await addItineraryMutation.mutateAsync(payload)
+      setShowItineraryForm(false)
+    } catch (error) {
+      if (isUnauthorizedMutationError(error)) {
+        setShowItineraryForm(false)
+        setItineraryError(permissionDeniedMessage('add itinerary items'))
+      } else {
+        setItineraryError(getErrorMessage(error, 'Failed to add itinerary item.'))
       }
-    )
+      throw error
+    }
   }
 
   async function handleEditItinerary(item: ItineraryItemV2, payload: ItemFormEditPayload) {
@@ -393,6 +398,7 @@ export default function TripDetailPage() {
       <NotFoundPage
         title="Trip not found"
         description="This trip may have been deleted, made private, or your session no longer has access to it."
+        homeTo={token && !isJwtTokenExpired(token) ? '/' : '/discover'}
       />
     )
   }
@@ -425,17 +431,19 @@ export default function TripDetailPage() {
   const canEditPrivacy = isOwner
   const canEditPlanning = isOwner || isEditor
   const isAnonymousPublicViewer = !isAuthenticated && trip.visibility === 'PUBLIC'
-
   return (
     <div className="min-h-screen bg-slate-50">
       <TripDetailHeader
         tripName={trip.name}
         userDisplayName={user?.displayName ?? 'Guest'}
         isAuthenticated={isAuthenticated}
-        onLogout={logout}
+        onLogout={() => {
+          logout()
+          navigate('/discover', { replace: true })
+        }}
       />
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      <main className="max-w-[min(100vw-16px,1760px)] mx-auto px-2 sm:px-3 lg:px-4 py-4 lg:py-6">
         {isAnonymousPublicViewer && (
           <Box sx={{ mb: 3 }}>
             <Paper
@@ -491,140 +499,220 @@ export default function TripDetailPage() {
           </Box>
         )}
 
-        <TripDetailsSection
-          trip={trip}
-          tripDetailsError={tripDetailsError}
-          canEditTripDetails={canEditTripDetails}
-          canEditPrivacy={canEditPrivacy}
-          tripName={tripName}
-          tripStartDate={tripStartDate}
-          tripEndDate={tripEndDate}
-          tripVisibility={tripVisibility}
-          isSaving={updateTripMutation.isPending}
-          onTripNameChange={setTripName}
-          onTripStartDateChange={setTripStartDate}
-          onTripEndDateChange={setTripEndDate}
-          onTripVisibilityChange={setTripVisibility}
-          onSubmit={handleUpdateTripDetails}
-        />
-
-        <ItinerarySection
-          trip={trip}
-          itinerary={itinerary}
-          isItineraryLoading={isItineraryLoading}
-          canEditPlanning={canEditPlanning}
-          showItineraryForm={showItineraryForm}
-          itineraryLoadError={itineraryLoadError}
-          itineraryError={itineraryError}
-          isAddPending={addItineraryMutation.isPending}
-          isMovePending={moveItineraryMutation.isPending}
-          isEditPending={updateItineraryMutation.isPending}
-          onShowForm={() => setShowItineraryForm(true)}
-          onHideForm={() => setShowItineraryForm(false)}
-          onAddItinerary={handleAddItinerary}
-          onEditItinerary={handleEditItinerary}
-          onMove={handleMove}
-          onRemove={handleRemove}
-        />
-
-        <CollaboratorsSection
-          isAuthenticated={isAuthenticated}
-          collaborators={collaborators}
-          collaboratorsLoadError={collaboratorsLoadError}
-          collaboratorError={collaboratorError}
-          isCollaboratorsLoading={isCollaboratorsLoading}
-          isOwner={isOwner}
-          isMember={isMember}
-          userEmail={user?.email}
-          inviteEmail={inviteEmail}
-          inviteRole={inviteRole}
-          isInvitePending={inviteMutation.isPending}
-          isRespondPending={respondInviteMutation.isPending}
-          isRevokePending={revokeInviteMutation.isPending}
-          isLeavePending={leaveTripMutation.isPending}
-          onInviteEmailChange={setInviteEmail}
-          onInviteRoleChange={setInviteRole}
-          onInviteSubmit={handleInviteSubmit}
-          onAcceptInvite={() => {
-            setCollaboratorError('')
-            respondInviteMutation.mutate(true)
+        <Paper
+          elevation={0}
+          sx={{
+            mb: 3,
+            borderRadius: 3,
+            border: '1px solid rgba(15,23,42,0.06)',
+            bgcolor: 'rgba(255,255,255,0.92)',
+            p: { xs: 1.5, md: 1.75 },
           }}
-          onDeclineInvite={() => {
-            setCollaboratorError('')
-            respondInviteMutation.mutate(false)
-          }}
-          onRevokeInvite={(email) => {
-            setCollaboratorError('')
-            revokeInviteMutation.mutate(email)
-          }}
-          onLeaveTrip={() => {
-            setCollaboratorError('')
-            leaveTripMutation.mutate()
-          }}
-        />
-
-        <ExpensesSection
-          trip={trip}
-          expenses={expenses}
-          totalExpenses={totalExpenses}
-          canEditPlanning={canEditPlanning}
-          showExpenseForm={showExpenseForm}
-          amount={amount}
-          currency={currency}
-          expenseDesc={expenseDesc}
-          expenseDate={expenseDate}
-          expenseError={expenseError}
-          isCreatePending={createExpenseMutation.isPending}
-          onShowForm={() => setShowExpenseForm(true)}
-          onHideForm={() => setShowExpenseForm(false)}
-          onAmountChange={setAmount}
-          onCurrencyChange={setCurrency}
-          onExpenseDescChange={setExpenseDesc}
-          onExpenseDateChange={setExpenseDate}
-          onAddExpense={handleAddExpense}
-          onDeleteExpense={(expenseId) => deleteExpenseMutation.mutate(expenseId)}
-        />
-
-        {isOwner && (
-          <div className="mt-10 pt-6 border-t border-slate-200">
-            {tripActionError && (
-              <div className="mb-3 p-2 rounded-md bg-red-50 text-red-700 text-sm">{tripActionError}</div>
-            )}
-            {trip.status === 'ACTIVE' ? (
-              <button
-                onClick={() => {
-                  setTripActionError('')
-                  setConfirmAction('archive')
+        >
+          <Stack spacing={1.25}>
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
+              <Box
+                sx={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 2,
+                  bgcolor: 'rgba(21,112,239,0.10)',
+                  color: 'primary.main',
+                  display: 'grid',
+                  placeItems: 'center',
+                  flexShrink: 0,
                 }}
-                disabled={archiveTripMutation.isPending || deleteTripMutation.isPending}
-                className="mr-3 text-amber-700 text-sm hover:underline disabled:opacity-50"
               >
-                Archive trip
-              </button>
-            ) : (
-              <button
-                onClick={() => {
-                  setTripActionError('')
-                  setConfirmAction('restore')
-                }}
-                disabled={restoreTripMutation.isPending || deleteTripMutation.isPending}
-                className="mr-3 text-emerald-700 text-sm hover:underline disabled:opacity-50"
-              >
-                Restore trip
-              </button>
-            )}
-            <button
-              onClick={() => {
-                setTripActionError('')
-                setConfirmAction('delete')
+                <TravelExploreRoundedIcon sx={{ fontSize: 18 }} />
+              </Box>
+              <Stack spacing={0} sx={{ minWidth: 0 }}>
+                <Typography sx={{ fontWeight: 800, color: '#223046', lineHeight: 1.1 }}>
+                  {trip.name}
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#667085' }}>
+                  {trip.startDate} to {trip.endDate} • {trip.visibility} • {trip.status}
+                </Typography>
+              </Stack>
+            </Stack>
+
+            <Tabs
+              value={activeSection}
+              aria-label="Trip detail sections"
+              onChange={(_event, value: 'itinerary' | 'collaborators' | 'expenses' | 'settings') => setActiveSection(value)}
+              variant="scrollable"
+              allowScrollButtonsMobile
+              sx={{
+                minHeight: 42,
+                '& .MuiTabs-indicator': { height: 3, borderRadius: 999 },
+                '& .MuiTab-root': {
+                  minHeight: 42,
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  px: { xs: 1.25, md: 1.75 },
+                  minWidth: 'auto',
+                },
               }}
-              disabled={deleteTripMutation.isPending || archiveTripMutation.isPending || restoreTripMutation.isPending}
-              className="text-red-600 text-sm hover:underline disabled:opacity-50"
             >
-              Delete trip
-            </button>
-          </div>
-        )}
+              <Tab value="itinerary" label="Itinerary" />
+              <Tab value="collaborators" label="Collaborators" />
+              <Tab value="expenses" label="Expenses" />
+              <Tab value="settings" label="Settings" />
+            </Tabs>
+          </Stack>
+        </Paper>
+
+        {activeSection === 'itinerary' ? (
+          <ItinerarySection
+            trip={trip}
+            itinerary={itinerary}
+            isItineraryLoading={isItineraryLoading}
+            canEditPlanning={canEditPlanning}
+            showItineraryForm={showItineraryForm}
+            itineraryLoadError={itineraryLoadError}
+            itineraryError={itineraryError}
+            isAddPending={addItineraryMutation.isPending}
+            isMovePending={moveItineraryMutation.isPending}
+            isEditPending={updateItineraryMutation.isPending}
+            onShowForm={() => {
+              setItineraryFormPrefill({ destinationType: 'DAY' })
+              setShowItineraryForm(true)
+            }}
+            onRequestQuickAdd={(target) => {
+              setItineraryFormPrefill(target)
+              setShowItineraryForm(true)
+            }}
+            onHideForm={() => setShowItineraryForm(false)}
+            createFormPrefill={itineraryFormPrefill}
+            onAddItinerary={handleAddItinerary}
+            onEditItinerary={handleEditItinerary}
+            onMove={handleMove}
+            onRemove={handleRemove}
+          />
+        ) : null}
+
+        {activeSection === 'collaborators' ? (
+          <CollaboratorsSection
+            isAuthenticated={isAuthenticated}
+            collaborators={collaborators}
+            collaboratorsLoadError={collaboratorsLoadError}
+            collaboratorError={collaboratorError}
+            isCollaboratorsLoading={isCollaboratorsLoading}
+            isOwner={isOwner}
+            isMember={isMember}
+            userEmail={user?.email}
+            inviteEmail={inviteEmail}
+            inviteRole={inviteRole}
+            isInvitePending={inviteMutation.isPending}
+            isRespondPending={respondInviteMutation.isPending}
+            isRevokePending={revokeInviteMutation.isPending}
+            isLeavePending={leaveTripMutation.isPending}
+            onInviteEmailChange={setInviteEmail}
+            onInviteRoleChange={setInviteRole}
+            onInviteSubmit={handleInviteSubmit}
+            onAcceptInvite={() => {
+              setCollaboratorError('')
+              respondInviteMutation.mutate(true)
+            }}
+            onDeclineInvite={() => {
+              setCollaboratorError('')
+              respondInviteMutation.mutate(false)
+            }}
+            onRevokeInvite={(email) => {
+              setCollaboratorError('')
+              revokeInviteMutation.mutate(email)
+            }}
+            onLeaveTrip={() => {
+              setCollaboratorError('')
+              leaveTripMutation.mutate()
+            }}
+          />
+        ) : null}
+
+        {activeSection === 'expenses' ? (
+          <ExpensesSection
+            trip={trip}
+            expenses={expenses}
+            totalExpenses={totalExpenses}
+            canEditPlanning={canEditPlanning}
+            showExpenseForm={showExpenseForm}
+            amount={amount}
+            currency={currency}
+            expenseDesc={expenseDesc}
+            expenseDate={expenseDate}
+            expenseError={expenseError}
+            isCreatePending={createExpenseMutation.isPending}
+            onShowForm={() => setShowExpenseForm(true)}
+            onHideForm={() => setShowExpenseForm(false)}
+            onAmountChange={setAmount}
+            onCurrencyChange={setCurrency}
+            onExpenseDescChange={setExpenseDesc}
+            onExpenseDateChange={setExpenseDate}
+            onAddExpense={handleAddExpense}
+            onDeleteExpense={(expenseId) => deleteExpenseMutation.mutate(expenseId)}
+          />
+        ) : null}
+
+        {activeSection === 'settings' ? (
+          <>
+            <TripDetailsSection
+              trip={trip}
+              tripDetailsError={tripDetailsError}
+              canEditTripDetails={canEditTripDetails}
+              canEditPrivacy={canEditPrivacy}
+              tripName={tripName}
+              tripStartDate={tripStartDate}
+              tripEndDate={tripEndDate}
+              tripVisibility={tripVisibility}
+              isSaving={updateTripMutation.isPending}
+              onTripNameChange={setTripName}
+              onTripStartDateChange={setTripStartDate}
+              onTripEndDateChange={setTripEndDate}
+              onTripVisibilityChange={setTripVisibility}
+              onSubmit={handleUpdateTripDetails}
+            />
+
+            {isOwner && (
+              <div className="mt-10 pt-6 border-t border-slate-200">
+                {tripActionError && (
+                  <div className="mb-3 p-2 rounded-md bg-red-50 text-red-700 text-sm">{tripActionError}</div>
+                )}
+                {trip.status === 'ACTIVE' ? (
+                  <button
+                    onClick={() => {
+                      setTripActionError('')
+                      setConfirmAction('archive')
+                    }}
+                    disabled={archiveTripMutation.isPending || deleteTripMutation.isPending}
+                    className="mr-3 text-amber-700 text-sm hover:underline disabled:opacity-50"
+                  >
+                    Archive trip
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setTripActionError('')
+                      setConfirmAction('restore')
+                    }}
+                    disabled={restoreTripMutation.isPending || deleteTripMutation.isPending}
+                    className="mr-3 text-emerald-700 text-sm hover:underline disabled:opacity-50"
+                  >
+                    Restore trip
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    setTripActionError('')
+                    setConfirmAction('delete')
+                  }}
+                  disabled={deleteTripMutation.isPending || archiveTripMutation.isPending || restoreTripMutation.isPending}
+                  className="text-red-600 text-sm hover:underline disabled:opacity-50"
+                >
+                  Delete trip
+                </button>
+              </div>
+            )}
+          </>
+        ) : null}
       </main>
 
       {confirmAction && (

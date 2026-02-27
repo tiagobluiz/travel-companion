@@ -40,6 +40,7 @@ function App() {
           path="/"
           element={token ? <DashboardPage /> : <DiscoveryAuthShellPage />}
         />
+        <Route path="/discover" element={<DiscoveryAuthShellPage />} />
         <Route
           path="/trips/:id"
           element={<TripDetailPage />}

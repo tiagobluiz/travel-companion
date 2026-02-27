@@ -2,10 +2,12 @@ import MapRoundedIcon from '@mui/icons-material/MapRounded'
 import PlaceRoundedIcon from '@mui/icons-material/PlaceRounded'
 import RouteRoundedIcon from '@mui/icons-material/RouteRounded'
 import SatelliteAltRoundedIcon from '@mui/icons-material/SatelliteAltRounded'
-import { Box, Button, Divider, Paper, Stack, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
+import { Box, Divider, Paper, Stack, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
 import { useMemo, useState } from 'react'
 import type { ItineraryV2Response, MoveItineraryItemV2Request } from '../../../../api/itinerary'
-import type { ItemFormEditPayload } from './ItemForm'
+import type { ItineraryQuickAddTarget } from '../detail/ItinerarySection'
+import type { ItemFormCreatePayload, ItemFormEditPayload } from './ItemForm'
+import { ItineraryMapCanvas } from './ItineraryMapCanvas'
 import { DayColumn } from './DayColumn'
 import { PlacesToVisitColumn } from './PlacesToVisitColumn'
 import { ItineraryDragContext } from './dnd/DragContext'
@@ -16,16 +18,28 @@ interface ItineraryBoardProps {
   isLoading: boolean
   loadError: unknown
   canEditPlanning: boolean
+  isAddPending: boolean
   isMovePending: boolean
   isEditPending: boolean
+  itineraryError?: string
   tripStartDate: string
   tripEndDate: string
+  onAdd: (payload: ItemFormCreatePayload) => Promise<void> | void
   onMove: (itemId: string, payload: MoveItineraryItemV2Request) => void
   onEdit: (itemId: string, payload: ItemFormEditPayload) => Promise<void> | void
   onRemove: (itemId: string) => void
+  onRequestQuickAdd?: (target: ItineraryQuickAddTarget) => void
 }
 
-function ItineraryMapPreview({ itinerary }: { itinerary: ItineraryV2Response }) {
+function ItineraryMapPreview({
+  itinerary,
+  highlightedItemId,
+  focusedDayNumber,
+}: {
+  itinerary: ItineraryV2Response
+  highlightedItemId?: string | null
+  focusedDayNumber?: number | null
+}) {
   const [mapMode, setMapMode] = useState<'MAP' | 'SATELLITE'>('MAP')
   const routeStops = useMemo(() => {
     const scheduled = itinerary.days.flatMap((day) =>
@@ -82,49 +96,13 @@ function ItineraryMapPreview({ itinerary }: { itinerary: ItineraryV2Response }) 
           </ToggleButtonGroup>
         </Stack>
 
-        <Box
-          sx={{
-            position: 'relative',
-            minHeight: { xs: 220, lg: 420 },
-            borderTop: '1px solid rgba(15,23,42,0.06)',
-            background:
-              mapMode === 'MAP'
-                ? 'radial-gradient(circle at 20% 20%, rgba(59,130,246,0.18), transparent 50%), radial-gradient(circle at 80% 30%, rgba(16,185,129,0.14), transparent 45%), linear-gradient(180deg, #eef4ff 0%, #f8fbff 60%, #eef6ff 100%)'
-                : 'radial-gradient(circle at 25% 25%, rgba(15,23,42,0.22), transparent 52%), radial-gradient(circle at 75% 20%, rgba(59,130,246,0.18), transparent 46%), linear-gradient(180deg, #dfe6ee 0%, #eef2f7 55%, #d7e1ea 100%)',
-            overflow: 'hidden',
-          }}
-        >
-          <Box
-            sx={{
-              position: 'absolute',
-              inset: 0,
-              opacity: 0.55,
-              backgroundImage:
-                'linear-gradient(rgba(15,23,42,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,0.06) 1px, transparent 1px)',
-              backgroundSize: '36px 36px',
-            }}
+        <Box sx={{ position: 'relative' }}>
+          <ItineraryMapCanvas
+            itinerary={itinerary}
+            mode={mapMode}
+            highlightedItemId={highlightedItemId ?? null}
+            focusedDayNumber={focusedDayNumber ?? null}
           />
-          <Box
-            sx={{
-              position: 'absolute',
-              inset: '12% 10% 16% 10%',
-              pointerEvents: 'none',
-            }}
-          >
-            <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-              <path
-                d="M8,72 C20,60 23,40 38,42 C53,44 51,70 66,68 C80,66 82,42 92,34"
-                fill="none"
-                stroke="#2f6fe4"
-                strokeWidth="2.2"
-                strokeDasharray="4 2"
-                strokeLinecap="round"
-              />
-              {[12, 27, 40, 55, 71, 86].map((x, idx) => (
-                <circle key={x} cx={x} cy={[72, 58, 44, 61, 52, 37][idx]} r="2.3" fill="#2f6fe4" />
-              ))}
-            </svg>
-          </Box>
           <Stack spacing={0.8} sx={{ position: 'absolute', left: 12, right: 12, bottom: 12 }}>
             <Paper
               elevation={0}
@@ -305,14 +283,36 @@ export function ItineraryBoard({
   isLoading,
   loadError,
   canEditPlanning,
+  isAddPending,
   isMovePending,
   isEditPending,
+  itineraryError,
   tripStartDate,
   tripEndDate,
+  onAdd,
   onMove,
   onEdit,
   onRemove,
+  onRequestQuickAdd,
 }: ItineraryBoardProps) {
+  const [activeDraggedItemId, setActiveDraggedItemId] = useState<string | null>(null)
+  const [activeEditedItemId, setActiveEditedItemId] = useState<string | null>(null)
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
+  const [focusedDayNumber, setFocusedDayNumber] = useState<number | null>(null)
+  const highlightedMapItemId = activeDraggedItemId ?? activeEditedItemId ?? selectedItemId
+  const itemById = useMemo(
+    () =>
+      new Map(
+        itinerary
+          ? [
+              ...itinerary.days.flatMap((day) => day.items.map((item) => [item.id, item] as const)),
+              ...itinerary.placesToVisit.items.map((item) => [item.id, item] as const),
+            ]
+          : []
+      ),
+    [itinerary]
+  )
+
   if (isLoading) {
     return (
       <Stack spacing={1.5}>
@@ -354,44 +354,35 @@ export function ItineraryBoard({
       itinerary={itinerary}
       disabled={!canEditPlanning || isMovePending || isEditPending}
       onMove={onMove}
+      onActiveDragItemChange={setActiveDraggedItemId}
     >
-      <Stack spacing={1.5}>
-        <Box sx={{ display: { xs: 'block', lg: 'none' } }}>
-          <Paper
-            variant="outlined"
-            sx={{
-              p: 1.5,
-              borderRadius: 3,
-              borderColor: 'rgba(15,23,42,0.08)',
-              bgcolor: 'rgba(255,255,255,0.96)',
-            }}
-          >
-            <Stack spacing={1}>
-              <Typography sx={{ fontWeight: 800, color: '#223046' }}>Trip planning workspace</Typography>
-              <Typography variant="body2" color="text.secondary">
-                Mobile uses list-first planning with action-menu move fallback and map preview entry.
-              </Typography>
-              <Button variant="outlined" startIcon={<MapRoundedIcon />} sx={{ alignSelf: 'flex-start' }}>
-                Open map preview
-              </Button>
-            </Stack>
-          </Paper>
-        </Box>
-
+      <Stack
+        spacing={1.5}
+        onClick={() => {
+          if (selectedItemId) {
+            const selectedItem = itemById.get(selectedItemId)
+            setFocusedDayNumber(selectedItem?.dayNumber ?? null)
+          }
+          setSelectedItemId(null)
+        }}
+      >
         <Box
           sx={{
             display: 'grid',
             gap: 1.5,
             gridTemplateColumns: {
               xs: '1fr',
-              lg: '220px minmax(0, 1fr) 360px',
-              xl: '240px minmax(0, 1fr) 390px',
+              lg: '15fr 12px 35fr 12px 50fr',
             },
             alignItems: 'start',
           }}
         >
           <Box sx={{ display: { xs: 'none', lg: 'block' }, position: 'sticky', top: 88, alignSelf: 'start' }}>
             <OverviewRail itinerary={itinerary} />
+          </Box>
+
+          <Box sx={{ display: { xs: 'none', lg: 'flex' }, justifyContent: 'center' }} aria-hidden="true">
+            <Box sx={{ width: 2, bgcolor: 'rgba(15,23,42,0.12)', borderRadius: 999, flex: 1 }} />
           </Box>
 
           <Stack spacing={1.5}>
@@ -402,36 +393,71 @@ export function ItineraryBoard({
                 day={day}
                 dayIndex={dayIndex}
                 totalDays={itinerary.days.length}
+                availableDayNumbers={itinerary.days.map((d) => d.dayNumber)}
                 previousDayNumber={itinerary.days[dayIndex - 1]?.dayNumber}
                 nextDayNumber={itinerary.days[dayIndex + 1]?.dayNumber}
                 canEditPlanning={canEditPlanning}
+                isAddPending={isAddPending}
                 isMovePending={isMovePending}
                 isEditPending={isEditPending}
+                addErrorMessage={itineraryError}
                 tripStartDate={tripStartDate}
                 tripEndDate={tripEndDate}
+                onAdd={onAdd}
                 onMove={onMove}
                 onEdit={onEdit}
                 onRemove={onRemove}
+                onEditStateChange={(itemId, isEditing) =>
+                  setActiveEditedItemId((current) => (isEditing ? itemId : current === itemId ? null : current))
+                }
+                selectedItemId={selectedItemId}
+                onSelectItem={(itemId) => {
+                  setSelectedItemId(itemId)
+                  const selectedItem = itemById.get(itemId)
+                  setFocusedDayNumber(selectedItem?.dayNumber ?? null)
+                }}
+                onSelectDay={(dayNumber) => {
+                  setSelectedItemId(null)
+                  setFocusedDayNumber(dayNumber)
+                }}
+                onRequestQuickAdd={onRequestQuickAdd}
               />
             ))}
 
             <PlacesToVisitColumn
               containerId="places"
               placesToVisit={itinerary.placesToVisit}
-              firstDayNumber={itinerary.days[0]?.dayNumber}
+              availableDayNumbers={itinerary.days.map((d) => d.dayNumber)}
               canEditPlanning={canEditPlanning}
+              isAddPending={isAddPending}
               isMovePending={isMovePending}
               isEditPending={isEditPending}
+              addErrorMessage={itineraryError}
               tripStartDate={tripStartDate}
               tripEndDate={tripEndDate}
+              onAdd={onAdd}
               onMove={onMove}
               onEdit={onEdit}
               onRemove={onRemove}
+              onEditStateChange={(itemId, isEditing) =>
+                setActiveEditedItemId((current) => (isEditing ? itemId : current === itemId ? null : current))
+              }
+              selectedItemId={selectedItemId}
+              onSelectItem={setSelectedItemId}
+              onRequestQuickAdd={onRequestQuickAdd}
             />
           </Stack>
 
+          <Box sx={{ display: { xs: 'none', lg: 'flex' }, justifyContent: 'center' }} aria-hidden="true">
+            <Box sx={{ width: 2, bgcolor: 'rgba(15,23,42,0.12)', borderRadius: 999, flex: 1 }} />
+          </Box>
+
           <Box sx={{ display: { xs: 'none', lg: 'block' }, position: 'sticky', top: 88, alignSelf: 'start' }}>
-            <ItineraryMapPreview itinerary={itinerary} />
+            <ItineraryMapPreview
+              itinerary={itinerary}
+              highlightedItemId={highlightedMapItemId}
+              focusedDayNumber={focusedDayNumber}
+            />
           </Box>
         </Box>
       </Stack>

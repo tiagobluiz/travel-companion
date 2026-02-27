@@ -83,6 +83,10 @@ function renderPage() {
   )
 }
 
+async function openTripDetailTab(name: 'Itinerary' | 'Collaborators' | 'Expenses' | 'Settings') {
+  fireEvent.click(await screen.findByRole('tab', { name }))
+}
+
 const baseTrip = {
   id: 'trip-1',
   name: 'Paris',
@@ -211,7 +215,8 @@ describe('TripDetailPage', () => {
 
     expect(screen.queryByText('+ Add place')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Move up' })).not.toBeInTheDocument()
-    expect(screen.getByText('Sign in to manage collaborators and invites.')).toBeInTheDocument()
+    await openTripDetailTab('Collaborators')
+    expect(await screen.findByText('Sign in to manage collaborators and invites.')).toBeInTheDocument()
     expect(mockFetchCollaborators).not.toHaveBeenCalled()
   })
 
@@ -251,13 +256,14 @@ describe('TripDetailPage', () => {
 
   it('owner can edit trip details including privacy (permission matrix)', async () => {
     renderPage()
+    await openTripDetailTab('Settings')
     const tripDetailsHeading = await screen.findByRole('heading', { name: 'Trip details' })
     const tripDetailsSection = tripDetailsHeading.closest('section')
     expect(tripDetailsSection).not.toBeNull()
     const tripDetails = within(tripDetailsSection!)
     await tripDetails.findByRole('button', { name: 'Save details' })
 
-    fireEvent.change(tripDetails.getByPlaceholderText('Trip name'), { target: { value: 'Paris Updated' } })
+    fireEvent.change(tripDetails.getByDisplayValue('Paris'), { target: { value: 'Paris Updated' } })
     fireEvent.change(tripDetails.getByDisplayValue('2026-01-01'), { target: { value: '2026-01-02' } })
     fireEvent.change(tripDetails.getByDisplayValue('2026-01-03'), { target: { value: '2026-01-04' } })
     fireEvent.change(tripDetails.getByLabelText('Privacy'), { target: { value: 'PUBLIC' } })
@@ -280,6 +286,7 @@ describe('TripDetailPage', () => {
       logout: vi.fn(),
     }
     renderPage()
+    await openTripDetailTab('Settings')
     const tripDetailsHeading = await screen.findByRole('heading', { name: 'Trip details' })
     const tripDetailsSection = tripDetailsHeading.closest('section')
     expect(tripDetailsSection).not.toBeNull()
@@ -289,7 +296,7 @@ describe('TripDetailPage', () => {
     const privacySelect = tripDetails.getByLabelText('Privacy')
     expect(privacySelect).toBeDisabled()
 
-    fireEvent.change(tripDetails.getByPlaceholderText('Trip name'), { target: { value: 'Editor Updated' } })
+    fireEvent.change(tripDetails.getByDisplayValue('Paris'), { target: { value: 'Editor Updated' } })
     fireEvent.click(tripDetails.getByRole('button', { name: 'Save details' }))
 
     await waitFor(() => {
@@ -314,6 +321,7 @@ describe('TripDetailPage', () => {
     })
 
     renderPage()
+    await openTripDetailTab('Settings')
     expect(await screen.findByText('Trip details')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Save details' })).not.toBeInTheDocument()
     expect(screen.getByText('Privacy: PRIVATE')).toBeInTheDocument()
@@ -332,8 +340,6 @@ describe('TripDetailPage', () => {
     fireEvent.change(dateInput!, {
       target: { value: '2026-01-08' },
     })
-    fireEvent.change(screen.getByPlaceholderText('Latitude'), { target: { value: '1' } })
-    fireEvent.change(screen.getByPlaceholderText('Longitude'), { target: { value: '1' } })
     const itineraryForm = screen.getByPlaceholderText('Place or activity').closest('form')
     expect(itineraryForm).not.toBeNull()
     fireEvent.submit(itineraryForm!)
@@ -350,8 +356,6 @@ describe('TripDetailPage', () => {
     fireEvent.change(screen.getByPlaceholderText('Place or activity'), {
       target: { value: 'Arc de Triomphe' },
     })
-    fireEvent.change(screen.getByPlaceholderText('Latitude'), { target: { value: '48.87' } })
-    fireEvent.change(screen.getByPlaceholderText('Longitude'), { target: { value: '2.29' } })
     fireEvent.change(screen.getByLabelText('Destination'), { target: { value: 'PLACES' } })
     const itineraryForm = screen.getByPlaceholderText('Place or activity').closest('form')
     expect(itineraryForm).not.toBeNull()
@@ -361,21 +365,19 @@ describe('TripDetailPage', () => {
       expect(mockAddItineraryItem).toHaveBeenCalledWith('trip-1', {
         placeName: 'Arc de Triomphe',
         notes: undefined,
-        latitude: 48.87,
-        longitude: 2.29,
+        latitude: 0,
+        longitude: 0,
         dayNumber: undefined,
       })
     })
   })
 
-  it('updates itinerary item notes and destination day from edit form (happy path)', async () => {
+  it('updates itinerary item notes inline (happy path)', async () => {
     renderPage()
     await screen.findByText('Louvre')
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Edit' })[0]!)
-    fireEvent.change(screen.getByPlaceholderText('Notes'), { target: { value: 'Updated note' } })
-    fireEvent.change(screen.getByLabelText('Destination'), { target: { value: 'PLACES' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    fireEvent.click(screen.getByText('Louvre'))
+    fireEvent.change(await screen.findByLabelText('Notes'), { target: { value: 'Updated note' } })
 
     await waitFor(() => {
       expect(mockUpdateItineraryItem).toHaveBeenCalledWith('trip-1', 'day1-a', {
@@ -383,18 +385,17 @@ describe('TripDetailPage', () => {
         notes: 'Updated note',
         latitude: 1,
         longitude: 1,
-        dayNumber: null,
+        dayNumber: 1,
       })
     })
   })
 
-  it('allows clearing notes from edit form', async () => {
+  it('allows clearing notes from inline notes editor', async () => {
     renderPage()
     await screen.findByText('Louvre')
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Edit' })[0]!)
-    fireEvent.change(screen.getByPlaceholderText('Notes'), { target: { value: '' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    fireEvent.click(screen.getByText('Louvre'))
+    fireEvent.change(await screen.findByLabelText('Notes'), { target: { value: '' } })
 
     await waitFor(() => {
       expect(mockUpdateItineraryItem).toHaveBeenCalledWith('trip-1', 'day1-a', {
@@ -412,8 +413,8 @@ describe('TripDetailPage', () => {
     renderPage()
     await screen.findByText('Louvre')
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Edit' })[0]!)
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    fireEvent.click(screen.getByText('Louvre'))
+    fireEvent.change(await screen.findByLabelText('Notes'), { target: { value: 'Fails save' } })
 
     expect(await screen.findByText('Edit failed')).toBeInTheDocument()
   })
@@ -453,8 +454,6 @@ describe('TripDetailPage', () => {
     fireEvent.change(dateInput!, {
       target: { value: '2026-01-02' },
     })
-    fireEvent.change(screen.getByPlaceholderText('Latitude'), { target: { value: '1' } })
-    fireEvent.change(screen.getByPlaceholderText('Longitude'), { target: { value: '1' } })
     const itineraryForm = screen.getByPlaceholderText('Place or activity').closest('form')
     expect(itineraryForm).not.toBeNull()
     fireEvent.submit(itineraryForm!)
@@ -477,6 +476,28 @@ describe('TripDetailPage', () => {
     renderPage()
 
     expect(await screen.findByText('Trip not found')).toBeInTheDocument()
+  })
+
+  it('opens inline create form in a day column without destination/date fields', async () => {
+    renderPage()
+    await screen.findByText('Day 1 (2026-01-01)')
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Add activity' })[0]!)
+
+    expect(await screen.findByPlaceholderText('Place or activity')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Destination')).not.toBeInTheDocument()
+    expect(document.querySelector('input[type="date"][min="2026-01-01"][max="2026-01-03"]')).toBeNull()
+  })
+
+  it('opens inline create form in places to visit without destination/date fields', async () => {
+    renderPage()
+    await screen.findByText('Places To Visit')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add item' }))
+
+    expect(await screen.findByPlaceholderText('Place or activity')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Destination')).not.toBeInTheDocument()
+    expect(document.querySelector('input[type="date"][min="2026-01-01"][max="2026-01-03"]')).toBeNull()
   })
 
   it('renders reusable not found page on trip 404 (auth-loss/private visibility path)', async () => {
@@ -524,6 +545,7 @@ describe('TripDetailPage', () => {
 
   it('shows collaborator role and pending/declined badges (happy path)', async () => {
     renderPage()
+    await openTripDetailTab('Collaborators')
 
     expect(await screen.findByRole('heading', { name: 'Collaborators' })).toBeInTheDocument()
     expect(screen.getByText('OWNER')).toBeInTheDocument()
@@ -534,6 +556,7 @@ describe('TripDetailPage', () => {
 
   it('accepts pending invite for current user (invite flow)', async () => {
     renderPage()
+    await openTripDetailTab('Collaborators')
     await screen.findByText('PENDING')
 
     fireEvent.click(screen.getByRole('button', { name: 'Accept' }))
@@ -545,6 +568,7 @@ describe('TripDetailPage', () => {
 
   it('revokes a declined invite (edge case)', async () => {
     renderPage()
+    await openTripDetailTab('Collaborators')
     await screen.findByText('DECLINED')
 
     const revokeButtons = screen.getAllByRole('button', { name: 'Revoke' })
@@ -557,6 +581,7 @@ describe('TripDetailPage', () => {
 
   it('validates invite form before submit (validation failure)', async () => {
     renderPage()
+    await openTripDetailTab('Collaborators')
     await screen.findByText('Invite collaborator')
 
     fireEvent.click(screen.getByRole('button', { name: 'Invite' }))
@@ -569,6 +594,7 @@ describe('TripDetailPage', () => {
     mockRemoveInvite.mockRejectedValueOnce(new Error('Only owners can manage invites'))
 
     renderPage()
+    await openTripDetailTab('Collaborators')
     await screen.findByText('DECLINED')
 
     const revokeButtons = screen.getAllByRole('button', { name: 'Revoke' })
@@ -579,6 +605,7 @@ describe('TripDetailPage', () => {
 
   it('requires confirmation before archiving a trip', async () => {
     renderPage()
+    await openTripDetailTab('Settings')
     await screen.findByRole('button', { name: 'Archive trip' })
 
     fireEvent.click(screen.getByRole('button', { name: 'Archive trip' }))
@@ -604,6 +631,7 @@ describe('TripDetailPage', () => {
   it('shows restore action for archived trips and requires confirmation', async () => {
     mockFetchTrip.mockResolvedValueOnce({ ...baseTrip, status: 'ARCHIVED' })
     renderPage()
+    await openTripDetailTab('Settings')
     await screen.findByRole('button', { name: 'Restore trip' })
 
     fireEvent.click(screen.getByRole('button', { name: 'Restore trip' }))
@@ -618,6 +646,7 @@ describe('TripDetailPage', () => {
 
   it('requires confirmation before deleting an active trip', async () => {
     renderPage()
+    await openTripDetailTab('Settings')
     await screen.findByRole('button', { name: 'Delete trip' })
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete trip' }))
@@ -643,6 +672,7 @@ describe('TripDetailPage', () => {
   it('allows deleting an archived trip with confirmation', async () => {
     mockFetchTrip.mockResolvedValueOnce({ ...baseTrip, status: 'ARCHIVED' })
     renderPage()
+    await openTripDetailTab('Settings')
     await screen.findByRole('button', { name: 'Delete trip' })
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete trip' }))
@@ -663,6 +693,7 @@ describe('TripDetailPage', () => {
     }
 
     renderPage()
+    await openTripDetailTab('Settings')
     await screen.findByText('Trip details')
 
     expect(screen.queryByRole('button', { name: 'Archive trip' })).not.toBeInTheDocument()
@@ -672,6 +703,7 @@ describe('TripDetailPage', () => {
 
   it('supports self-remove flow (regression)', async () => {
     renderPage()
+    await openTripDetailTab('Collaborators')
     await screen.findByRole('button', { name: 'Leave trip' })
 
     fireEvent.click(screen.getByRole('button', { name: 'Leave trip' }))
@@ -681,3 +713,6 @@ describe('TripDetailPage', () => {
     })
   })
 })
+
+
+

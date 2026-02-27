@@ -5,6 +5,7 @@ import { CssBaseline, ThemeProvider } from '@mui/material'
 import { registerSW } from 'virtual:pwa-register'
 import App from './App'
 import './index.css'
+import 'maplibre-gl/dist/maplibre-gl.css'
 import { appTheme } from './theme/appTheme'
 
 registerSW({ immediate: true })

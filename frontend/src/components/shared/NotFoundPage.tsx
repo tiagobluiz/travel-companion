@@ -3,6 +3,8 @@ import HomeRoundedIcon from '@mui/icons-material/HomeRounded'
 import SearchOffRoundedIcon from '@mui/icons-material/SearchOffRounded'
 import { Box, Button, Container, Paper, Stack, Typography } from '@mui/material'
 import { Link as RouterLink } from 'react-router-dom'
+import { useAuthStore } from '../../stores/authStore'
+import { isJwtTokenExpired } from '../../utils/authToken'
 import { AppTopNav } from './AppTopNav'
 
 interface NotFoundPageProps {
@@ -10,6 +12,7 @@ interface NotFoundPageProps {
   description?: string
   backTo?: string
   backLabel?: string
+  homeTo?: string
 }
 
 export function NotFoundPage({
@@ -17,7 +20,12 @@ export function NotFoundPage({
   description = 'The page may have moved, expired, or you may no longer have access to it.',
   backTo,
   backLabel = 'Go back',
+  homeTo,
 }: NotFoundPageProps) {
+  const token = useAuthStore((s) => s.token)
+  const shouldUseDashboardHome = Boolean(token) && !isJwtTokenExpired(token)
+  const resolvedHomeTo = homeTo ?? (shouldUseDashboardHome ? '/' : '/discover')
+
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#e7edf7' }}>
       <Box
@@ -77,7 +85,7 @@ export function NotFoundPage({
             </Stack>
 
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} sx={{ width: '100%', justifyContent: 'center' }}>
-              <Button component={RouterLink} to="/" variant="contained" startIcon={<HomeRoundedIcon />}>
+              <Button component={RouterLink} to={resolvedHomeTo} variant="contained" startIcon={<HomeRoundedIcon />}>
                 Go to Home
               </Button>
               {backTo ? (

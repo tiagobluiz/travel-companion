@@ -39,3 +39,17 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 - Local overrides go in `backend/src/main/resources/application-local.yml` (not committed). Example includes DB connection and `app.jwt.secret`.
 - Production expects `JWT_SECRET` and HTTPS for auth.
+
+## Current FE Working Conventions (UX Lane)
+
+- Dashboard/Home is currently a **single unified trips page** (`fetchTrips('ALL')`).
+  - Do not split Home by ownership/feed tabs for now.
+  - Use **sections + filters** for active vs archived presentation.
+- Dashboard search/sort/filter controls should mirror the **discovery page search bar pattern** for consistency.
+- Dashboard metadata styling favors **small rectangular badges** over default MUI `Chip` styling.
+- Auth expiry on protected dashboard requests (`401/403`) should **logout + redirect to sign-in** rather than leaving stale protected data visible.
+- Dashboard recency copy is currently based on `createdAt`, so wording should be **\"Created ...\"** (not \"Updated ...\") until `updatedAt` exists in API payloads.
+- Pending invites panel on dashboard is currently **mocked UI** by design.
+  - Replacement work is tracked in issues `#120` (BE API) and `#121` (FE integration).
+- MUI theme defaults were tuned for consistency:
+  - `Paper` / `Card` radius defaults are **8px**.

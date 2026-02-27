@@ -4,7 +4,7 @@ import HomeRoundedIcon from '@mui/icons-material/HomeRounded'
 import NotificationsNoneRoundedIcon from '@mui/icons-material/NotificationsNoneRounded'
 import PersonRoundedIcon from '@mui/icons-material/PersonRounded'
 import TravelExploreRoundedIcon from '@mui/icons-material/TravelExploreRounded'
-import { Avatar, Box, Button, Container, Paper, Stack, Tab, Tabs, Typography } from '@mui/material'
+import { Avatar, Box, Button, Paper, Stack, Typography } from '@mui/material'
 import { Link } from 'react-router-dom'
 
 interface TripDetailHeaderProps {
@@ -33,7 +33,7 @@ export function TripDetailHeader({
         backdropFilter: 'blur(10px)',
       }}
     >
-      <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3 } }}>
+      <Box sx={{ px: { xs: 2, sm: 3, lg: 4 } }}>
         <Stack spacing={1.25} sx={{ py: 1.25 }}>
           <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1.5}>
             <Stack direction="row" spacing={1.25} alignItems="center" sx={{ minWidth: 0 }}>
@@ -108,11 +108,62 @@ export function TripDetailHeader({
             </Stack>
           </Stack>
 
+          <Box
+            sx={{
+              borderRadius: 3,
+              overflow: 'hidden',
+              border: '1px solid rgba(15,23,42,0.06)',
+              background:
+                'linear-gradient(135deg, rgba(34,103,214,0.92) 0%, rgba(48,126,233,0.86) 32%, rgba(107,193,246,0.72) 68%, rgba(255,255,255,0.88) 100%)',
+              position: 'relative',
+            }}
+          >
+            <Box
+              sx={{
+                position: 'absolute',
+                inset: 0,
+                opacity: 0.18,
+                backgroundImage:
+                  'radial-gradient(circle at 14% 20%, #fff 0, transparent 28%), radial-gradient(circle at 72% 30%, #fff 0, transparent 24%), radial-gradient(circle at 48% 80%, #fff 0, transparent 30%)',
+              }}
+            />
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={1.25}
+              alignItems={{ xs: 'flex-start', sm: 'flex-end' }}
+              justifyContent="space-between"
+              sx={{ position: 'relative', px: { xs: 1.5, md: 2 }, py: { xs: 1.5, md: 2 }, minHeight: 92 }}
+            >
+              <Stack spacing={0.25}>
+                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.92)', fontWeight: 800, letterSpacing: 0.4 }}>
+                  TRIP COVER
+                </Typography>
+                <Typography variant="h5" sx={{ fontWeight: 900, color: '#fff', lineHeight: 1.05 }}>
+                  {tripName}
+                </Typography>
+              </Stack>
+              <Box
+                sx={{
+                  px: 1.1,
+                  py: 0.55,
+                  borderRadius: 999,
+                  bgcolor: 'rgba(255,255,255,0.18)',
+                  border: '1px solid rgba(255,255,255,0.26)',
+                  color: '#fff',
+                }}
+              >
+                <Typography variant="caption" sx={{ fontWeight: 800 }}>
+                  Image support (API pending)
+                </Typography>
+              </Box>
+            </Stack>
+          </Box>
+
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} alignItems={{ xs: 'flex-start', md: 'center' }} justifyContent="space-between">
             <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
               <Button
                 component={Link}
-                to="/"
+                to={isAuthenticated ? '/' : '/discover'}
                 startIcon={<ArrowBackRoundedIcon />}
                 variant="text"
                 sx={{ px: 0.5, minWidth: 0 }}
@@ -123,30 +174,9 @@ export function TripDetailHeader({
                 {tripName}
               </Typography>
             </Stack>
-
-            <Tabs
-              value="itinerary"
-              aria-label="Trip detail sections"
-              sx={{
-                minHeight: 42,
-                '& .MuiTabs-indicator': { height: 3, borderRadius: 999 },
-                '& .MuiTab-root': {
-                  minHeight: 42,
-                  textTransform: 'none',
-                  fontWeight: 700,
-                  px: { xs: 1.25, md: 1.75 },
-                  minWidth: 'auto',
-                },
-              }}
-            >
-              <Tab value="itinerary" label="Itinerary" />
-              <Tab value="collaborators" label="Collaborators" />
-              <Tab value="expenses" label="Expenses" />
-              <Tab value="settings" label="Settings" />
-            </Tabs>
           </Stack>
         </Stack>
-      </Container>
+      </Box>
     </Paper>
   )
 }

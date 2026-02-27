@@ -10,6 +10,11 @@ import type { Trip } from '../../../../api/trips'
 import { ItineraryBoard } from '../itinerary/ItineraryBoard'
 import { ItemForm, type ItemFormCreatePayload, type ItemFormEditPayload } from '../itinerary/ItemForm'
 
+export interface ItineraryQuickAddTarget {
+  destinationType: 'DAY' | 'PLACES'
+  dayNumber?: number | null
+}
+
 interface ItinerarySectionProps {
   trip: Trip
   itinerary: ItineraryV2Response
@@ -22,8 +27,10 @@ interface ItinerarySectionProps {
   isMovePending: boolean
   isEditPending: boolean
   onShowForm: () => void
+  onRequestQuickAdd: (target: ItineraryQuickAddTarget) => void
   onHideForm: () => void
-  onAddItinerary: (payload: ItemFormCreatePayload) => void
+  createFormPrefill?: ItineraryQuickAddTarget
+  onAddItinerary: (payload: ItemFormCreatePayload) => Promise<void> | void
   onEditItinerary: (item: ItineraryItemV2, payload: ItemFormEditPayload) => Promise<void> | void
   onMove: (itemId: string, payload: MoveItineraryItemV2Request) => void
   onRemove: (itemId: string) => void
@@ -41,7 +48,9 @@ export function ItinerarySection({
   isMovePending,
   isEditPending,
   onShowForm,
+  onRequestQuickAdd,
   onHideForm,
+  createFormPrefill,
   onAddItinerary,
   onEditItinerary,
   onMove,
@@ -128,6 +137,8 @@ export function ItinerarySection({
                 tripEndDate={trip.endDate}
                 isPending={isAddPending}
                 errorMessage={itineraryError}
+                initialDestinationType={createFormPrefill?.destinationType}
+                initialDayNumber={createFormPrefill?.destinationType === 'DAY' ? createFormPrefill.dayNumber : null}
                 onCreate={onAddItinerary}
                 onCancel={onHideForm}
               />
@@ -139,11 +150,15 @@ export function ItinerarySection({
             isLoading={isItineraryLoading}
             loadError={itineraryLoadError}
             canEditPlanning={canEditPlanning}
+            isAddPending={isAddPending}
             isMovePending={isMovePending}
             isEditPending={isEditPending}
+            itineraryError={itineraryError}
             tripStartDate={trip.startDate}
             tripEndDate={trip.endDate}
+            onAdd={onAddItinerary}
             onMove={onMove}
+            onRequestQuickAdd={canEditPlanning ? onRequestQuickAdd : undefined}
             onEdit={(itemId, payload) => {
               const item =
                 itinerary.days.flatMap((day) => day.items).find((dayItem) => dayItem.id === itemId) ??

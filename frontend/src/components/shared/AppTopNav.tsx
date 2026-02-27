@@ -3,15 +3,18 @@ import NotificationsNoneRoundedIcon from '@mui/icons-material/NotificationsNoneR
 import PersonRoundedIcon from '@mui/icons-material/PersonRounded'
 import TravelExploreRoundedIcon from '@mui/icons-material/TravelExploreRounded'
 import { Avatar, Box, Button, Container, Paper, Stack, Typography } from '@mui/material'
-import { Link as RouterLink } from 'react-router-dom'
+import { Link as RouterLink, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../stores/authStore'
+import { isJwtTokenExpired } from '../../utils/authToken'
 
 export function AppTopNav() {
   const token = useAuthStore((s) => s.token)
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
+  const navigate = useNavigate()
   const isAuthenticated = Boolean(token)
   const displayName = user?.displayName?.trim() || (isAuthenticated ? 'Traveler' : 'Guest')
+  const isValidAuthenticated = isAuthenticated && !isJwtTokenExpired(token)
 
   return (
     <Paper
@@ -48,10 +51,10 @@ export function AppTopNav() {
           </Stack>
 
           <Stack direction="row" spacing={0.5} alignItems="center" sx={{ display: { xs: 'none', md: 'flex' } }}>
-            <Button component={RouterLink} to="/" startIcon={<HomeRoundedIcon />} variant="text" sx={{ color: 'primary.main', fontWeight: 700 }}>
+            <Button component={RouterLink} to={isValidAuthenticated ? '/' : '/discover'} startIcon={<HomeRoundedIcon />} variant="text" sx={{ color: 'primary.main', fontWeight: 700 }}>
               Home
             </Button>
-            <Button component={RouterLink} to="/" startIcon={<TravelExploreRoundedIcon />} variant="text" sx={{ color: 'text.secondary' }}>
+            <Button component={RouterLink} to="/discover" startIcon={<TravelExploreRoundedIcon />} variant="text" sx={{ color: 'text.secondary' }}>
               Discover
             </Button>
             <Button startIcon={<NotificationsNoneRoundedIcon />} variant="text" sx={{ color: 'text.secondary' }} disabled>
@@ -71,7 +74,15 @@ export function AppTopNav() {
                 {displayName}
               </Typography>
               {isAuthenticated ? (
-                <Button onClick={logout} variant="text" size="small" sx={{ minHeight: 'auto', p: 0, justifyContent: 'flex-start' }}>
+                <Button
+                  onClick={() => {
+                    logout()
+                    navigate('/discover', { replace: true })
+                  }}
+                  variant="text"
+                  size="small"
+                  sx={{ minHeight: 'auto', p: 0, justifyContent: 'flex-start' }}
+                >
                   Sign out
                 </Button>
               ) : (

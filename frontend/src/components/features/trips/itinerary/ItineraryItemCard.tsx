@@ -1,16 +1,18 @@
 import PlaceRoundedIcon from '@mui/icons-material/PlaceRounded'
-import { Box, Paper, Stack, Typography } from '@mui/material'
-import { useState, type ReactNode } from 'react'
+import { Box, Paper, Stack, TextField, Typography } from '@mui/material'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { ItineraryItemV2 } from '../../../../api/itinerary'
-import { ItemForm, type ItemFormEditPayload } from './ItemForm'
+import type { ItemFormEditPayload } from './ItemForm'
 
 interface ItineraryItemCardProps {
   item: ItineraryItemV2
   canEditPlanning: boolean
   isPending: boolean
-  tripStartDate: string
-  tripEndDate: string
   onEdit: (payload: ItemFormEditPayload) => Promise<void> | void
+  dragHandle?: ReactNode
+  onEditStateChange?: (isEditing: boolean) => void
+  onSelect?: () => void
+  isSelected?: boolean
   children?: ReactNode
 }
 
@@ -18,63 +20,79 @@ export function ItineraryItemCard({
   item,
   canEditPlanning,
   isPending,
-  tripStartDate,
-  tripEndDate,
   onEdit,
+  dragHandle,
+  onEditStateChange,
+  onSelect,
+  isSelected = false,
   children,
 }: ItineraryItemCardProps) {
-  const [isEditing, setIsEditing] = useState(false)
+  const [draftNotes, setDraftNotes] = useState(item.notes)
+  const lastSubmittedNotesRef = useRef<string | null>(null)
+  const lastFailedNotesRef = useRef<string | null>(null)
 
-  if (isEditing) {
-    return (
-      <Paper
-        component="li"
-        variant="outlined"
-        sx={{
-          p: 1.5,
-          borderRadius: 2.5,
-          bgcolor: 'rgba(248,250,252,0.9)',
-          listStyle: 'none',
-        }}
-      >
-        <ItemForm
-          mode="edit"
-          tripStartDate={tripStartDate}
-          tripEndDate={tripEndDate}
-          isPending={isPending}
-          initialNotes={item.notes}
-          initialDayNumber={item.dayNumber}
-          onEdit={async (payload) => {
-            try {
-              await onEdit(payload)
-              setIsEditing(false)
-            } catch {
-              // Keep the form open so users can retry after the parent shows the error.
-            }
-          }}
-          onCancel={() => setIsEditing(false)}
-        />
-      </Paper>
-    )
-  }
+  useEffect(() => {
+    onEditStateChange?.(Boolean(isSelected && canEditPlanning))
+  }, [isSelected, canEditPlanning, onEditStateChange])
+
+  useEffect(() => {
+    setDraftNotes(item.notes)
+    if (lastSubmittedNotesRef.current === item.notes) {
+      lastSubmittedNotesRef.current = null
+      lastFailedNotesRef.current = null
+    }
+  }, [item.notes])
+
+  useEffect(() => {
+    if (!canEditPlanning || !isSelected) return
+    if (isPending) return
+    if (draftNotes === item.notes) return
+    if (draftNotes === lastSubmittedNotesRef.current) return
+    if (draftNotes === lastFailedNotesRef.current) return
+
+    const timeout = window.setTimeout(async () => {
+      lastSubmittedNotesRef.current = draftNotes
+      try {
+        await onEdit({ notes: draftNotes, dayNumber: item.dayNumber })
+        lastFailedNotesRef.current = null
+      } catch {
+        lastFailedNotesRef.current = draftNotes
+        if (lastSubmittedNotesRef.current === draftNotes) {
+          lastSubmittedNotesRef.current = null
+        }
+      }
+    }, 500)
+
+    return () => window.clearTimeout(timeout)
+  }, [canEditPlanning, draftNotes, isPending, isSelected, item.dayNumber, item.notes, onEdit])
 
   return (
     <Paper
-      component="li"
+      component="div"
       variant="outlined"
+      onClick={(event) => {
+        event.stopPropagation()
+        onSelect?.()
+      }}
       sx={{
-        p: 1.25,
-        borderRadius: 2.25,
+        p: { xs: 1.35, md: 1.5 },
+        borderRadius: 2.5,
         bgcolor: 'rgba(255,255,255,0.96)',
-        borderColor: 'rgba(15,23,42,0.08)',
+        borderColor: isSelected ? 'rgba(21,112,239,0.38)' : 'rgba(15,23,42,0.08)',
         listStyle: 'none',
+        minHeight: 88,
+        cursor: onSelect ? 'pointer' : 'default',
+        boxShadow: isSelected ? '0 0 0 2px rgba(21,112,239,0.10)' : 'none',
       }}
     >
-      <Stack direction="row" spacing={1} alignItems="flex-start">
+      <Stack direction="row" spacing={1.25} alignItems="flex-start">
+        {canEditPlanning && dragHandle ? (
+          <Box sx={{ display: 'grid', placeItems: 'center', mt: 0.2, flexShrink: 0 }}>{dragHandle}</Box>
+        ) : null}
         <Box
           sx={{
-            width: 30,
-            height: 30,
+            width: 36,
+            height: 36,
             borderRadius: 1.5,
             bgcolor: 'rgba(21,112,239,0.08)',
             color: 'primary.main',
@@ -84,15 +102,15 @@ export function ItineraryItemCard({
             flexShrink: 0,
           }}
         >
-          <PlaceRoundedIcon sx={{ fontSize: 16 }} />
+          <PlaceRoundedIcon sx={{ fontSize: 18 }} />
         </Box>
 
-        <Stack spacing={0.35} sx={{ minWidth: 0, flex: 1 }}>
-          <Typography sx={{ fontWeight: 700, color: '#223046', lineHeight: 1.2 }}>
+        <Stack spacing={0.45} sx={{ minWidth: 0, flex: 1, pt: 0.15 }}>
+          <Typography sx={{ fontWeight: 800, color: '#223046', lineHeight: 1.2, fontSize: { xs: 15, md: 16 } }}>
             {item.placeName}
           </Typography>
-          {item.notes ? (
-            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.25 }}>
+          {!isSelected && item.notes ? (
+            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.3 }}>
               {item.notes}
             </Typography>
           ) : null}
@@ -100,11 +118,7 @@ export function ItineraryItemCard({
             <Typography variant="caption" sx={{ color: '#667085', fontWeight: 600 }}>
               Places To Visit backlog
             </Typography>
-          ) : (
-            <Typography variant="caption" sx={{ color: '#667085', fontWeight: 600 }}>
-              Scheduled for day {item.dayNumber}
-            </Typography>
-          )}
+          ) : null}
         </Stack>
 
         {canEditPlanning ? (
@@ -114,32 +128,31 @@ export function ItineraryItemCard({
             useFlexGap
             flexWrap="wrap"
             justifyContent="flex-end"
-            sx={{ flexShrink: 0, maxWidth: { xs: 160, sm: 420 } }}
+            alignItems="center"
+            sx={{ flexShrink: 0, maxWidth: { xs: 190, sm: 420 } }}
           >
             {children}
-            <Box
-              component="button"
-              type="button"
-              onClick={() => setIsEditing(true)}
-              disabled={isPending}
-              sx={{
-                px: 1.1,
-                py: 0.55,
-                borderRadius: 1.5,
-                border: '1px solid rgba(15,23,42,0.12)',
-                bgcolor: '#fff',
-                color: '#344054',
-                fontSize: 12,
-                fontWeight: 700,
-                cursor: isPending ? 'not-allowed' : 'pointer',
-                opacity: isPending ? 0.5 : 1,
-              }}
-            >
-              Edit
-            </Box>
           </Stack>
         ) : null}
       </Stack>
+
+      {isSelected && canEditPlanning ? (
+        <Box sx={{ mt: 1.1, pl: canEditPlanning && dragHandle ? 5.9 : 0 }} onClick={(event) => event.stopPropagation()}>
+          <TextField
+            fullWidth
+            size="small"
+            label="Notes"
+            placeholder="Add notes here"
+            value={draftNotes}
+            onChange={(event) => {
+              lastFailedNotesRef.current = null
+              setDraftNotes(event.target.value)
+            }}
+            disabled={isPending}
+            helperText={isPending ? 'Saving...' : ' '}
+          />
+        </Box>
+      ) : null}
     </Paper>
   )
 }

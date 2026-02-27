@@ -1,3 +1,7 @@
+import AddRoundedIcon from '@mui/icons-material/AddRounded'
+import ReceiptLongRoundedIcon from '@mui/icons-material/ReceiptLongRounded'
+import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded'
+import { Alert, Box, Button, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material'
 import type { FormEvent } from 'react'
 import type { Expense } from '../../../../api/expenses'
 import type { Trip } from '../../../../api/trips'
@@ -46,102 +50,174 @@ export function ExpensesSection({
   onDeleteExpense,
 }: ExpensesSectionProps) {
   return (
-    <section>
-      <h2 className="text-lg font-semibold text-slate-900 mb-3">Expenses</h2>
-      <p className="text-sm text-slate-600 mb-3">Total: {totalExpenses.toFixed(2)}</p>
+    <Box component="section" sx={{ mb: 4.5 }}>
+      <Paper
+        elevation={0}
+        sx={{
+          borderRadius: 3,
+          border: '1px solid rgba(15,23,42,0.06)',
+          bgcolor: 'rgba(255,255,255,0.92)',
+          p: { xs: 1.75, md: 2 },
+        }}
+      >
+        <Stack spacing={1.75}>
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={1.2}
+            alignItems={{ xs: 'flex-start', md: 'center' }}
+            justifyContent="space-between"
+          >
+            <Stack spacing={0.4}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Box
+                  sx={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 2,
+                    bgcolor: 'rgba(21,112,239,0.10)',
+                    color: 'primary.main',
+                    display: 'grid',
+                    placeItems: 'center',
+                  }}
+                >
+                  <ReceiptLongRoundedIcon sx={{ fontSize: 18 }} />
+                </Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#223046' }}>
+                  Expenses
+                </Typography>
+              </Stack>
+              <Typography variant="body2" color="text.secondary">
+                Track trip costs and keep shared spending transparent.
+              </Typography>
+            </Stack>
 
-      {canEditPlanning && showExpenseForm ? (
-        <form onSubmit={onAddExpense} className="mb-4 p-4 bg-white rounded-lg border border-slate-200 space-y-3">
-          {expenseError && <div className="p-2 rounded-md bg-red-50 text-red-700 text-sm">{expenseError}</div>}
-          <div className="flex gap-3">
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="Amount"
-              value={amount}
-              onChange={(e) => onAmountChange(e.target.value)}
-              required
-              className="flex-1 px-3 py-2 border border-slate-300 rounded-lg bg-white"
-            />
-            <select
-              value={currency}
-              onChange={(e) => onCurrencyChange(e.target.value)}
-              className="px-3 py-2 border border-slate-300 rounded-lg bg-white"
-            >
-              <option value="USD">USD</option>
-              <option value="EUR">EUR</option>
-              <option value="GBP">GBP</option>
-            </select>
-          </div>
-          <input
-            type="text"
-            placeholder="Description"
-            value={expenseDesc}
-            onChange={(e) => onExpenseDescChange(e.target.value)}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
-          />
-          <input
-            type="date"
-            value={expenseDate}
-            onChange={(e) => onExpenseDateChange(e.target.value)}
-            min={trip.startDate}
-            max={trip.endDate}
-            required
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
-          />
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={isCreatePending}
-              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
-            >
-              Add
-            </button>
-            <button
-              type="button"
-              onClick={onHideForm}
-              className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      ) : canEditPlanning ? (
-        <button onClick={onShowForm} className="mb-4 text-sm text-primary-600 hover:underline">
-          + Add expense
-        </button>
-      ) : (
-        <p className="mb-4 text-sm text-slate-500">
-          Read-only expenses view. Only editors and owners can add expenses.
-        </p>
-      )}
+            <Box sx={{ px: 1.1, py: 0.6, borderRadius: 1.75, bgcolor: 'rgba(15,23,42,0.05)', color: '#344054' }}>
+              <Typography variant="caption" sx={{ fontWeight: 800 }}>
+                Total: {totalExpenses.toFixed(2)}
+              </Typography>
+            </Box>
+          </Stack>
 
-      {expenses.length === 0 ? (
-        <p className="text-slate-500 text-sm">No expenses yet.</p>
-      ) : (
-        <ul className="space-y-2">
-          {expenses.map((expense) => (
-            <li
-              key={expense.id}
-              className="p-3 bg-white rounded-lg border border-slate-200 flex justify-between items-center"
+          {canEditPlanning && showExpenseForm ? (
+            <Paper
+              variant="outlined"
+              sx={{ p: 1.5, borderRadius: 2.5, borderColor: 'rgba(15,23,42,0.08)', bgcolor: 'rgba(248,250,252,0.75)' }}
             >
-              <div>
-                <span className="font-medium">
-                  {expense.currency} {expense.amount}
-                </span>
-                {expense.description && <p className="text-sm text-slate-500">{expense.description}</p>}
-                <span className="text-xs text-slate-400">{expense.date}</span>
-              </div>
-              {canEditPlanning && (
-                <button onClick={() => onDeleteExpense(expense.id)} className="text-red-600 text-sm hover:underline">
-                  Remove
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+              <Stack component="form" onSubmit={onAddExpense} spacing={1.2}>
+                {expenseError ? (
+                  <Alert severity="error" sx={{ borderRadius: 2 }}>
+                    {expenseError}
+                  </Alert>
+                ) : null}
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                  <TextField
+                    type="number"
+                    inputProps={{ step: '0.01', min: 0 }}
+                    label="Amount"
+                    value={amount}
+                    onChange={(e) => onAmountChange(e.target.value)}
+                    required
+                    fullWidth
+                    size="small"
+                    sx={{ '& .MuiInputBase-root': { height: 40 } }}
+                  />
+                  <TextField
+                    select
+                    label="Currency"
+                    value={currency}
+                    onChange={(e) => onCurrencyChange(e.target.value)}
+                    size="small"
+                    sx={{ minWidth: { xs: '100%', sm: 130 }, '& .MuiInputBase-root': { height: 40 } }}
+                  >
+                    <MenuItem value="USD">USD</MenuItem>
+                    <MenuItem value="EUR">EUR</MenuItem>
+                    <MenuItem value="GBP">GBP</MenuItem>
+                  </TextField>
+                </Stack>
+                <TextField
+                  label="Description"
+                  value={expenseDesc}
+                  onChange={(e) => onExpenseDescChange(e.target.value)}
+                  fullWidth
+                  size="small"
+                />
+                <TextField
+                  type="date"
+                  label="Date"
+                  value={expenseDate}
+                  onChange={(e) => onExpenseDateChange(e.target.value)}
+                  inputProps={{ min: trip.startDate, max: trip.endDate }}
+                  InputLabelProps={{ shrink: true }}
+                  required
+                  fullWidth
+                  size="small"
+                />
+                <Stack direction="row" spacing={1}>
+                  <Button type="submit" variant="contained" disabled={isCreatePending}>
+                    Add
+                  </Button>
+                  <Button type="button" variant="text" onClick={onHideForm}>
+                    Cancel
+                  </Button>
+                </Stack>
+              </Stack>
+            </Paper>
+          ) : canEditPlanning ? (
+            <Button onClick={onShowForm} variant="contained" startIcon={<AddRoundedIcon />} sx={{ width: 'fit-content' }}>
+              + Add expense
+            </Button>
+          ) : (
+            <Alert severity="info" sx={{ borderRadius: 2.5 }}>
+              Read-only expenses view. Only editors and owners can add expenses.
+            </Alert>
+          )}
+
+          {expenses.length === 0 ? (
+            <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2.5 }}>
+              <Typography variant="body2" color="text.secondary">
+                No expenses yet.
+              </Typography>
+            </Paper>
+          ) : (
+            <Stack spacing={0.9}>
+              {expenses.map((expense) => (
+                <Paper
+                  key={expense.id}
+                  variant="outlined"
+                  sx={{ p: 1.2, borderRadius: 2.25, borderColor: 'rgba(15,23,42,0.08)', bgcolor: 'rgba(255,255,255,0.96)' }}
+                >
+                  <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
+                    <Stack spacing={0.3}>
+                      <Typography sx={{ fontWeight: 800, color: '#223046' }}>
+                        {expense.currency} {expense.amount}
+                      </Typography>
+                      {expense.description ? (
+                        <Typography variant="body2" color="text.secondary">
+                          {expense.description}
+                        </Typography>
+                      ) : null}
+                      <Typography variant="caption" sx={{ color: '#667085' }}>
+                        {expense.date}
+                      </Typography>
+                    </Stack>
+                    {canEditPlanning ? (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="error"
+                        startIcon={<DeleteOutlineRoundedIcon />}
+                        onClick={() => onDeleteExpense(expense.id)}
+                      >
+                        Remove
+                      </Button>
+                    ) : null}
+                  </Stack>
+                </Paper>
+              ))}
+            </Stack>
+          )}
+        </Stack>
+      </Paper>
+    </Box>
   )
 }
